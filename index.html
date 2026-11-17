@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartClass - Academic Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- הוספת ספריית סורק ה-QR למצלמה -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body class="bg-slate-50 font-sans text-slate-800">
+
+    <div class="max-w-5xl mx-auto p-6">
+        <!-- Main Header -->
+        <header class="bg-indigo-600 text-white p-6 rounded-2xl shadow-lg mb-8 flex justify-between items-center cursor-pointer" onclick="goHome()">
+            <div>
+                <h1 class="text-3xl font-bold">SmartClass 🎓</h1>
+                <p class="text-indigo-100 text-sm mt-1">Smart Classroom, AI Attendance & Institutional Management</p>
+            </div>
+            <div id="user-badge" class="bg-indigo-700 px-4 py-2 rounded-xl text-sm hidden">
+                <span id="badge-name"></span> (<span id="badge-role"></span>)
+            </div>
+        </header>
+
+        <!-- Step 1: Authentication -->
+        <section id="login-section" class="bg-white p-8 rounded-2xl shadow-md mb-6">
+            <h2 class="text-xl font-bold mb-4 text-indigo-900">Institutional Login</h2>
+            <div class="flex gap-4 mb-4">
+                <input type="email" id="email-input" placeholder="name@ariel.ac.il" class="flex-1 border border-slate-300 rounded-xl px-4 py-2">
+                <button onclick="requestOtp()" class="bg-indigo-600 text-white px-6 py-2 rounded-xl hover:bg-indigo-700 transition">Request OTP</button>
+            </div>
+            <div id="otp-box" class="hidden flex gap-4">
+                <input type="text" id="otp-input" placeholder="Enter 4-digit code" class="w-48 border border-slate-300 rounded-xl px-4 py-2">
+                <button onclick="verifyOtp()" class="bg-emerald-600 text-white px-6 py-2 rounded-xl hover:bg-emerald-700 transition">Login</button>
+            </div>
+            <p id="login-msg" class="text-sm mt-3 text-slate-500 font-medium"></p>
+        </section>
+
+        <!-- Level 1: Main Dashboard (Courses List Only) -->
+        <div id="dashboard-section" class="hidden bg-white p-6 rounded-2xl shadow-md space-y-6">
+            <div class="flex justify-between items-center border-b pb-4">
+                <h2 class="text-xl font-bold text-indigo-900">📚 My Courses</h2>
+                <button id="btn-enroll" onclick="promptEnrollCourse()" class="hidden bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-indigo-700 transition">+ Enroll in Course</button>
+                <div id="lecturer-course-actions" class="hidden flex gap-2">
+                    <input type="text" id="course-title" placeholder="Course Title" class="border rounded-lg px-3 py-1 text-sm">
+                    <input type="text" id="course-desc" placeholder="Description" class="border rounded-lg px-3 py-1 text-sm">
+                    <button onclick="createCourse()" class="bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-indigo-700 transition">+ Create Course</button>
+                </div>
+            </div>
+            <div id="courses-list" class="space-y-3">
+                <span class="text-slate-400">Loading courses...</span>
+            </div>
+        </div>
+
+        <!-- Level 2: Specific Course View -->
+        <div id="course-view-section" class="hidden bg-white p-6 rounded-2xl shadow-md space-y-6">
+            <button onclick="goHome()" class="text-indigo-600 text-sm font-bold hover:underline mb-2">← Back to Courses</button>
+            <h2 id="current-course-title" class="text-2xl font-bold text-slate-800">Course Title</h2>
+
+            <div class="grid grid-cols-2 gap-6">
+                <!-- Sessions Area -->
+                <div class="border p-4 rounded-xl bg-slate-50">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-slate-700">Course Sessions</h3>
+                        <button id="btn-start-session" onclick="startSession()" class="hidden bg-emerald-600 text-white text-xs px-3 py-2 rounded hover:bg-emerald-700 transition shadow">Start Live Session</button>
+                    </div>
+                    <div id="sessions-list" class="space-y-2 text-sm"></div>
+                </div>
+
+                <!-- Assignments Area -->
+                <div class="border p-4 rounded-xl bg-slate-50">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-slate-700">Assignments</h3>
+                        <button id="btn-create-assignment" onclick="openCreateAssignmentUI()" class="hidden bg-indigo-600 text-white text-xs px-3 py-2 rounded hover:bg-indigo-700 transition shadow">New Assignment</button>
+                    </div>
+                    <div id="assignments-list" class="space-y-2 text-sm"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Level 3: Session View (Active or Past) -->
+        <div id="session-view-section" class="hidden bg-white p-6 rounded-2xl shadow-md space-y-6">
+            <button onclick="goBackToCourse()" class="text-indigo-600 text-sm font-bold hover:underline mb-2">← Back to Course</button>
+
+            <div id="session-header" class="p-4 rounded-xl text-white bg-slate-400 shadow-inner">
+                <h2 class="text-2xl font-bold">Session ID: <span id="view-session-id"></span></h2>
+                <p id="session-status-text" class="text-sm font-medium mt-1">Status: Past Session</p>
+            </div>
+
+            <!-- Student Active Session Tools (With Camera Scanner) -->
+            <div id="student-active-tools" class="hidden border p-5 rounded-xl bg-emerald-50 border-emerald-200">
+                <h3 class="font-bold text-emerald-900 mb-3">Attendance Scanner</h3>
+
+                <div id="camera-container" class="mb-4 hidden border-2 border-emerald-500 rounded-lg overflow-hidden bg-black max-w-sm mx-auto shadow-lg">
+                    <div id="qr-reader" style="width: 100%;"></div>
+                </div>
+
+                <div class="flex gap-4">
+                    <button onclick="startCameraScanner()" class="bg-emerald-100 text-emerald-800 px-4 py-2 rounded-lg hover:bg-emerald-200 font-bold border border-emerald-300 shadow-sm flex items-center gap-2">📷 Scan with Camera</button>
+                    <span class="text-slate-400 mt-2 font-bold">OR</span>
+                    <input type="text" id="scan-qr-token" placeholder="Manual Token" class="flex-1 border border-emerald-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <button onclick="scanAttendance()" class="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 font-bold shadow-md transition">Check-in</button>
+                </div>
+                <p id="student-msg" class="text-sm mt-3 font-medium"></p>
+            </div>
+
+           <!-- Lecturer Active Session Tools -->
+            <div id="lecturer-active-tools" class="hidden border p-5 rounded-xl bg-emerald-50 border-emerald-200">
+                <h3 class="font-bold text-emerald-900 mb-4 border-b border-emerald-200 pb-2">Live Session Controls</h3>
+                <div class="flex gap-8 items-center">
+                    <div class="text-center flex flex-col items-center bg-white p-3 rounded-xl border border-emerald-200 shadow-sm">
+                        <img id="live-qr-img" src="" alt="Dynamic QR Code" class="w-32 h-32 mb-2 hidden">
+                        <p class="text-xl font-mono font-bold text-emerald-700" id="live-qr-text">Loading...</p>
+                        <p class="text-xs text-emerald-600 bg-emerald-100 px-2 py-1 rounded-full mt-1 animate-pulse">Rotating every 10s</p>
+                    </div>
+                    <div class="flex-1 border-l-2 pl-8 border-emerald-200">
+                        <h4 class="text-md font-bold mb-1 text-slate-800">End Session & Verify Attendance (YOLO)</h4>
+                        <p class="text-xs text-slate-500 mb-4">Capture or upload classroom photo to cross-reference physical presence with QR scans.</p>
+
+                        <!-- השורה המעודכנת: פותחת מצלמה במובייל או בוחרת קובץ במחשב -->
+                        <input type="file" id="class-photo-file" accept="image/*" capture="environment" class="border border-slate-300 bg-white rounded-lg p-2 text-sm mb-3 w-full cursor-pointer text-slate-600">
+
+                        <button onclick="closeSessionWithVision()" class="bg-rose-600 text-white px-6 py-2 rounded-lg text-sm font-bold shadow-md hover:bg-rose-700 transition">End Session & Verify</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Session Extras -->
+            <div class="border p-4 rounded-xl bg-slate-50 text-center text-slate-500 text-sm border-dashed">
+                <p class="font-bold mb-1">Session Extras</p>
+                Forums, Polls & AI Video Summaries will load here.
+            </div>
+        </div>
+
+        <!-- Level 3: Assignment View -->
+        <div id="assignment-view-section" class="hidden bg-white p-6 rounded-2xl shadow-md space-y-4">
+            <button onclick="goBackToCourse()" class="text-indigo-600 text-sm font-bold hover:underline mb-2">← Back to Course</button>
+            <h2 id="assignment-view-title" class="text-2xl font-bold text-slate-800 border-b pb-2">Assignment Details</h2>
+
+            <!-- Student Assignment UI (Drag & Drop) -->
+            <div id="student-assignment-tools" class="hidden border p-5 rounded-xl bg-indigo-50 border-indigo-200 mt-4">
+                <h3 class="font-bold text-indigo-900 mb-3">Submit Your Work</h3>
+
+                <!-- Drag & Drop Zone -->
+                <div id="drop-zone" class="border-2 border-dashed border-indigo-300 bg-white rounded-xl p-8 text-center cursor-pointer hover:bg-indigo-100 transition shadow-sm mb-4">
+                    <div class="text-4xl mb-2">📁</div>
+                    <p class="text-indigo-600 font-bold">Drag & Drop your files here</p>
+                    <p class="text-slate-500 text-sm mt-1">or click to browse from your device</p>
+                    <input type="file" id="student-file-upload" class="hidden" multiple>
+                    <p id="file-name-display" class="text-sm text-emerald-600 mt-3 font-bold"></p>
+                </div>
+
+                <button onclick="submitAssignment()" class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 font-bold shadow-md transition w-full">Submit to AI for Review</button>
+                <div id="student-feedback-box" class="mt-4 hidden p-4 bg-white rounded-lg border shadow-sm"></div>
+            </div>
+
+            <!-- Lecturer Assignment UI -->
+            <div id="lecturer-assignment-tools" class="hidden mt-4 space-y-4">
+                <div class="flex justify-between items-center bg-slate-100 p-4 rounded-xl border">
+                    <div>
+                        <h3 class="font-bold text-slate-800">Submissions & AI Reviews</h3>
+                        <p class="text-xs text-slate-500">Review AI feedback, update grades, and view comparisons.</p>
+                    </div>
+                    <button onclick="loadAssignmentSubmissions()" class="bg-slate-700 text-white px-4 py-2 rounded-lg text-sm hover:bg-slate-800 shadow transition">Refresh Data</button>
+                </div>
+                <div id="lecturer-submissions-container" class="space-y-3"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let currentUser = null;
+        let currentCourseId = null;
+        let currentSessionId = null;
+        let currentAssignmentId = null;
+        let qrInterval = null;
+        let html5QrcodeScanner = null;
+        const API_URL = "";
+
+        // --- Drag & Drop Setup ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const dropZone = document.getElementById('drop-zone');
+            const fileInput = document.getElementById('student-file-upload');
+            const fileNameDisplay = document.getElementById('file-name-display');
+
+            dropZone.addEventListener('click', () => fileInput.click());
+
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('bg-indigo-100', 'border-indigo-500');
+            });
+
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('bg-indigo-100', 'border-indigo-500');
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('bg-indigo-100', 'border-indigo-500');
+                if (e.dataTransfer.files.length > 0) {
+                    fileInput.files = e.dataTransfer.files;
+                    fileNameDisplay.innerText = "Selected: " + Array.from(fileInput.files).map(f => f.name).join(', ');
+                }
+            });
+
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files.length > 0) {
+                    fileNameDisplay.innerText = "Selected: " + Array.from(fileInput.files).map(f => f.name).join(', ');
+                }
+            });
+        });
+
+        // --- QR Camera Scanner ---
+        function startCameraScanner() {
+            document.getElementById('camera-container').classList.remove('hidden');
+            if(!html5QrcodeScanner) {
+                html5QrcodeScanner = new Html5QrcodeScanner(
+                    "qr-reader",
+                    { fps: 10, qrbox: {width: 250, height: 250} },
+                    false);
+                html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+            }
+        }
+
+        function onScanSuccess(decodedText, decodedResult) {
+            document.getElementById('scan-qr-token').value = decodedText;
+            document.getElementById('camera-container').classList.add('hidden');
+            html5QrcodeScanner.clear();
+            html5QrcodeScanner = null;
+            // Auto submit when scanned
+            scanAttendance();
+        }
+
+        function onScanFailure(error) { /* Background scanning process */ }
+
+        // --- AUTH & NAV ---
+        async function requestOtp() {
+            const email = document.getElementById('email-input').value;
+            if(!email) { alert('Please enter your email'); return; }
+            try {
+                const res = await fetch(`${API_URL}/api/auth/request-otp?email=${email}`, { method: 'POST' });
+                const data = await res.json();
+                if(res.ok) {
+                    document.getElementById('otp-box').classList.remove('hidden');
+                    document.getElementById('login-msg').innerText = `✉️ Email sent! (Check terminal for code: ${data.debug_code})`;
+                } else { alert(data.detail || 'Access denied'); }
+            } catch(e) { alert('Server error.'); }
+        }
+
+        async function verifyOtp() {
+            const email = document.getElementById('email-input').value;
+            const code = document.getElementById('otp-input').value;
+            const res = await fetch(`${API_URL}/api/auth/verify-otp?email=${email}&code=${code}`, { method: 'POST' });
+            if (res.ok) {
+                currentUser = await res.json();
+                document.getElementById('login-section').classList.add('hidden');
+                document.getElementById('user-badge').classList.remove('hidden');
+                document.getElementById('badge-name').innerText = currentUser.name;
+                document.getElementById('badge-role').innerText = currentUser.role;
+                goHome();
+            } else { alert('Invalid OTP code'); }
+        }
+
+        function hideAllSections() {
+            ['dashboard-section', 'course-view-section', 'session-view-section', 'assignment-view-section'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            if(html5QrcodeScanner) { html5QrcodeScanner.clear(); html5QrcodeScanner = null; }
+            document.getElementById('camera-container').classList.add('hidden');
+        }
+
+        function goHome() {
+            if(!currentUser) return;
+            hideAllSections();
+            document.getElementById('dashboard-section').classList.remove('hidden');
+
+            if(currentUser.role === 'student') {
+                document.getElementById('btn-enroll').classList.remove('hidden');
+                document.getElementById('lecturer-course-actions').classList.add('hidden');
+                loadStudentCourses();
+            } else {
+                document.getElementById('lecturer-course-actions').classList.remove('hidden');
+                document.getElementById('btn-enroll').classList.add('hidden');
+                loadLecturerCourses();
+            }
+        }
+
+        function goBackToCourse() {
+            if(qrInterval) clearInterval(qrInterval);
+            openCourseView(currentCourseId, "Course Dashboard");
+        }
+
+        async function openCourseView(courseId, title) {
+            currentCourseId = courseId;
+            hideAllSections();
+            document.getElementById('course-view-section').classList.remove('hidden');
+            document.getElementById('current-course-title').innerText = `${title} (${courseId})`;
+
+            if(currentUser.role === 'lecturer') {
+                document.getElementById('btn-start-session').classList.remove('hidden');
+                document.getElementById('btn-create-assignment').classList.remove('hidden');
+            }
+
+            document.getElementById('sessions-list').innerHTML = `
+                <div class="bg-emerald-50 border border-emerald-300 p-3 rounded-lg cursor-pointer transition hover:bg-emerald-100 flex justify-between items-center shadow-sm" onclick="openSessionView(101, true)">
+                    <span class="font-bold text-emerald-900">▶ Current Session</span>
+                    <span class="text-xs bg-emerald-600 text-white font-bold px-2 py-1 rounded">LIVE</span>
+                </div>
+            `;
+            loadAssignmentsForCourse();
+        }
+
+        // --- COURSES ---
+        async function loadLecturerCourses() {
+            const res = await fetch(`${API_URL}/api/courses`);
+            renderCoursesList(await res.json());
+        }
+
+        async function loadStudentCourses() {
+            const res = await fetch(`${API_URL}/api/students/${currentUser.email}/courses`);
+            renderCoursesList(await res.json());
+        }
+
+        function renderCoursesList(courses) {
+            const container = document.getElementById('courses-list');
+            if (courses.length === 0) {
+                container.innerHTML = `<span class="text-slate-400">No courses available.</span>`;
+                return;
+            }
+            container.innerHTML = courses.map(c => `
+                <div class="bg-white p-4 rounded-xl border shadow-sm cursor-pointer hover:border-indigo-500 hover:shadow-md transition" onclick="openCourseView('${c.course_id}', '${c.title}')">
+                    <span class="font-bold text-indigo-700">${c.course_id}</span>: <span class="font-bold text-slate-800 text-lg ml-1">${c.title}</span>
+                </div>
+            `).join('');
+        }
+
+        async function createCourse() {
+            const title = document.getElementById('course-title').value;
+            const description = document.getElementById('course-desc').value;
+            if(!title) { alert('Please enter a course title'); return; }
+            const res = await fetch(`${API_URL}/api/courses/create?title=${encodeURIComponent(title)}&description=${encodeURIComponent(description)}&lecturer_email=${currentUser.email}`, { method: 'POST' });
+            if(res.ok) {
+                document.getElementById('course-title').value = '';
+                document.getElementById('course-desc').value = '';
+                loadLecturerCourses();
+            }
+        }
+
+        async function promptEnrollCourse() {
+            const courseId = prompt("Enter Course ID to enroll:");
+            if (!courseId) return;
+            const res = await fetch(`${API_URL}/api/students/enroll?student_email=${currentUser.email}&course_id=${courseId}`, { method: 'POST' });
+            alert((await res.json()).message);
+            loadStudentCourses();
+        }
+
+        // --- SESSIONS ---
+        async function startSession() {
+            if(!currentCourseId) return;
+            const res = await fetch(`${API_URL}/api/sessions/start?course_id=${currentCourseId}`, { method: 'POST' });
+            const data = await res.json();
+
+            openSessionView(data.session_id, true);
+            updateQrDisplay(data.qr_code);
+
+            if(qrInterval) clearInterval(qrInterval);
+            qrInterval = setInterval(async () => {
+                const qrRes = await fetch(`${API_URL}/api/sessions/${data.session_id}/refresh-qr`);
+                if(qrRes.ok) updateQrDisplay((await qrRes.json()).qr_code);
+            }, 10000);
+        }
+
+        function updateQrDisplay(codeText) {
+            document.getElementById('live-qr-text').innerText = codeText;
+            const img = document.getElementById('live-qr-img');
+            img.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(codeText)}`;
+            img.classList.remove('hidden');
+        }
+
+        function openSessionView(sessionId, isActive) {
+            currentSessionId = sessionId;
+            hideAllSections();
+            document.getElementById('session-view-section').classList.remove('hidden');
+            document.getElementById('view-session-id').innerText = sessionId;
+
+            document.getElementById('student-active-tools').classList.add('hidden');
+            document.getElementById('lecturer-active-tools').classList.add('hidden');
+
+            if(isActive) {
+                document.getElementById('session-header').className = "p-4 rounded-xl text-white bg-emerald-600 shadow-lg";
+                document.getElementById('session-status-text').innerText = "Status: LIVE (Active Session)";
+                if(currentUser.role === 'student') document.getElementById('student-active-tools').classList.remove('hidden');
+                else document.getElementById('lecturer-active-tools').classList.remove('hidden');
+            }
+        }
+
+        async function scanAttendance() {
+            const qrCode = document.getElementById('scan-qr-token').value;
+            const res = await fetch(`${API_URL}/api/attendance/scan?session_id=${currentSessionId}&student_email=${currentUser.email}&student_name=${currentUser.name}&qr_code=${qrCode}`, { method: 'POST' });
+            const data = await res.json();
+            const msg = document.getElementById('student-msg');
+            if(res.ok) {
+                msg.className = "text-sm mt-3 text-emerald-600 font-bold";
+                msg.innerText = "✅ " + data.message;
+            } else {
+                msg.className = "text-sm mt-3 text-rose-600 font-bold";
+                msg.innerText = "❌ " + (data.detail || 'Failed');
+            }
+        }
+
+        async function closeSessionWithVision() {
+            const fileInput = document.getElementById('class-photo-file').files[0];
+            if(!fileInput) { alert('Please provide a classroom photo file'); return; }
+            if(qrInterval) clearInterval(qrInterval);
+            const formData = new FormData(); formData.append('file', fileInput);
+            const res = await fetch(`${API_URL}/api/sessions/${currentSessionId}/close-with-vision`, { method: 'POST', body: formData });
+            const data = await res.json();
+            alert(`Session closed!\nYOLO detection: ${data.yolo_detected_people}\nQR scans: ${data.qr_scanned_count}\nReport: ${data.excel_report_generated}`);
+            goBackToCourse();
+        }
+
+        // --- ASSIGNMENTS ---
+        async function loadAssignmentsForCourse() {
+            const res = await fetch(`${API_URL}/api/courses/${currentCourseId}/assignments`);
+            const assignments = await res.json();
+            const container = document.getElementById('assignments-list');
+            if (assignments.length === 0) {
+                container.innerHTML = `<p class="text-slate-500 italic">No assignments yet.</p>`;
+                return;
+            }
+            container.innerHTML = assignments.map(a => `
+                <div class="bg-white p-3 rounded-lg border cursor-pointer hover:bg-indigo-50 transition flex justify-between items-center shadow-sm" onclick="openAssignmentView(${a.id}, '${a.title}')">
+                    <div><strong class="text-indigo-800">${a.title}</strong><p class="text-xs text-slate-500 mt-1">Due: ${a.due_date}</p></div>
+                    <span class="text-indigo-600 text-xs font-bold border border-indigo-200 px-2 py-1 rounded bg-white">Open</span>
+                </div>
+            `).join('');
+        }
+
+        async function openCreateAssignmentUI() {
+            const title = prompt("Enter Assignment Title:");
+            if(!title) return;
+            const res = await fetch(`${API_URL}/api/assignments/create?course_id=${currentCourseId}&title=${encodeURIComponent(title)}&description=Standard&due_date=2026-12-01`, { method: 'POST' });
+            if(res.ok) loadAssignmentsForCourse();
+        }
+
+        function openAssignmentView(assignmentId, title) {
+            currentAssignmentId = assignmentId;
+            hideAllSections();
+            document.getElementById('assignment-view-section').classList.remove('hidden');
+            document.getElementById('assignment-view-title').innerText = title;
+            document.getElementById('student-assignment-tools').classList.add('hidden');
+            document.getElementById('lecturer-assignment-tools').classList.add('hidden');
+            if (currentUser.role === 'student') {
+                document.getElementById('student-assignment-tools').classList.remove('hidden');
+                document.getElementById('student-file-upload').value = ""; // איפוס העלאה
+                document.getElementById('file-name-display').innerText = "";
+                document.getElementById('student-feedback-box').classList.add('hidden');
+            } else {
+                document.getElementById('lecturer-assignment-tools').classList.remove('hidden');
+                loadAssignmentSubmissions();
+            }
+        }
+
+        async function submitAssignment() {
+            const files = document.getElementById('student-file-upload').files;
+            if(files.length === 0) { alert('Please select or drop a file first'); return; }
+
+            // בשרת שלנו כרגע זה מקבל string של file_url, נשלח את שם הקובץ לטובת הסימולציה
+            const fileName = files[0].name;
+            const res = await fetch(`${API_URL}/api/assignments/submit?assignment_id=${currentAssignmentId}&student_email=${currentUser.email}&file_url=${encodeURIComponent(fileName)}`, { method: 'POST' });
+            const data = await res.json();
+
+            if(res.ok) {
+                const box = document.getElementById('student-feedback-box');
+                box.classList.remove('hidden');
+                box.innerHTML = `
+                    <p class="font-bold text-emerald-700 mb-2">✅ Submission Successful & Reviewed by AI!</p>
+                    <p class="text-sm"><strong>AI Recommended Grade:</strong> <span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded">${data.llm_grade}</span></p>
+                    <p class="text-xs text-slate-600 mt-2 bg-slate-50 p-2 rounded border"><strong>Deep Review:</strong> ${data.llm_review}</p>
+                `;
+            }
+        }
+
+        async function loadAssignmentSubmissions() {
+            const [subRes, compRes] = await Promise.all([
+                fetch(`${API_URL}/api/assignments/${currentAssignmentId}/submissions`),
+                fetch(`${API_URL}/api/assignments/${currentAssignmentId}/comparison`)
+            ]);
+            const subs = await subRes.json();
+            const comp = await compRes.json();
+            const container = document.getElementById('lecturer-submissions-container');
+
+            let html = `<div class="bg-indigo-50 border border-indigo-200 p-4 rounded-xl mb-4 text-sm text-indigo-900 shadow-sm"><strong class="block mb-1">🤖 AI Comparison Report:</strong> ${comp.comparison_insights}</div>`;
+            if (subs.length === 0) { html += `<p class="text-slate-500 italic text-center p-4">No submissions yet.</p>`; }
+            else {
+                subs.forEach(s => {
+                    html += `
+                        <div class="bg-white p-4 rounded-xl border shadow-sm mb-3">
+                            <div class="flex justify-between items-start mb-3 border-b pb-3">
+                                <div><span class="font-bold block">${s.student_email}</span><span class="text-xs text-indigo-500 bg-indigo-50 px-2 py-1 rounded mt-1 inline-block">File: ${s.file_url}</span></div>
+                                <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-lg border">
+                                    <span class="text-xs font-bold">Grade:</span><input type="text" id="grade-${s.id}" value="${s.llm_grade || ''}" class="w-12 border rounded px-2 py-1 text-center font-bold">
+                                    <button onclick="updateGrade(${s.id}, true)" class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded shadow">Approve</button>
+                                </div>
+                            </div>
+                            <p class="text-xs text-slate-600 bg-slate-50 p-3 rounded-lg border"><strong class="text-slate-700">AI Deep Review:</strong> ${s.llm_review}</p>
+                        </div>`;
+                });
+            }
+            container.innerHTML = html;
+        }
+
+        async function updateGrade(submissionId, approved) {
+            const grade = document.getElementById(`grade-${submissionId}`).value;
+            await fetch(`${API_URL}/api/assignments/submission/${submissionId}/grade?grade=${grade}&approved=${approved}`, { method: 'POST' });
+            alert("Grade updated!");
+        }
+    </script>
+</body>
+</html>
