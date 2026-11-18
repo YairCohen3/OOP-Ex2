@@ -24,7 +24,7 @@ app.add_middleware(
 )
 
 SENDER_EMAIL = "yair18487@gmail.com"
-APP_PASSWORD = "evxfnkchhbwfkkmt"
+APP_PASSWORD = "nrpokkpvxuprjdws"
 otp_store = {}
 
 AUTH_USERS = {

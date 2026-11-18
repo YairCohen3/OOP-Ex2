@@ -210,18 +210,43 @@
         }
 
         // Auth
-        async function requestOtp() {
-            const email = document.getElementById('email-input').value;
-            if(!email) return alert('Please enter your email');
-            try {
-                const res = await fetch(`${API_URL}/api/auth/request-otp?email=${email}`, { method: 'POST' });
-                const data = await res.json();
-                if(res.ok) {
-                    document.getElementById('otp-box').classList.remove('hidden');
-                    document.getElementById('login-msg').innerText = `✉️ Real Email sent! Check your inbox.`;
-                } else alert(data.detail || 'Access denied');
-            } catch(e) { alert('Server error.'); }
+    async function requestOtp() {
+    const emailInput = document.getElementById('email-input').value;
+    // תפיסת הכפתור כדי לשנות לו את הטקסט
+    const btn = document.querySelector('button[onclick="requestOtp()"]');
+
+    if(!emailInput) return alert('Please enter your email');
+
+    // שינוי הכפתור כדי שנראה ויזואלית שהוא אכן נלחץ
+    const originalText = btn.innerText;
+    btn.innerText = "Sending...";
+    btn.disabled = true;
+    btn.classList.add('opacity-75', 'cursor-not-allowed');
+
+    try {
+        console.log("Sending request to server...");
+        const res = await fetch(`${API_URL}/api/auth/request-otp?email=${emailInput}`, { method: 'POST' });
+
+        console.log("Response status:", res.status);
+        const data = await res.json();
+        console.log("Response data:", data);
+
+        if(res.ok) {
+            document.getElementById('otp-box').classList.remove('hidden');
+            document.getElementById('login-msg').innerText = `✉️ Real Email sent! Check your inbox.`;
+        } else {
+            alert(data.detail || 'Access denied');
         }
+    } catch(e) {
+        console.error("Fetch error:", e);
+        alert('Error contacting server. Press F12 and check the Console.');
+    } finally {
+        // החזרת הכפתור למצב רגיל בסיום הפעולה
+        btn.innerText = originalText;
+        btn.disabled = false;
+        btn.classList.remove('opacity-75', 'cursor-not-allowed');
+    }
+}
         async function verifyOtp() {
             const email = document.getElementById('email-input').value, code = document.getElementById('otp-input').value;
             const res = await fetch(`${API_URL}/api/auth/verify-otp?email=${email}&code=${code}`, { method: 'POST' });
