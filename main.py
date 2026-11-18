@@ -29,7 +29,7 @@ otp_store = {}
 
 AUTH_USERS = {
     "yair18487@gmail.com": {"name": "Yair Cohen", "role": "student"},
-    "ohadbennun25@ariel.ac.il": {"name": "Dr. Ohad", "role": "lecturer"}
+    "ohadbennun25@gmail.com": {"name": "Dr. Ohad", "role": "lecturer"}
 }
 
 
