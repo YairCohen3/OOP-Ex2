@@ -11,7 +11,7 @@
 
     <div class="max-w-5xl mx-auto p-4 sm:p-6">
         <!-- Main Header -->
-        <header class="bg-indigo-600 text-white p-4 sm:p-6 rounded-2xl shadow-lg mb-6 sm:mb-8 flex flex-col sm:flex-row justify-between items-center cursor-pointer gap-4 text-center sm:text-left" onclick="goHome()">
+        <header class="bg-indigo-600 text-white p-4 sm:p-6 rounded-2xl shadow-lg mb-6 flex flex-col sm:flex-row justify-between items-center cursor-pointer gap-4 text-center sm:text-left" onclick="goHome()">
             <div>
                 <h1 class="text-2xl sm:text-3xl font-bold">SmartClass 🎓</h1>
                 <p class="text-indigo-100 text-xs sm:text-sm mt-1">Smart Classroom, AI Attendance & Institutional Management</p>
@@ -22,55 +22,55 @@
         </header>
 
         <!-- Step 1: Authentication -->
-        <section id="login-section" class="bg-white p-6 sm:p-8 rounded-2xl shadow-md mb-6">
+        <section id="login-section" class="bg-white p-6 rounded-2xl shadow-md mb-6 max-w-md mx-auto sm:max-w-none">
             <h2 class="text-xl font-bold mb-4 text-indigo-900 text-center sm:text-left">Institutional Login</h2>
-            <!-- תוקן העיצוב למובייל: flex-col מסדר אותם בעמודה בטלפון, sm:flex-row מסדר בשורה במחשב -->
-            <div class="flex flex-col sm:flex-row gap-4 mb-4">
-                <input type="email" id="email-input" placeholder="name@ariel.ac.il" class="flex-1 border border-slate-300 rounded-xl px-4 py-3 sm:py-2 w-full">
-                <button onclick="requestOtp()" class="bg-indigo-600 text-white px-6 py-3 sm:py-2 rounded-xl hover:bg-indigo-700 transition font-bold w-full sm:w-auto">Request OTP</button>
+            <div class="flex flex-col sm:flex-row gap-3 mb-4 w-full">
+                <input type="email" id="email-input" placeholder="name@ariel.ac.il" class="w-full sm:flex-1 border border-slate-300 rounded-xl px-4 py-3">
+                <button onclick="requestOtp()" class="w-full sm:w-auto bg-indigo-600 text-white px-6 py-3 rounded-xl hover:bg-indigo-700 transition font-bold shadow-sm">Request OTP</button>
             </div>
-            <div id="otp-box" class="hidden flex flex-col sm:flex-row gap-4">
-                <input type="text" id="otp-input" placeholder="Enter 4-digit code" class="flex-1 sm:w-48 border border-slate-300 rounded-xl px-4 py-3 sm:py-2 w-full text-center tracking-widest font-mono text-lg">
-                <button onclick="verifyOtp()" class="bg-emerald-600 text-white px-6 py-3 sm:py-2 rounded-xl hover:bg-emerald-700 transition font-bold w-full sm:w-auto">Login</button>
+            <div id="otp-box" class="hidden flex flex-col sm:flex-row gap-3 w-full">
+                <!-- Autocomplete for OTP added here -->
+                <input type="text" id="otp-input" autocomplete="one-time-code" inputmode="numeric" placeholder="Enter code" class="w-full sm:w-48 border border-slate-300 rounded-xl px-4 py-3 text-center tracking-widest font-mono text-lg focus:ring-2 focus:ring-emerald-500 outline-none">
+                <button onclick="verifyOtp()" class="w-full sm:w-auto bg-emerald-600 text-white px-6 py-3 rounded-xl hover:bg-emerald-700 transition font-bold shadow-sm">Login</button>
             </div>
             <p id="login-msg" class="text-sm mt-3 text-slate-500 font-medium text-center sm:text-left"></p>
         </section>
 
-        <!-- Level 1: Main Dashboard (Courses List Only) -->
+        <!-- Level 1: Dashboard -->
         <div id="dashboard-section" class="hidden bg-white p-4 sm:p-6 rounded-2xl shadow-md space-y-6">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-4 gap-4">
                 <h2 class="text-xl font-bold text-indigo-900 w-full sm:w-auto">📚 My Courses</h2>
-                <button id="btn-enroll" onclick="promptEnrollCourse()" class="hidden bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-indigo-700 transition w-full sm:w-auto">+ Enroll in Course</button>
-                <div id="lecturer-course-actions" class="hidden flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                    <input type="text" id="course-title" placeholder="Course Title" class="border rounded-lg px-3 py-2 text-sm w-full">
-                    <input type="text" id="course-desc" placeholder="Description" class="border rounded-lg px-3 py-2 text-sm w-full">
-                    <button onclick="createCourse()" class="bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-indigo-700 transition w-full sm:w-auto whitespace-nowrap">+ Create Course</button>
+                <button id="btn-enroll" onclick="promptEnrollCourse()" class="hidden bg-indigo-600 text-white text-sm px-4 py-3 sm:py-2 rounded-lg font-bold w-full sm:w-auto">+ Enroll in Course</button>
+                <div id="lecturer-course-actions" class="hidden flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                    <input type="text" id="course-title" placeholder="Course Title" class="border rounded-lg px-4 py-3 sm:py-2 text-sm w-full">
+                    <button onclick="createCourse()" class="bg-indigo-600 text-white text-sm px-4 py-3 sm:py-2 rounded-lg font-bold w-full sm:w-auto">+ Create</button>
                 </div>
             </div>
             <div id="courses-list" class="space-y-3"></div>
         </div>
 
-        <!-- Level 2: Specific Course View -->
+        <!-- Level 2: Course View -->
         <div id="course-view-section" class="hidden bg-white p-4 sm:p-6 rounded-2xl shadow-md space-y-6">
             <button onclick="goHome()" class="text-indigo-600 text-sm font-bold hover:underline mb-2 block">← Back to Courses</button>
             <h2 id="current-course-title" class="text-xl sm:text-2xl font-bold text-slate-800">Course Title</h2>
 
-            <!-- Grid adjusted: 1 column on mobile, 2 columns on desktop -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <!-- Sessions Area -->
                 <div class="border p-4 rounded-xl bg-slate-50">
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
                         <h3 class="font-bold text-slate-700">Course Sessions</h3>
-                        <button id="btn-start-session" onclick="startSession()" class="hidden bg-emerald-600 text-white text-xs px-3 py-2 rounded hover:bg-emerald-700 transition shadow w-full sm:w-auto">Start Live Session</button>
+                        <button id="btn-start-session" onclick="startSession()" class="hidden bg-emerald-600 text-white text-sm px-4 py-2 rounded-lg font-bold shadow w-full sm:w-auto">Start Live Session</button>
                     </div>
-                    <div id="sessions-list" class="space-y-2 text-sm"></div>
+                    <div id="sessions-list" class="space-y-2 text-sm">
+                        <!-- Real sessions will load here -->
+                    </div>
                 </div>
 
                 <!-- Assignments Area -->
                 <div class="border p-4 rounded-xl bg-slate-50">
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
                         <h3 class="font-bold text-slate-700">Assignments</h3>
-                        <button id="btn-create-assignment" onclick="openCreateAssignmentUI()" class="hidden bg-indigo-600 text-white text-xs px-3 py-2 rounded hover:bg-indigo-700 transition shadow w-full sm:w-auto">New Assignment</button>
+                        <button id="btn-create-assignment" onclick="openCreateAssignmentUI()" class="hidden bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg font-bold shadow w-full sm:w-auto">New Assignment</button>
                     </div>
                     <div id="assignments-list" class="space-y-2 text-sm"></div>
                 </div>
@@ -78,77 +78,80 @@
         </div>
 
         <!-- Level 3: Session View -->
-        <div id="session-view-section" class="hidden bg-white p-4 sm:p-6 rounded-2xl shadow-md space-y-4 sm:space-y-6">
-            <button onclick="goBackToCourse()" class="text-indigo-600 text-sm font-bold hover:underline mb-2 block">← Back to Course</button>
+        <div id="session-view-section" class="hidden bg-white p-4 sm:p-6 rounded-2xl shadow-md space-y-4">
+            <button onclick="goBackToCourse()" class="text-indigo-600 text-sm font-bold hover:underline block">← Back to Course</button>
 
-            <div id="session-header" class="p-4 rounded-xl text-white shadow-inner">
-                <h2 class="text-xl sm:text-2xl font-bold">Session ID: <span id="view-session-id"></span></h2>
+            <div id="session-header" class="p-4 rounded-xl text-white shadow-inner mt-2">
+                <h2 class="text-xl font-bold">Session ID: <span id="view-session-id"></span></h2>
                 <p id="session-status-text" class="text-sm font-medium mt-1">Status: Past Session</p>
             </div>
 
-            <!-- Student Active Session Tools -->
-            <div id="student-active-tools" class="hidden border p-4 sm:p-5 rounded-xl bg-emerald-50 border-emerald-200">
-                <h3 class="font-bold text-emerald-900 mb-3">Attendance Scanner</h3>
+            <!-- Student Tools (Fixed Layout for Mobile) -->
+            <div id="student-active-tools" class="hidden border p-4 rounded-xl bg-emerald-50 border-emerald-200">
+                <h3 class="font-bold text-emerald-900 mb-4 text-center">Attendance Scanner</h3>
 
-                <div id="camera-container" class="mb-4 hidden border-2 border-emerald-500 rounded-lg overflow-hidden bg-black w-full max-w-sm mx-auto shadow-lg">
-                    <div id="qr-reader" style="width: 100%;"></div>
+                <div id="camera-container" class="mb-4 hidden border-2 border-emerald-500 rounded-xl overflow-hidden bg-black w-full max-w-sm mx-auto shadow-lg relative">
+                    <div id="qr-reader" class="w-full"></div>
+                    <button onclick="stopCameraScanner()" class="absolute top-2 right-2 bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold z-10">Close</button>
                 </div>
 
-                <div class="flex flex-col sm:flex-row gap-4 items-center">
-                    <button onclick="startCameraScanner()" class="bg-emerald-100 text-emerald-800 px-4 py-3 sm:py-2 rounded-lg hover:bg-emerald-200 font-bold border border-emerald-300 shadow-sm flex items-center justify-center gap-2 w-full sm:w-auto">📷 Scan Camera</button>
-                    <span class="text-slate-400 font-bold">OR</span>
-                    <input type="text" id="scan-qr-token" placeholder="Manual Token" class="w-full sm:flex-1 border border-emerald-300 rounded-lg px-4 py-3 sm:py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                    <button onclick="scanAttendance()" class="bg-emerald-600 text-white px-6 py-3 sm:py-2 rounded-lg hover:bg-emerald-700 font-bold shadow-md transition w-full sm:w-auto">Check-in</button>
+                <!-- Fully responsive vertical stack for mobile, row for desktop -->
+                <div class="flex flex-col gap-3 w-full max-w-sm mx-auto">
+                    <button onclick="startCameraScanner()" class="bg-emerald-100 text-emerald-800 px-4 py-3 rounded-lg hover:bg-emerald-200 font-bold border border-emerald-300 shadow-sm flex items-center justify-center gap-2 w-full">📷 Open Camera</button>
+
+                    <div class="flex items-center gap-2 w-full py-1">
+                        <hr class="flex-1 border-emerald-200">
+                        <span class="text-emerald-400 font-bold text-xs uppercase">Or Enter Token</span>
+                        <hr class="flex-1 border-emerald-200">
+                    </div>
+
+                    <input type="text" id="scan-qr-token" placeholder="E.g. QR-12345" class="w-full border border-emerald-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-center font-mono">
+                    <button onclick="scanAttendance()" class="bg-emerald-600 text-white px-6 py-3 rounded-lg hover:bg-emerald-700 font-bold shadow-md transition w-full">Check-in</button>
                 </div>
-                <p id="student-msg" class="text-sm mt-3 font-medium text-center sm:text-left"></p>
+                <p id="student-msg" class="text-sm mt-3 font-bold text-center"></p>
             </div>
 
-            <!-- Lecturer Active Session Tools -->
-            <div id="lecturer-active-tools" class="hidden border p-4 sm:p-5 rounded-xl bg-emerald-50 border-emerald-200">
+            <!-- Lecturer Tools -->
+            <div id="lecturer-active-tools" class="hidden border p-4 rounded-xl bg-emerald-50 border-emerald-200">
                 <h3 class="font-bold text-emerald-900 mb-4 border-b border-emerald-200 pb-2">Live Session Controls</h3>
-                <!-- Changed to flex-col on mobile, flex-row on desktop -->
-                <div class="flex flex-col md:flex-row gap-6 md:gap-8 items-center md:items-start">
-                    <div class="text-center flex flex-col items-center bg-white p-3 rounded-xl border border-emerald-200 shadow-sm w-full md:w-auto">
-                        <img id="live-qr-img" src="" alt="Dynamic QR Code" class="w-32 h-32 mb-2 hidden">
-                        <p class="text-xl font-mono font-bold text-emerald-700" id="live-qr-text">Loading...</p>
-                        <p class="text-xs text-emerald-600 bg-emerald-100 px-2 py-1 rounded-full mt-1 animate-pulse">Rotating every 10s</p>
+                <div class="flex flex-col md:flex-row gap-6 items-center md:items-start">
+                    <div class="text-center flex flex-col items-center bg-white p-4 rounded-xl border border-emerald-200 shadow-sm w-full md:w-auto">
+                        <img id="live-qr-img" src="" alt="Dynamic QR Code" class="w-40 h-40 mb-2 hidden">
+                        <p class="text-2xl font-mono font-bold text-emerald-700" id="live-qr-text">Loading...</p>
+                        <p class="text-xs text-emerald-600 bg-emerald-100 px-3 py-1 rounded-full mt-2 animate-pulse">Rotating every 10s</p>
                     </div>
-                    <div class="flex-1 md:border-l-2 md:pl-8 border-emerald-200 w-full text-center md:text-left">
-                        <h4 class="text-md font-bold mb-1 text-slate-800">End Session & Verify (YOLO)</h4>
-                        <p class="text-xs text-slate-500 mb-4">Capture classroom photo to cross-reference presence with QR scans.</p>
-                        <input type="file" id="class-photo-file" accept="image/*" capture="environment" class="border border-slate-300 bg-white rounded-lg p-2 text-sm mb-3 w-full cursor-pointer text-slate-600">
-                        <button onclick="closeSessionWithVision()" class="bg-rose-600 text-white px-6 py-3 sm:py-2 rounded-lg text-sm font-bold shadow-md hover:bg-rose-700 transition w-full md:w-auto">End Session & Verify</button>
+                    <div class="flex-1 md:border-l-2 md:pl-6 border-emerald-200 w-full">
+                        <h4 class="text-md font-bold mb-1 text-slate-800">End Session & Verify</h4>
+                        <p class="text-xs text-slate-500 mb-4">Capture photo to cross-reference presence.</p>
+                        <input type="file" id="class-photo-file" accept="image/*" capture="environment" class="border border-slate-300 bg-white rounded-lg p-3 text-sm mb-4 w-full cursor-pointer">
+                        <button onclick="closeSessionWithVision()" class="bg-rose-600 text-white px-6 py-3 rounded-lg text-sm font-bold shadow-md hover:bg-rose-700 transition w-full">End Session & Verify</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Level 3: Assignment View -->
+        <!-- Level 3: Assignment View (Unchanged Structure, optimized padding) -->
         <div id="assignment-view-section" class="hidden bg-white p-4 sm:p-6 rounded-2xl shadow-md space-y-4">
             <button onclick="goBackToCourse()" class="text-indigo-600 text-sm font-bold hover:underline mb-2 block">← Back to Course</button>
-            <h2 id="assignment-view-title" class="text-xl sm:text-2xl font-bold text-slate-800 border-b pb-2">Assignment Details</h2>
+            <h2 id="assignment-view-title" class="text-xl sm:text-2xl font-bold text-slate-800 border-b pb-2">Assignment</h2>
 
-            <!-- Student Assignment UI -->
-            <div id="student-assignment-tools" class="hidden border p-4 sm:p-5 rounded-xl bg-indigo-50 border-indigo-200 mt-4">
-                <h3 class="font-bold text-indigo-900 mb-3">Submit Your Work</h3>
-                <div id="drop-zone" class="border-2 border-dashed border-indigo-300 bg-white rounded-xl p-6 sm:p-8 text-center cursor-pointer hover:bg-indigo-100 transition shadow-sm mb-4">
+            <div id="student-assignment-tools" class="hidden border p-4 rounded-xl bg-indigo-50 border-indigo-200 mt-4">
+                <div id="drop-zone" class="border-2 border-dashed border-indigo-300 bg-white rounded-xl p-6 text-center cursor-pointer hover:bg-indigo-100 transition mb-4">
                     <div class="text-4xl mb-2">📁</div>
                     <p class="text-indigo-600 font-bold">Tap or Drag files here</p>
                     <input type="file" id="student-file-upload" class="hidden" multiple>
                     <p id="file-name-display" class="text-sm text-emerald-600 mt-3 font-bold"></p>
                 </div>
-                <button onclick="submitAssignment()" class="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 font-bold shadow-md transition w-full">Submit to AI for Review</button>
+                <button onclick="submitAssignment()" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-bold shadow-md transition w-full">Submit to AI</button>
                 <div id="student-feedback-box" class="mt-4 hidden p-4 bg-white rounded-lg border shadow-sm"></div>
             </div>
 
-            <!-- Lecturer Assignment UI -->
             <div id="lecturer-assignment-tools" class="hidden mt-4 space-y-4">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-slate-100 p-4 rounded-xl border gap-4">
                     <div>
-                        <h3 class="font-bold text-slate-800">Submissions & Reviews</h3>
-                        <p class="text-xs text-slate-500">Review AI feedback and update grades.</p>
+                        <h3 class="font-bold text-slate-800">Submissions</h3>
                     </div>
-                    <button onclick="loadAssignmentSubmissions()" class="bg-slate-700 text-white px-4 py-2 rounded-lg text-sm hover:bg-slate-800 shadow transition w-full sm:w-auto">Refresh Data</button>
+                    <button onclick="loadAssignmentSubmissions()" class="bg-slate-700 text-white px-4 py-2 rounded-lg text-sm shadow w-full sm:w-auto">Refresh Data</button>
                 </div>
                 <div id="lecturer-submissions-container" class="space-y-3"></div>
             </div>
@@ -156,62 +159,71 @@
 
     </div>
 
-    <!-- Script Block Remains Unchanged -->
     <script>
-        let currentUser = null;
-        let currentCourseId = null;
-        let currentSessionId = null;
-        let currentAssignmentId = null;
-        let qrInterval = null;
-        let html5QrcodeScanner = null;
-
-        // This is empty so it works automatically with Render!
+        let currentUser = null, currentCourseId = null, currentSessionId = null, currentAssignmentId = null, qrInterval = null;
+        let html5QrCode = null;
         const API_URL = "";
 
+        // Drag & Drop
         document.addEventListener('DOMContentLoaded', () => {
-            const dropZone = document.getElementById('drop-zone');
-            const fileInput = document.getElementById('student-file-upload');
-            const fileNameDisplay = document.getElementById('file-name-display');
-
+            const dropZone = document.getElementById('drop-zone'), fileInput = document.getElementById('student-file-upload'), fileNameDisplay = document.getElementById('file-name-display');
             dropZone.addEventListener('click', () => fileInput.click());
-            dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('bg-indigo-100', 'border-indigo-500'); });
-            dropZone.addEventListener('dragleave', () => dropZone.classList.remove('bg-indigo-100', 'border-indigo-500'); });
+            dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('bg-indigo-100'); });
+            dropZone.addEventListener('dragleave', () => dropZone.classList.remove('bg-indigo-100'));
             dropZone.addEventListener('drop', (e) => {
-                e.preventDefault(); dropZone.classList.remove('bg-indigo-100', 'border-indigo-500');
-                if (e.dataTransfer.files.length > 0) { fileInput.files = e.dataTransfer.files; fileNameDisplay.innerText = "Selected: " + Array.from(fileInput.files).map(f => f.name).join(', '); }
+                e.preventDefault(); dropZone.classList.remove('bg-indigo-100');
+                if (e.dataTransfer.files.length > 0) { fileInput.files = e.dataTransfer.files; fileNameDisplay.innerText = "Selected: " + fileInput.files[0].name; }
             });
-            fileInput.addEventListener('change', () => { if (fileInput.files.length > 0) fileNameDisplay.innerText = "Selected: " + Array.from(fileInput.files).map(f => f.name).join(', '); });
+            fileInput.addEventListener('change', () => { if (fileInput.files.length > 0) fileNameDisplay.innerText = "Selected: " + fileInput.files[0].name; });
         });
 
-        function startCameraScanner() {
-            document.getElementById('camera-container').classList.remove('hidden');
-            if(!html5QrcodeScanner) {
-                html5QrcodeScanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: {width: 250, height: 250} }, false);
-                html5QrcodeScanner.render(onScanSuccess, () => {});
+        // FIXED CAMERA LOGIC (Direct API)
+        async function startCameraScanner() {
+            const container = document.getElementById('camera-container');
+            container.classList.remove('hidden');
+            if (!html5QrCode) html5QrCode = new Html5Qrcode("qr-reader");
+
+            try {
+                await html5QrCode.start(
+                    { facingMode: "environment" },
+                    { fps: 10, qrbox: { width: 250, height: 250 } },
+                    (decodedText) => {
+                        document.getElementById('scan-qr-token').value = decodedText;
+                        stopCameraScanner();
+                        scanAttendance(); // Auto check-in!
+                    },
+                    (errorMessage) => { /* Background parsing errors are normal */ }
+                );
+            } catch (err) {
+                alert("Camera access denied or unavailable.");
+                container.classList.add('hidden');
             }
         }
-        function onScanSuccess(decodedText) {
-            document.getElementById('scan-qr-token').value = decodedText;
-            document.getElementById('camera-container').classList.add('hidden');
-            html5QrcodeScanner.clear(); html5QrcodeScanner = null;
-            scanAttendance();
+        function stopCameraScanner() {
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    document.getElementById('camera-container').classList.add('hidden');
+                    html5QrCode.clear();
+                    html5QrCode = null;
+                }).catch(err => console.error(err));
+            }
         }
 
+        // Auth
         async function requestOtp() {
             const email = document.getElementById('email-input').value;
-            if(!email) { alert('Please enter your email'); return; }
+            if(!email) return alert('Please enter your email');
             try {
                 const res = await fetch(`${API_URL}/api/auth/request-otp?email=${email}`, { method: 'POST' });
                 const data = await res.json();
                 if(res.ok) {
                     document.getElementById('otp-box').classList.remove('hidden');
-                    document.getElementById('login-msg').innerText = `✉️ Email sent! (Code: ${data.debug_code})`;
+                    document.getElementById('login-msg').innerText = `✉️ Real Email sent! Check your inbox.`;
                 } else alert(data.detail || 'Access denied');
             } catch(e) { alert('Server error.'); }
         }
         async function verifyOtp() {
-            const email = document.getElementById('email-input').value;
-            const code = document.getElementById('otp-input').value;
+            const email = document.getElementById('email-input').value, code = document.getElementById('otp-input').value;
             const res = await fetch(`${API_URL}/api/auth/verify-otp?email=${email}&code=${code}`, { method: 'POST' });
             if (res.ok) {
                 currentUser = await res.json();
@@ -225,8 +237,7 @@
 
         function hideAllSections() {
             ['dashboard-section', 'course-view-section', 'session-view-section', 'assignment-view-section'].forEach(id => document.getElementById(id).classList.add('hidden'));
-            if(html5QrcodeScanner) { html5QrcodeScanner.clear(); html5QrcodeScanner = null; }
-            document.getElementById('camera-container').classList.add('hidden');
+            stopCameraScanner();
         }
 
         function goHome() {
@@ -243,7 +254,6 @@
                 loadLecturerCourses();
             }
         }
-        function goBackToCourse() { if(qrInterval) clearInterval(qrInterval); openCourseView(currentCourseId, "Course Dashboard"); }
 
         async function openCourseView(courseId, title) {
             currentCourseId = courseId;
@@ -254,7 +264,8 @@
                 document.getElementById('btn-start-session').classList.remove('hidden');
                 document.getElementById('btn-create-assignment').classList.remove('hidden');
             }
-            document.getElementById('sessions-list').innerHTML = `<div class="bg-emerald-50 border border-emerald-300 p-3 rounded-lg cursor-pointer transition hover:bg-emerald-100 flex justify-between items-center shadow-sm" onclick="openSessionView(101, true)"><span class="font-bold text-emerald-900">▶ Current Session</span> <span class="text-xs bg-emerald-600 text-white font-bold px-2 py-1 rounded">LIVE</span></div>`;
+            // Real Data Loading (No Mocks)
+            loadRealSessionsForCourse();
             loadAssignmentsForCourse();
         }
 
@@ -262,14 +273,14 @@
         async function loadStudentCourses() { renderCoursesList(await (await fetch(`${API_URL}/api/students/${currentUser.email}/courses`)).json()); }
         function renderCoursesList(courses) {
             const container = document.getElementById('courses-list');
-            if (courses.length === 0) { container.innerHTML = `<span class="text-slate-400">No courses available.</span>`; return; }
-            container.innerHTML = courses.map(c => `<div class="bg-white p-4 rounded-xl border shadow-sm cursor-pointer hover:border-indigo-500 hover:shadow-md transition" onclick="openCourseView('${c.course_id}', '${c.title}')"><span class="font-bold text-indigo-700">${c.course_id}</span>: <span class="font-bold text-slate-800 text-lg ml-1">${c.title}</span></div>`).join('');
+            if (courses.length === 0) return container.innerHTML = `<span class="text-slate-400">No courses available.</span>`;
+            container.innerHTML = courses.map(c => `<div class="bg-white p-4 rounded-xl border shadow-sm cursor-pointer hover:border-indigo-500 hover:shadow-md transition" onclick="openCourseView('${c.course_id}', '${c.title}')"><span class="font-bold text-indigo-700">${c.course_id}</span>: <span class="font-bold text-slate-800 ml-1">${c.title}</span></div>`).join('');
         }
         async function createCourse() {
-            const title = document.getElementById('course-title').value, desc = document.getElementById('course-desc').value;
+            const title = document.getElementById('course-title').value;
             if(!title) return alert('Enter title');
-            if((await fetch(`${API_URL}/api/courses/create?title=${encodeURIComponent(title)}&description=${encodeURIComponent(desc)}&lecturer_email=${currentUser.email}`, { method: 'POST' })).ok) {
-                document.getElementById('course-title').value = ''; document.getElementById('course-desc').value = ''; loadLecturerCourses();
+            if((await fetch(`${API_URL}/api/courses/create?title=${encodeURIComponent(title)}&description=New&lecturer_email=${currentUser.email}`, { method: 'POST' })).ok) {
+                document.getElementById('course-title').value = ''; loadLecturerCourses();
             }
         }
         async function promptEnrollCourse() {
@@ -277,6 +288,16 @@
             if (!courseId) return;
             alert((await (await fetch(`${API_URL}/api/students/enroll?student_email=${currentUser.email}&course_id=${courseId}`, { method: 'POST' })).json()).message);
             loadStudentCourses();
+        }
+
+        // Real Sessions Logic
+        async function loadRealSessionsForCourse() {
+            const container = document.getElementById('sessions-list');
+            container.innerHTML = '<span class="text-slate-400 text-xs">If a session is active, enter its ID to join:</span><div class="flex gap-2 mt-2"><input type="number" id="manual-session-id" placeholder="Session ID" class="border rounded px-2 py-1 w-full text-sm"><button onclick="joinSessionById()" class="bg-slate-700 text-white px-3 py-1 rounded text-sm font-bold">Join</button></div>';
+        }
+        function joinSessionById() {
+            const sId = document.getElementById('manual-session-id').value;
+            if(sId) openSessionView(sId, true);
         }
 
         async function startSession() {
@@ -291,7 +312,7 @@
         }
         function updateQrDisplay(codeText) {
             document.getElementById('live-qr-text').innerText = codeText;
-            document.getElementById('live-qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(codeText)}`;
+            document.getElementById('live-qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(codeText)}`;
             document.getElementById('live-qr-img').classList.remove('hidden');
         }
         function openSessionView(sessionId, isActive) {
@@ -300,35 +321,38 @@
             document.getElementById('view-session-id').innerText = sessionId;
             document.getElementById('student-active-tools').classList.add('hidden'); document.getElementById('lecturer-active-tools').classList.add('hidden');
             if(isActive) {
-                document.getElementById('session-header').className = "p-4 rounded-xl text-white bg-emerald-600 shadow-lg";
-                document.getElementById('session-status-text').innerText = "Status: LIVE (Active Session)";
+                document.getElementById('session-header').className = "p-4 rounded-xl text-white bg-emerald-600 shadow-lg mt-2";
+                document.getElementById('session-status-text').innerText = "Status: LIVE";
                 if(currentUser.role === 'student') document.getElementById('student-active-tools').classList.remove('hidden');
                 else document.getElementById('lecturer-active-tools').classList.remove('hidden');
             }
         }
+        function goBackToCourse() { if(qrInterval) clearInterval(qrInterval); openCourseView(currentCourseId, "Course Panel"); }
+
         async function scanAttendance() {
             const qrCode = document.getElementById('scan-qr-token').value;
             const res = await fetch(`${API_URL}/api/attendance/scan?session_id=${currentSessionId}&student_email=${currentUser.email}&student_name=${currentUser.name}&qr_code=${qrCode}`, { method: 'POST' });
             const data = await res.json();
             const msg = document.getElementById('student-msg');
-            msg.className = res.ok ? "text-sm mt-3 text-emerald-600 font-bold" : "text-sm mt-3 text-rose-600 font-bold";
+            msg.className = res.ok ? "text-sm mt-3 text-emerald-600 font-bold text-center" : "text-sm mt-3 text-rose-600 font-bold text-center";
             msg.innerText = res.ok ? "✅ " + data.message : "❌ " + (data.detail || 'Failed');
         }
         async function closeSessionWithVision() {
             const fileInput = document.getElementById('class-photo-file').files[0];
-            if(!fileInput) return alert('Please provide a classroom photo file');
+            if(!fileInput) return alert('Please provide a photo');
             if(qrInterval) clearInterval(qrInterval);
             const formData = new FormData(); formData.append('file', fileInput);
             const data = await (await fetch(`${API_URL}/api/sessions/${currentSessionId}/close-with-vision`, { method: 'POST', body: formData })).json();
-            alert(`Session closed!\nYOLO detection: ${data.yolo_detected_people}\nQR scans: ${data.qr_scanned_count}\nReport: ${data.excel_report_generated}`);
+            alert(`Session closed!\nYOLO: ${data.yolo_detected_people}\nQR scans: ${data.qr_scanned_count}`);
             goBackToCourse();
         }
 
+        // Assignments
         async function loadAssignmentsForCourse() {
             const assignments = await (await fetch(`${API_URL}/api/courses/${currentCourseId}/assignments`)).json();
             const container = document.getElementById('assignments-list');
-            if (assignments.length === 0) return container.innerHTML = `<p class="text-slate-500 italic">No assignments yet.</p>`;
-            container.innerHTML = assignments.map(a => `<div class="bg-white p-3 rounded-lg border cursor-pointer hover:bg-indigo-50 transition flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 shadow-sm" onclick="openAssignmentView(${a.id}, '${a.title}')"><div><strong class="text-indigo-800">${a.title}</strong><p class="text-xs text-slate-500 mt-1">Due: ${a.due_date}</p></div><span class="text-indigo-600 text-xs font-bold border border-indigo-200 px-2 py-1 rounded bg-white">Open</span></div>`).join('');
+            if (assignments.length === 0) return container.innerHTML = `<p class="text-slate-500 italic">No assignments.</p>`;
+            container.innerHTML = assignments.map(a => `<div class="bg-white p-3 rounded-lg border cursor-pointer hover:bg-indigo-50 transition flex justify-between items-center shadow-sm" onclick="openAssignmentView(${a.id}, '${a.title}')"><div><strong class="text-indigo-800">${a.title}</strong><p class="text-xs text-slate-500 mt-1">Due: ${a.due_date}</p></div><span class="text-indigo-600 text-xs font-bold border border-indigo-200 px-2 py-1 rounded bg-white">Open</span></div>`).join('');
         }
         async function openCreateAssignmentUI() {
             const title = prompt("Enter Assignment Title:");
@@ -347,21 +371,21 @@
         }
         async function submitAssignment() {
             const files = document.getElementById('student-file-upload').files;
-            if(files.length === 0) return alert('Please select or drop a file first');
+            if(files.length === 0) return alert('Please select a file');
             const res = await fetch(`${API_URL}/api/assignments/submit?assignment_id=${currentAssignmentId}&student_email=${currentUser.email}&file_url=${encodeURIComponent(files[0].name)}`, { method: 'POST' });
             const data = await res.json();
             if(res.ok) {
                 const box = document.getElementById('student-feedback-box'); box.classList.remove('hidden');
-                box.innerHTML = `<p class="font-bold text-emerald-700 mb-2">✅ Submission Successful & Reviewed by AI!</p><p class="text-sm"><strong>AI Recommended Grade:</strong> <span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded">${data.llm_grade}</span></p><p class="text-xs text-slate-600 mt-2 bg-slate-50 p-2 rounded border"><strong>Deep Review:</strong> ${data.llm_review}</p>`;
+                box.innerHTML = `<p class="font-bold text-emerald-700 mb-2">✅ Submited & Reviewed!</p><p class="text-sm"><strong>AI Grade:</strong> ${data.llm_grade}</p><p class="text-xs text-slate-600 mt-2">${data.llm_review}</p>`;
             }
         }
         async function loadAssignmentSubmissions() {
             const [subRes, compRes] = await Promise.all([fetch(`${API_URL}/api/assignments/${currentAssignmentId}/submissions`), fetch(`${API_URL}/api/assignments/${currentAssignmentId}/comparison`)]);
             const subs = await subRes.json(), comp = await compRes.json();
             const container = document.getElementById('lecturer-submissions-container');
-            let html = `<div class="bg-indigo-50 border border-indigo-200 p-4 rounded-xl mb-4 text-sm text-indigo-900 shadow-sm"><strong class="block mb-1">🤖 AI Comparison Report:</strong> ${comp.comparison_insights}</div>`;
-            if (subs.length === 0) html += `<p class="text-slate-500 italic text-center p-4">No submissions yet.</p>`;
-            else subs.forEach(s => { html += `<div class="bg-white p-4 rounded-xl border shadow-sm mb-3"><div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 border-b pb-3 gap-3"><div><span class="font-bold block">${s.student_email}</span><span class="text-xs text-indigo-500 bg-indigo-50 px-2 py-1 rounded mt-1 inline-block break-all">File: ${s.file_url}</span></div><div class="flex items-center gap-2 bg-slate-50 p-2 rounded-lg border w-full sm:w-auto"><span class="text-xs font-bold">Grade:</span><input type="text" id="grade-${s.id}" value="${s.llm_grade || ''}" class="w-12 border rounded px-2 py-1 text-center font-bold"><button onclick="updateGrade(${s.id}, true)" class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded shadow w-full sm:w-auto">Approve</button></div></div><p class="text-xs text-slate-600 bg-slate-50 p-3 rounded-lg border"><strong class="text-slate-700">AI Deep Review:</strong> ${s.llm_review}</p></div>`; });
+            let html = `<div class="bg-indigo-50 p-4 rounded-xl mb-4 text-sm text-indigo-900 shadow-sm"><strong>🤖 AI Comparison:</strong> ${comp.comparison_insights}</div>`;
+            if (subs.length === 0) html += `<p class="text-slate-500 italic">No submissions.</p>`;
+            else subs.forEach(s => { html += `<div class="bg-white p-4 rounded-xl border mb-3"><div class="flex flex-col sm:flex-row justify-between mb-3 border-b pb-3 gap-3"><div><span class="font-bold block">${s.student_email}</span><span class="text-xs text-indigo-500 break-all">File: ${s.file_url}</span></div><div class="flex items-center gap-2 w-full sm:w-auto"><input type="text" id="grade-${s.id}" value="${s.llm_grade || ''}" class="w-12 border rounded px-2 py-1 text-center font-bold"><button onclick="updateGrade(${s.id}, true)" class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded">Approve</button></div></div><p class="text-xs text-slate-600">${s.llm_review}</p></div>`; });
             container.innerHTML = html;
         }
         async function updateGrade(submissionId, approved) {

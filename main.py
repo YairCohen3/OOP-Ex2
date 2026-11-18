@@ -6,6 +6,9 @@ import random
 import openpyxl
 from database import engine, Base, get_db
 import models
+import smtplib
+from email.mime.text import MIMEText
+
 
 # יצירת טבלאות מסד הנתונים אוטומטית
 Base.metadata.create_all(bind=engine)
@@ -21,20 +24,51 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# זיכרון זמני לשמירת קודי ה-OTP
-otp_storage = {}
+SENDER_EMAIL = "yair18487@gmail.com"
+# סיסמת אפליקציה של גוגל (App Password) בת 16 תווים - לא הסיסמה הרגילה!
+APP_PASSWORD = "evxfnkchhbwfkkmt"
+otp_store = {}
 
-# רשימת משתמשים מורשים מראש (Institutional Whitelist Onboarding)
-ALLOWED_USERS_SEED = [
-    {"email": "lecturer@ariel.ac.il", "name": "Dr. Boaz Lecturer", "role": "lecturer"},
-    {"email": "student@ariel.ac.il", "name": "Yair Cohen", "role": "student"}
-]
+# פותר את שגיאת מסד הנתונים: מאגר משתמשים במקום db_session
+MOCK_USERS = {
+    "yair18487@gmail.com": {"name": "Yair Cohen", "role": "student"},  # חשוב: שנה למייל האמיתי שלך!
+    "ohadbennun25@ariel.ac.il": {"name": "Dr. Cohen", "role": "lecturer"}
+}
 
+
+@app.post("/api/auth/request-otp")
+def request_otp(email: str):
+    # בדיקה שהמשתמש קיים במאגר שלנו
+    if email not in MOCK_USERS:
+        raise HTTPException(status_code=403, detail="Email not found in institution records.")
+
+    user_info = MOCK_USERS[email]
+
+    # יצירת קוד רנדומלי אמיתי
+    code = str(random.randint(1000, 9999))
+    otp_store[email] = {"code": code, "role": user_info["role"], "name": user_info["name"]}
+
+    # שליחת המייל
+    msg = MIMEText(
+        f"Hello {user_info['name']},\n\nYour SmartClass verification code is: {code}\n\nDo not share this code with anyone.")
+    msg['Subject'] = 'SmartClass Login Code'
+    msg['From'] = SENDER_EMAIL
+    msg['To'] = email
+
+    try:
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+            server.login(SENDER_EMAIL, APP_PASSWORD)
+            server.send_message(msg)
+    except Exception as e:
+        print(f"Failed to send real email: {e}")
+        return {"message": "OTP generated (Email failed - check logs)", "debug_code": code}
+
+    return {"message": "OTP sent successfully to email"}
 
 @app.on_event("startup")
 def load_seed_users():
     db = next(get_db())
-    for u_data in ALLOWED_USERS_SEED:
+    for u_data in MOCK_USERS:
         existing = db.query(models.User).filter(models.User.email == u_data["email"]).first()
         if not existing:
             new_user = models.User(
@@ -45,39 +79,6 @@ def load_seed_users():
             db.add(new_user)
     db.commit()
     db.close()
-
-
-# --- 1. אימות ורישום מוסדי (Auth) ---
-@app.post("/api/auth/request-otp")
-def request_otp(email: str, db: Session = Depends(get_db)):
-    # בדיקה האם המשתמש נמצא ברשימה המוסדית הסגורה
-    user = db.query(models.User).filter(models.User.email == email).first()
-    if not user:
-        raise HTTPException(
-            status_code=403,
-            detail="Access denied: Email is not registered in the institutional system."
-        )
-
-    code = str(random.randint(1000, 9999))
-    otp_storage[email] = code
-
-    print(f"\n================ [EMAIL DISPATCHER] ================")
-    print(f"To: {email}")
-    print(f"Subject: SmartClass - Institutional Verification Code (OTP)")
-    print(f"Body: Hello {user.name}, your verification code is: {code}")
-    print(f"====================================================\n")
-
-    return {"message": "Email sent successfully to inbox", "debug_code": code}
-
-
-@app.post("/api/auth/verify-otp")
-def verify_otp(email: str, code: str, db: Session = Depends(get_db)):
-    if email not in otp_storage or otp_storage[email] != code:
-        raise HTTPException(status_code=400, detail="Invalid OTP code")
-
-    user = db.query(models.User).filter(models.User.email == email).first()
-    return {"email": user.email, "name": user.name, "role": user.role}
-
 
 # --- 2. ניהול קורסים והרשמה ---
 @app.post("/api/courses/create")
