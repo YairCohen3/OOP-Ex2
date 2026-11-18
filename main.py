@@ -9,7 +9,6 @@ import models
 import smtplib
 from email.mime.text import MIMEText
 
-
 # יצירת טבלאות מסד הנתונים אוטומטית
 Base.metadata.create_all(bind=engine)
 
@@ -25,30 +24,24 @@ app.add_middleware(
 )
 
 SENDER_EMAIL = "yair18487@gmail.com"
-# סיסמת אפליקציה של גוגל (App Password) בת 16 תווים - לא הסיסמה הרגילה!
 APP_PASSWORD = "evxfnkchhbwfkkmt"
 otp_store = {}
 
-# פותר את שגיאת מסד הנתונים: מאגר משתמשים במקום db_session
-MOCK_USERS = {
-    "yair18487@gmail.com": {"name": "Yair Cohen", "role": "student"},  # חשוב: שנה למייל האמיתי שלך!
-    "ohadbennun25@ariel.ac.il": {"name": "Dr. Cohen", "role": "lecturer"}
+AUTH_USERS = {
+    "yair18487@gmail.com": {"name": "Yair Cohen", "role": "student"},
+    "ohadbennun25@ariel.ac.il": {"name": "Dr. Ohad", "role": "lecturer"}
 }
 
 
 @app.post("/api/auth/request-otp")
 def request_otp(email: str):
-    # בדיקה שהמשתמש קיים במאגר שלנו
-    if email not in MOCK_USERS:
+    if email not in AUTH_USERS:
         raise HTTPException(status_code=403, detail="Email not found in institution records.")
 
-    user_info = MOCK_USERS[email]
-
-    # יצירת קוד רנדומלי אמיתי
+    user_info = AUTH_USERS[email]
     code = str(random.randint(1000, 9999))
     otp_store[email] = {"code": code, "role": user_info["role"], "name": user_info["name"]}
 
-    # שליחת המייל
     msg = MIMEText(
         f"Hello {user_info['name']},\n\nYour SmartClass verification code is: {code}\n\nDo not share this code with anyone.")
     msg['Subject'] = 'SmartClass Login Code'
@@ -65,14 +58,24 @@ def request_otp(email: str):
 
     return {"message": "OTP sent successfully to email"}
 
+
+@app.post("/api/auth/verify-otp")
+def verify_otp(email: str, code: str):
+    if email not in otp_store or otp_store[email]["code"] != code:
+        raise HTTPException(status_code=401, detail="Invalid or expired OTP")
+
+    user_data = otp_store.pop(email)
+    return {"email": email, "name": user_data["name"], "role": user_data["role"]}
+
+
 @app.on_event("startup")
 def load_seed_users():
     db = next(get_db())
-    for u_data in MOCK_USERS:
-        existing = db.query(models.User).filter(models.User.email == u_data["email"]).first()
+    for email, u_data in AUTH_USERS.items():
+        existing = db.query(models.User).filter(models.User.email == email).first()
         if not existing:
             new_user = models.User(
-                email=u_data["email"],
+                email=email,
                 name=u_data["name"],
                 role=u_data["role"]
             )
@@ -80,10 +83,9 @@ def load_seed_users():
     db.commit()
     db.close()
 
-# --- 2. ניהול קורסים והרשמה ---
+
 @app.post("/api/courses/create")
 def create_course(title: str, description: str, lecturer_email: str, db: Session = Depends(get_db)):
-    # יצירת Course ID ייחודי אוטומטית כפי שהוגדר באפיון
     course_id = f"CRS-{random.randint(100, 999)}"
     new_course = models.Course(
         course_id=course_id,
@@ -131,7 +133,6 @@ def get_student_courses(student_email: str, db: Session = Depends(get_db)):
     return db.query(models.Course).filter(models.Course.course_id.in_(course_ids)).all()
 
 
-# --- 3. ניהול שיעורים ו-QR דינמי ---
 @app.post("/api/sessions/start")
 def start_session(course_id: str, db: Session = Depends(get_db)):
     initial_qr = f"QR-{random.randint(10000, 99999)}"
@@ -158,16 +159,13 @@ def refresh_qr(session_id: int, db: Session = Depends(get_db)):
     return {"session_id": session.id, "qr_code": new_token}
 
 
-# --- 4. דיווח נוכחות והצלבת YOLO ---
 @app.post("/api/attendance/scan")
 def scan_attendance(session_id: int, student_email: str, student_name: str, qr_code: str,
                     db: Session = Depends(get_db)):
-    # 1. בדיקה שהשיעור קיים ופעיל
     session = db.query(models.Session).filter(models.Session.id == session_id, models.Session.is_active == True).first()
     if not session:
         raise HTTPException(status_code=400, detail="Session is not active or does not exist")
 
-    # 2. ולידציה אקדמית: בדיקה שהסטודנט רשום לקורס של הסשן
     enrollment = db.query(models.StudentCourse).filter(
         models.StudentCourse.student_email == student_email,
         models.StudentCourse.course_id == session.course_id
@@ -176,11 +174,9 @@ def scan_attendance(session_id: int, student_email: str, student_name: str, qr_c
     if not enrollment:
         raise HTTPException(status_code=403, detail="Access denied: You are not enrolled in this course.")
 
-    # 3. בדיקת תקינות קוד ה-QR המתחלף
     if session.current_qr_code != qr_code:
         raise HTTPException(status_code=400, detail="Invalid or expired QR code")
 
-    # 4. מניעת כפילויות בדיווח
     existing = db.query(models.AttendanceRecord).filter(
         models.AttendanceRecord.session_id == session_id,
         models.AttendanceRecord.student_email == student_email
@@ -201,19 +197,16 @@ async def close_session_with_vision(session_id: int, file: UploadFile = File(...
     if not session:
         raise HTTPException(status_code=404, detail="Active session not found")
 
-    # סגירת הסשן (הפיכה לשיעור עבר באפור)
     session.is_active = False
     session.current_qr_code = None
     db.commit()
 
-    # הדמיית ספירת YOLO לתמונת הכיתה
     scanned_count = db.query(models.AttendanceRecord).filter(models.AttendanceRecord.session_id == session_id).count()
     simulated_detected_people = scanned_count + random.randint(-1, 2)
     if simulated_detected_people < 0: simulated_detected_people = 0
 
     discrepancy = scanned_count > simulated_detected_people
 
-    # הפקת קובץ Excel לתוצאות הנוכחות (שמירה על פרטיות: ללא תעודות זהות)
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Attendance Report"
@@ -236,7 +229,6 @@ async def close_session_with_vision(session_id: int, file: UploadFile = File(...
     }
 
 
-# --- 5. פורום שאלות והצעות ---
 @app.post("/api/forum/post")
 def post_forum_message(session_id: int, student_email: str, student_name: str, message: str,
                        db: Session = Depends(get_db)):
@@ -259,11 +251,9 @@ def reply_forum_message(post_id: int, reply: str, db: Session = Depends(get_db))
 
 @app.get("/api/sessions/{session_id}/forum")
 def get_session_forum(session_id: int, db: Session = Depends(get_db)):
-    return db.query(models.ForumPost).filter(models.ForumPost.id == session_id).all() if False else db.query(
-        models.ForumPost).filter(models.ForumPost.session_id == session_id).all()
+    return db.query(models.ForumPost).filter(models.ForumPost.session_id == session_id).all()
 
 
-# --- 6. מערכת סקרים (KISS Polls) ---
 @app.post("/api/polls/create")
 def create_poll(session_id: int, question: str, options: str, db: Session = Depends(get_db)):
     poll = models.Poll(session_id=session_id, question=question, options=options, is_active=True)
@@ -278,7 +268,6 @@ def vote_poll(poll_id: int, student_email: str, selected_option: str, db: Sessio
     if not poll:
         raise HTTPException(status_code=400, detail="Poll is closed or does not exist")
 
-    # בדיקה האם הסשן של הסקר עדיין פעיל (במידה ומקושר לסשן)
     if poll.session_id:
         session = db.query(models.Session).filter(models.Session.id == poll.session_id).first()
         if session and not session.is_active:
@@ -317,7 +306,6 @@ def get_session_polls(session_id: int, db: Session = Depends(get_db)):
     return result
 
 
-# --- 7. סיכומי הקלטת שיעור (AI Video Summary) ---
 @app.post("/api/sessions/{session_id}/ai-summary")
 def upload_ai_summary(session_id: int, summary_text: str, db: Session = Depends(get_db)):
     session = db.query(models.Session).filter(models.Session.id == session_id).first()
@@ -336,7 +324,6 @@ def get_ai_summary(session_id: int, db: Session = Depends(get_db)):
     return {"ai_summary": session.ai_summary or "No summary available yet."}
 
 
-# --- 8. ניהול מטלות, בדיקת LLM ופורום משובים ---
 @app.post("/api/assignments/create")
 def create_assignment(course_id: str, title: str, description: str, due_date: str, db: Session = Depends(get_db)):
     assignment = models.Assignment(course_id=course_id, title=title, description=description, due_date=due_date)
@@ -353,7 +340,6 @@ def get_course_assignments(course_id: str, db: Session = Depends(get_db)):
 
 @app.post("/api/assignments/submit")
 def submit_assignment(assignment_id: int, student_email: str, file_url: str, db: Session = Depends(get_db)):
-    # סימולציית בדיקת LLM להפקת סקירה עמוקה וציון מומלץ
     simulated_review = "Deep AI Review: Code structure is clean and well-documented. Algorithmic efficiency is optimal (O(n log n)). Recommended to add edge case validation."
     simulated_grade = "92"
 
@@ -400,7 +386,6 @@ def update_or_approve_grade(submission_id: int, grade: str, approved: bool, db: 
 
 @app.get("/api/assignments/{assignment_id}/feedback-forum")
 def get_feedback_forum(assignment_id: int, db: Session = Depends(get_db)):
-    # מציג את הסקירות המילוליות בלבד (ללא ציונים) ללמידת עמיתים כיתתית
     subs = db.query(models.Submission).filter(models.Submission.assignment_id == assignment_id).all()
     feedback_list = [{"student_email": s.student_email, "llm_review": s.llm_review} for s in subs if s.llm_review]
     return feedback_list
@@ -408,13 +393,14 @@ def get_feedback_forum(assignment_id: int, db: Session = Depends(get_db)):
 
 @app.get("/api/assignments/{assignment_id}/comparison")
 def get_assignment_comparison(assignment_id: int, db: Session = Depends(get_db)):
-    # ניתוח השוואתי למרצה בלבד
     subs = db.query(models.Submission).filter(models.Submission.assignment_id == assignment_id).all()
     total_subs = len(subs)
     return {
         "total_submissions": total_subs,
         "comparison_insights": f"AI Comparison Report: Analyzed {total_subs} submissions. Common strengths include clean syntax; potential plagiarism detected between 2 submissions. Average suggested grade is optimal."
     }
+
+
 @app.get("/")
 def serve_home():
     return FileResponse("index.html")
