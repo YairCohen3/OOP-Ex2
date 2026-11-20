@@ -23,8 +23,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-SENDER_EMAIL = "yair18487@gmail.com"
-APP_PASSWORD = "nrpokkpvxuprjdws"
 otp_store = {}
 
 AUTH_USERS = {
@@ -42,21 +40,10 @@ def request_otp(email: str):
     code = str(random.randint(1000, 9999))
     otp_store[email] = {"code": code, "role": user_info["role"], "name": user_info["name"]}
 
-    msg = MIMEText(
-        f"Hello {user_info['name']},\n\nYour SmartClass verification code is: {code}\n\nDo not share this code with anyone.")
-    msg['Subject'] = 'SmartClass Login Code'
-    msg['From'] = SENDER_EMAIL
-    msg['To'] = email
+    # הדפסה לטרמינל / לוגים של השרת
+    print(f"🔑 [DEMO OTP] Email: {email} | Code: {code}")
 
-    try:
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
-            server.login(SENDER_EMAIL, APP_PASSWORD)
-            server.send_message(msg)
-    except Exception as e:
-        print(f"Failed to send real email: {e}")
-        return {"message": "OTP generated (Email failed - check logs)", "debug_code": code}
-
-    return {"message": "OTP sent successfully to email"}
+    return {"message": "OTP generated", "debug_code": code}
 
 
 @app.post("/api/auth/verify-otp")
