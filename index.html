@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartClass - Academic Management System</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 </head>
 <body class="bg-slate-50 font-sans text-slate-800">
 
@@ -29,7 +29,6 @@
                 <button onclick="requestOtp()" class="w-full sm:w-auto bg-indigo-600 text-white px-6 py-3 rounded-xl hover:bg-indigo-700 transition font-bold shadow-sm">Request OTP</button>
             </div>
             <div id="otp-box" class="hidden flex flex-col sm:flex-row gap-3 w-full">
-                <!-- Autocomplete for OTP added here -->
                 <input type="text" id="otp-input" autocomplete="one-time-code" inputmode="numeric" placeholder="Enter code" class="w-full sm:w-48 border border-slate-300 rounded-xl px-4 py-3 text-center tracking-widest font-mono text-lg focus:ring-2 focus:ring-emerald-500 outline-none">
                 <button onclick="verifyOtp()" class="w-full sm:w-auto bg-emerald-600 text-white px-6 py-3 rounded-xl hover:bg-emerald-700 transition font-bold shadow-sm">Login</button>
             </div>
@@ -61,9 +60,7 @@
                         <h3 class="font-bold text-slate-700">Course Sessions</h3>
                         <button id="btn-start-session" onclick="startSession()" class="hidden bg-emerald-600 text-white text-sm px-4 py-2 rounded-lg font-bold shadow w-full sm:w-auto">Start Live Session</button>
                     </div>
-                    <div id="sessions-list" class="space-y-2 text-sm">
-                        <!-- Real sessions will load here -->
-                    </div>
+                    <div id="sessions-list" class="space-y-2 text-sm"></div>
                 </div>
 
                 <!-- Assignments Area -->
@@ -86,18 +83,19 @@
                 <p id="session-status-text" class="text-sm font-medium mt-1">Status: Past Session</p>
             </div>
 
-            <!-- Student Tools (Fixed Layout for Mobile) -->
+            <!-- Student Tools -->
             <div id="student-active-tools" class="hidden border p-4 rounded-xl bg-emerald-50 border-emerald-200">
                 <h3 class="font-bold text-emerald-900 mb-4 text-center">Attendance Scanner</h3>
 
                 <div id="camera-container" class="mb-4 hidden border-2 border-emerald-500 rounded-xl overflow-hidden bg-black w-full max-w-sm mx-auto shadow-lg relative">
-                    <div id="qr-reader" class="w-full"></div>
-                    <button onclick="stopCameraScanner()" class="absolute top-2 right-2 bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold z-10">Close</button>
+                    <div id="qr-reader" class="w-full min-h-[260px]"></div>
+                    <button onclick="stopCameraScanner()" class="absolute top-2 right-2 bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold z-10 shadow">✖ Close</button>
                 </div>
 
-                <!-- Fully responsive vertical stack for mobile, row for desktop -->
                 <div class="flex flex-col gap-3 w-full max-w-sm mx-auto">
-                    <button onclick="startCameraScanner()" class="bg-emerald-100 text-emerald-800 px-4 py-3 rounded-lg hover:bg-emerald-200 font-bold border border-emerald-300 shadow-sm flex items-center justify-center gap-2 w-full">📷 Open Camera</button>
+                    <button id="btn-open-camera" onclick="startCameraScanner()" class="bg-emerald-100 text-emerald-800 px-4 py-3 rounded-lg hover:bg-emerald-200 font-bold border border-emerald-300 shadow-sm flex items-center justify-center gap-2 w-full">
+                        📷 Open Camera to Scan QR
+                    </button>
 
                     <div class="flex items-center gap-2 w-full py-1">
                         <hr class="flex-1 border-emerald-200">
@@ -130,7 +128,7 @@
             </div>
         </div>
 
-        <!-- Level 3: Assignment View (Unchanged Structure, optimized padding) -->
+        <!-- Level 3: Assignment View -->
         <div id="assignment-view-section" class="hidden bg-white p-4 sm:p-6 rounded-2xl shadow-md space-y-4">
             <button onclick="goBackToCourse()" class="text-indigo-600 text-sm font-bold hover:underline mb-2 block">← Back to Course</button>
             <h2 id="assignment-view-title" class="text-xl sm:text-2xl font-bold text-slate-800 border-b pb-2">Assignment</h2>
@@ -177,60 +175,72 @@
             fileInput.addEventListener('change', () => { if (fileInput.files.length > 0) fileNameDisplay.innerText = "Selected: " + fileInput.files[0].name; });
         });
 
-        // FIXED CAMERA LOGIC (Direct API)
+        // Improved Mobile Camera Scanner
         async function startCameraScanner() {
             const container = document.getElementById('camera-container');
             container.classList.remove('hidden');
-            if (!html5QrCode) html5QrCode = new Html5Qrcode("qr-reader");
 
             try {
+                if (html5QrCode && html5QrCode.isScanning) {
+                    await html5QrCode.stop();
+                }
+                html5QrCode = new Html5Qrcode("qr-reader");
+
                 await html5QrCode.start(
                     { facingMode: "environment" },
-                    { fps: 10, qrbox: { width: 250, height: 250 } },
+                    { fps: 10, qrbox: { width: 220, height: 220 }, aspectRatio: 1.0 },
                     (decodedText) => {
-                        document.getElementById('scan-qr-token').value = decodedText;
+                        document.getElementById('scan-qr-token').value = decodedText.trim();
                         stopCameraScanner();
-                        scanAttendance(); // Auto check-in!
+                        scanAttendance();
                     },
-                    (errorMessage) => { /* Background parsing errors are normal */ }
+                    (errorMessage) => { /* Normal scanning noise */ }
                 );
             } catch (err) {
-                alert("Camera access denied or unavailable.");
+                alert("Camera error: " + err + "\nMake sure you granted camera permission.");
                 container.classList.add('hidden');
             }
         }
+
         function stopCameraScanner() {
-            if (html5QrCode) {
+            const container = document.getElementById('camera-container');
+            if (html5QrCode && html5QrCode.isScanning) {
                 html5QrCode.stop().then(() => {
-                    document.getElementById('camera-container').classList.add('hidden');
                     html5QrCode.clear();
-                    html5QrCode = null;
-                }).catch(err => console.error(err));
+                    container.classList.add('hidden');
+                }).catch(err => {
+                    console.error(err);
+                    container.classList.add('hidden');
+                });
+            } else {
+                container.classList.add('hidden');
             }
         }
 
         // Auth
-async function requestOtp() {
-    const emailInput = document.getElementById('email-input').value.trim();
-    if (!emailInput) return alert('Please enter your email');
+        async function requestOtp() {
+            const emailInput = document.getElementById('email-input').value.trim();
+            if (!emailInput) return alert('Please enter your email');
 
-    try {
-        const res = await fetch(`${API_URL}/api/auth/request-otp?email=${encodeURIComponent(emailInput)}`, { method: 'POST' });
-        const data = await res.json();
+            try {
+                const res = await fetch(`${API_URL}/api/auth/request-otp?email=${encodeURIComponent(emailInput)}`, { method: 'POST' });
+                const data = await res.json();
 
-        if (res.ok) {
-            document.getElementById('otp-box').classList.remove('hidden');
-            document.getElementById('login-msg').innerText = `🔑 Demo Mode — Your OTP code is: ${data.debug_code}`;
-        } else {
-            alert(data.detail || 'Access denied');
+                if (res.ok) {
+                    document.getElementById('otp-box').classList.remove('hidden');
+                    document.getElementById('login-msg').innerText = `🔑 Demo Mode — Your OTP code is: ${data.debug_code}`;
+                } else {
+                    alert(data.detail || 'Access denied');
+                }
+            } catch (e) {
+                alert('Server error.');
+            }
         }
-    } catch (e) {
-        alert('Server error.');
-    }
-}
+
         async function verifyOtp() {
-            const email = document.getElementById('email-input').value, code = document.getElementById('otp-input').value;
-            const res = await fetch(`${API_URL}/api/auth/verify-otp?email=${email}&code=${code}`, { method: 'POST' });
+            const email = document.getElementById('email-input').value.trim();
+            const code = document.getElementById('otp-input').value.trim();
+            const res = await fetch(`${API_URL}/api/auth/verify-otp?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`, { method: 'POST' });
             if (res.ok) {
                 currentUser = await res.json();
                 document.getElementById('login-section').classList.add('hidden');
@@ -269,30 +279,32 @@ async function requestOtp() {
             if(currentUser.role === 'lecturer') {
                 document.getElementById('btn-start-session').classList.remove('hidden');
                 document.getElementById('btn-create-assignment').classList.remove('hidden');
+            } else {
+                document.getElementById('btn-start-session').classList.add('hidden');
+                document.getElementById('btn-create-assignment').classList.add('hidden');
             }
-            // Real Data Loading (No Mocks)
             loadRealSessionsForCourse();
             loadAssignmentsForCourse();
         }
 
         async function loadLecturerCourses() { renderCoursesList(await (await fetch(`${API_URL}/api/courses`)).json()); }
-        async function loadStudentCourses() { renderCoursesList(await (await fetch(`${API_URL}/api/students/${currentUser.email}/courses`)).json()); }
+        async function loadStudentCourses() { renderCoursesList(await (await fetch(`${API_URL}/api/students/${encodeURIComponent(currentUser.email)}/courses`)).json()); }
         function renderCoursesList(courses) {
             const container = document.getElementById('courses-list');
             if (courses.length === 0) return container.innerHTML = `<span class="text-slate-400">No courses available.</span>`;
             container.innerHTML = courses.map(c => `<div class="bg-white p-4 rounded-xl border shadow-sm cursor-pointer hover:border-indigo-500 hover:shadow-md transition" onclick="openCourseView('${c.course_id}', '${c.title}')"><span class="font-bold text-indigo-700">${c.course_id}</span>: <span class="font-bold text-slate-800 ml-1">${c.title}</span></div>`).join('');
         }
         async function createCourse() {
-            const title = document.getElementById('course-title').value;
+            const title = document.getElementById('course-title').value.trim();
             if(!title) return alert('Enter title');
-            if((await fetch(`${API_URL}/api/courses/create?title=${encodeURIComponent(title)}&description=New&lecturer_email=${currentUser.email}`, { method: 'POST' })).ok) {
+            if((await fetch(`${API_URL}/api/courses/create?title=${encodeURIComponent(title)}&description=New&lecturer_email=${encodeURIComponent(currentUser.email)}`, { method: 'POST' })).ok) {
                 document.getElementById('course-title').value = ''; loadLecturerCourses();
             }
         }
         async function promptEnrollCourse() {
             const courseId = prompt("Enter Course ID:");
             if (!courseId) return;
-            alert((await (await fetch(`${API_URL}/api/students/enroll?student_email=${currentUser.email}&course_id=${courseId}`, { method: 'POST' })).json()).message);
+            alert((await (await fetch(`${API_URL}/api/students/enroll?student_email=${encodeURIComponent(currentUser.email)}&course_id=${encodeURIComponent(courseId.trim())}`, { method: 'POST' })).json()).message);
             loadStudentCourses();
         }
 
@@ -308,7 +320,7 @@ async function requestOtp() {
 
         async function startSession() {
             if(!currentCourseId) return;
-            const data = await (await fetch(`${API_URL}/api/sessions/start?course_id=${currentCourseId}`, { method: 'POST' })).json();
+            const data = await (await fetch(`${API_URL}/api/sessions/start?course_id=${encodeURIComponent(currentCourseId)}`, { method: 'POST' })).json();
             openSessionView(data.session_id, true); updateQrDisplay(data.qr_code);
             if(qrInterval) clearInterval(qrInterval);
             qrInterval = setInterval(async () => {
@@ -325,7 +337,8 @@ async function requestOtp() {
             currentSessionId = sessionId; hideAllSections();
             document.getElementById('session-view-section').classList.remove('hidden');
             document.getElementById('view-session-id').innerText = sessionId;
-            document.getElementById('student-active-tools').classList.add('hidden'); document.getElementById('lecturer-active-tools').classList.add('hidden');
+            document.getElementById('student-active-tools').classList.add('hidden');
+            document.getElementById('lecturer-active-tools').classList.add('hidden');
             if(isActive) {
                 document.getElementById('session-header').className = "p-4 rounded-xl text-white bg-emerald-600 shadow-lg mt-2";
                 document.getElementById('session-status-text').innerText = "Status: LIVE";
@@ -336,8 +349,9 @@ async function requestOtp() {
         function goBackToCourse() { if(qrInterval) clearInterval(qrInterval); openCourseView(currentCourseId, "Course Panel"); }
 
         async function scanAttendance() {
-            const qrCode = document.getElementById('scan-qr-token').value;
-            const res = await fetch(`${API_URL}/api/attendance/scan?session_id=${currentSessionId}&student_email=${currentUser.email}&student_name=${currentUser.name}&qr_code=${qrCode}`, { method: 'POST' });
+            const qrCode = document.getElementById('scan-qr-token').value.trim();
+            if (!qrCode) return alert('Please scan or enter a QR code');
+            const res = await fetch(`${API_URL}/api/attendance/scan?session_id=${currentSessionId}&student_email=${encodeURIComponent(currentUser.email)}&student_name=${encodeURIComponent(currentUser.name)}&qr_code=${encodeURIComponent(qrCode)}`, { method: 'POST' });
             const data = await res.json();
             const msg = document.getElementById('student-msg');
             msg.className = res.ok ? "text-sm mt-3 text-emerald-600 font-bold text-center" : "text-sm mt-3 text-rose-600 font-bold text-center";
@@ -355,7 +369,7 @@ async function requestOtp() {
 
         // Assignments
         async function loadAssignmentsForCourse() {
-            const assignments = await (await fetch(`${API_URL}/api/courses/${currentCourseId}/assignments`)).json();
+            const assignments = await (await fetch(`${API_URL}/api/courses/${encodeURIComponent(currentCourseId)}/assignments`)).json();
             const container = document.getElementById('assignments-list');
             if (assignments.length === 0) return container.innerHTML = `<p class="text-slate-500 italic">No assignments.</p>`;
             container.innerHTML = assignments.map(a => `<div class="bg-white p-3 rounded-lg border cursor-pointer hover:bg-indigo-50 transition flex justify-between items-center shadow-sm" onclick="openAssignmentView(${a.id}, '${a.title}')"><div><strong class="text-indigo-800">${a.title}</strong><p class="text-xs text-slate-500 mt-1">Due: ${a.due_date}</p></div><span class="text-indigo-600 text-xs font-bold border border-indigo-200 px-2 py-1 rounded bg-white">Open</span></div>`).join('');
@@ -363,7 +377,7 @@ async function requestOtp() {
         async function openCreateAssignmentUI() {
             const title = prompt("Enter Assignment Title:");
             if(!title) return;
-            if((await fetch(`${API_URL}/api/assignments/create?course_id=${currentCourseId}&title=${encodeURIComponent(title)}&description=Standard&due_date=2026-12-01`, { method: 'POST' })).ok) loadAssignmentsForCourse();
+            if((await fetch(`${API_URL}/api/assignments/create?course_id=${encodeURIComponent(currentCourseId)}&title=${encodeURIComponent(title)}&description=Standard&due_date=2026-12-01`, { method: 'POST' })).ok) loadAssignmentsForCourse();
         }
         function openAssignmentView(assignmentId, title) {
             currentAssignmentId = assignmentId; hideAllSections();
@@ -378,11 +392,11 @@ async function requestOtp() {
         async function submitAssignment() {
             const files = document.getElementById('student-file-upload').files;
             if(files.length === 0) return alert('Please select a file');
-            const res = await fetch(`${API_URL}/api/assignments/submit?assignment_id=${currentAssignmentId}&student_email=${currentUser.email}&file_url=${encodeURIComponent(files[0].name)}`, { method: 'POST' });
+            const res = await fetch(`${API_URL}/api/assignments/submit?assignment_id=${currentAssignmentId}&student_email=${encodeURIComponent(currentUser.email)}&file_url=${encodeURIComponent(files[0].name)}`, { method: 'POST' });
             const data = await res.json();
             if(res.ok) {
                 const box = document.getElementById('student-feedback-box'); box.classList.remove('hidden');
-                box.innerHTML = `<p class="font-bold text-emerald-700 mb-2">✅ Submited & Reviewed!</p><p class="text-sm"><strong>AI Grade:</strong> ${data.llm_grade}</p><p class="text-xs text-slate-600 mt-2">${data.llm_review}</p>`;
+                box.innerHTML = `<p class="font-bold text-emerald-700 mb-2">✅ Submitted & Reviewed!</p><p class="text-sm"><strong>AI Grade:</strong> ${data.llm_grade}</p><p class="text-xs text-slate-600 mt-2">${data.llm_review}</p>`;
             }
         }
         async function loadAssignmentSubmissions() {
@@ -395,9 +409,9 @@ async function requestOtp() {
             container.innerHTML = html;
         }
         async function updateGrade(submissionId, approved) {
-            await fetch(`${API_URL}/api/assignments/submission/${submissionId}/grade?grade=${document.getElementById(`grade-${submissionId}`).value}&approved=${approved}`, { method: 'POST' });
+            await fetch(`${API_URL}/api/assignments/submission/${submissionId}/grade?grade=${encodeURIComponent(document.getElementById(`grade-${submissionId}`).value)}&approved=${approved}`, { method: 'POST' });
             alert("Grade updated!");
         }
     </script>
 </body>
-</html>
+</html>עןא
