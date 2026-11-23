@@ -8,7 +8,7 @@ NOTE: OTP and email-based authorization are demonstration-only. This is not
 production institutional authentication or authorization; AI grades are not
 fabricated when Gemini is unconfigured.
 """
-from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, Request
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from sqlalchemy.orm import Session
@@ -23,7 +23,7 @@ from collections import Counter
 from sqlalchemy import Boolean
 import random
 import openpyxl
-from database import engine, Base, get_db, DATA_DIR, DB_PATH
+from database import engine, Base, get_db, DATA_DIR, DB_PATH, SessionLocal
 import models
 
 # Extra tables are additive; existing course data and tables are left unchanged.
@@ -484,6 +484,38 @@ def review_submission(db: Session, assignment, sub: models.Submission, meta: Sub
         sub.llm_grade = str(assessment["score"])
         sub.llm_review = json.dumps(assessment, ensure_ascii=False)
         sub.final_grade_approved = False
+
+
+AUTO_RETRY_DELAYS = (20, 60, 180)  # seconds between automatic re-tries of a failed AI review
+
+
+def retry_review_in_background(submission_id: int, submitted_at):
+    """Gemini sometimes fails for a moment (busy / rate limit). Instead of waiting for the lecturer to press
+    "Re-run AI review", try again a few times in the background. Runs in a worker thread with its own DB session."""
+    for delay in AUTO_RETRY_DELAYS:
+        time.sleep(delay)
+        db = SessionLocal()
+        try:
+            sub = db.query(models.Submission).filter(models.Submission.id == submission_id).first()
+            meta = db.query(SubmissionDocument).filter(SubmissionDocument.submission_id == submission_id).first()
+            # Stop if the submission was deleted, re-submitted, or already reviewed (e.g. lecturer re-ran it).
+            if not sub or not meta or meta.submitted_at != submitted_at or meta.ai_status != "review_failed":
+                return
+            assignment = db.query(models.Assignment).filter(models.Assignment.id == sub.assignment_id).first()
+            if not assignment:
+                return
+            review_submission(db, assignment, sub, meta)
+            if meta.ai_status == "reviewed":
+                notify(db, [sub.student_email], assignment.course_id, "review_ready", "AI review ready",
+                       f"Your AI review for {assignment.title} is ready", "assignment", assignment.id)
+            db.commit()
+            if meta.ai_status != "review_failed":
+                return
+        except Exception as exc:
+            print(f"[SmartClass] Background review retry failed: {exc}")
+            db.rollback()
+        finally:
+            db.close()
 
 
 def review_for_response(sub: models.Submission, meta: SubmissionDocument | None):
@@ -1577,7 +1609,8 @@ def submit_assignment(assignment_id: int, student_email: str, file_url: str,
 
 
 @app.post("/api/assignments/{assignment_id}/submit-file")
-async def submit_assignment_file(assignment_id: int, student_email: str = Form(...),
+async def submit_assignment_file(assignment_id: int, background_tasks: BackgroundTasks,
+                                 student_email: str = Form(...),
                                  file: UploadFile = File(...), db: Session = Depends(get_db)):
     assignment = assignment_for_member(db, assignment_id, student_email)
     if find_course(db, assignment.course_id).lecturer_email == student_email:
@@ -1613,6 +1646,8 @@ async def submit_assignment_file(assignment_id: int, student_email: str = Form(.
            "new_submission", "New assignment submission", f"{student_email} submitted {assignment.title}",
            "assignment", assignment.id)
     db.commit()
+    if meta.ai_status == "review_failed":
+        background_tasks.add_task(retry_review_in_background, sub.id, meta.submitted_at)
     return {"message": "Submission uploaded and saved", "submission_id": sub.id,
             "ai_status": meta.ai_status, "ai_error": meta.ai_error,
             "llm_review": sub.llm_review, "llm_grade": sub.llm_grade,
@@ -1672,7 +1707,8 @@ def update_or_approve_grade(submission_id: int, grade: str, approved: bool,
 
 
 @app.post("/api/assignments/submission/{submission_id}/rerun-review")
-async def rerun_submission_review(submission_id: int, lecturer_email: str, db: Session = Depends(get_db)):
+async def rerun_submission_review(submission_id: int, lecturer_email: str, background_tasks: BackgroundTasks,
+                                  db: Session = Depends(get_db)):
     """Lecturer re-runs the AI review, e.g. after the Gemini key was added on the server."""
     sub = db.query(models.Submission).filter(models.Submission.id == submission_id).first()
     if not sub:
@@ -1686,6 +1722,8 @@ async def rerun_submission_review(submission_id: int, lecturer_email: str, db: S
             Path(meta.stored_path).read_bytes(), Path(meta.stored_path).suffix.lower())
     await run_in_threadpool(review_submission, db, assignment, sub, meta)
     db.commit()
+    if meta.ai_status == "review_failed":
+        background_tasks.add_task(retry_review_in_background, sub.id, meta.submitted_at)
     return {"ai_status": meta.ai_status, "ai_error": meta.ai_error, "llm_grade": sub.llm_grade}
 
 

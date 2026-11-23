@@ -2094,12 +2094,14 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
         state.innerHTML = `<span class="${data.final_grade_approved ? 'graded' : 'pending'}">${data.final_grade_approved ? 'Approved final grade' : 'AI recommended grade · awaiting approval'}: ${escapeHtml(data.llm_grade ?? '—')}/100</span>`;
       } else if (data.ai_status==='legacy_demo') {
         state.textContent = 'Legacy submission detected. Resubmit the actual file to receive a new assessment.';
+      } else if (data.ai_status==='review_failed') {
+        state.innerHTML = '<span class="pending">Submitted · AI is busy, retrying automatically</span>';
       } else {
         state.innerHTML = '<span class="pending">Submitted · AI review pending</span>';
       }
       box.appendChild(state);
       const review = document.createElement('p');
-      review.textContent = extractReview(data.llm_review) || (data.ai_status==='pending_content' ? (data.ai_error || 'Your file could not be read. Try submitting it as PDF, DOCX, ZIP or source files.') : 'Your files are saved. The AI review will appear here as soon as it is ready.');
+      review.textContent = extractReview(data.llm_review) || (data.ai_status==='pending_content' ? (data.ai_error || 'Your file could not be read. Try submitting it as PDF, DOCX, ZIP or source files.') : data.ai_status==='review_failed' ? 'Your file is saved. The AI service was busy, so the review will be retried automatically in the next few minutes — this page updates by itself.' : 'Your files are saved. The AI review will appear here as soon as it is ready.');
       box.appendChild(review);
     }
 
@@ -2187,7 +2189,7 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
         if (!ok) throw Error(data.detail || 'Could not upload file');
         byId('file-name-display').textContent='';
         await Promise.all([loadMyAssignmentSubmission(),loadAssignmentFeedbackForum(),loadNotifications()]);
-        showToast(data.ai_status==='reviewed' ? '✓ Assignment submitted and reviewed · awaiting lecturer approval' : '✓ File submitted. AI review pending.');
+        showToast(data.ai_status==='reviewed' ? '✓ Assignment submitted and reviewed · awaiting lecturer approval' : data.ai_status==='review_failed' ? '✓ File submitted. The AI was busy — the review will retry automatically.' : '✓ File submitted. AI review pending.');
       } catch(e) {showToast(e.message,true);}
       finally {btn.disabled=false;btn.textContent='Upload and submit';}
     }
