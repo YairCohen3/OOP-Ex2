@@ -522,6 +522,16 @@
 .sc-progress.done .sc-progress-label{color:#147955}
 .sc-progress.failed .sc-progress-label{color:#b3394c}
 .sr-file{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;overflow:hidden!important;pointer-events:none}
+.assignment-title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.assignment-title-actions{display:flex;gap:8px;flex-wrap:wrap}
+.assignment-title-actions button{min-height:38px;padding:0 14px;font-size:11px}
+.edit-dialog{width:min(100%,560px);max-height:calc(100vh - 40px);overflow:auto}
+.edit-dialog label{margin-top:14px}
+.edit-dialog textarea{display:block;width:100%;box-sizing:border-box;border:1.5px solid #d5e3f2;border-radius:12px;padding:12px 14px;font:inherit;font-size:13px;color:#193e69;background:#fbfdff;resize:vertical;outline:0}
+.edit-dialog input[type=file]{padding:10px;font-size:12px}
+.edit-dialog .edit-file-note{margin:0 0 8px!important;font-size:12px!important}
+.edit-dialog .edit-remove-file{display:flex!important;align-items:center;gap:8px;letter-spacing:0!important;font-size:12px!important;font-weight:700!important;margin:0 0 8px!important}
+.edit-dialog .edit-remove-file input{width:auto;display:inline-block;margin:0}
 </style>
 </head>
 <body>
@@ -831,7 +841,11 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
   <main id="assignment-view-section" class="hidden">
     <div class="content-panel">
       <button class="back-btn" type="button" onclick="goBackToCourse()">← Back to course</button>
-      <h1 id="assignment-view-title" class="page-title">Assignment</h1>
+      <div class="assignment-title-row"><h1 id="assignment-view-title" class="page-title">Assignment</h1>
+        <div id="assignment-lecturer-actions" class="assignment-title-actions hidden">
+          <button type="button" class="secondary-btn" onclick="openEditAssignment()">✎ Edit</button>
+          <button type="button" class="danger-btn" onclick="deleteCurrentAssignment()">🗑 Delete</button>
+        </div></div>
       <div id="assignment-intro" class="assignment-intro"><span class="due" id="assignment-due">ASSIGNMENT DETAILS</span><p id="assignment-instructions">Loading assignment requirements…</p><p id="assignment-rubric-text" class="rubric hidden"></p><a id="assignment-reference-link" href="#" class="assignment-reference-link hidden" target="_blank" rel="noopener">↓ Download official assignment brief</a></div>
       <div class="assignment-detail-grid">
         <div>
@@ -853,6 +867,29 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
     </div>
   </main>
 
+  <div id="edit-assignment-overlay" class="join-overlay hidden" role="presentation" onclick="if(event.target===this)closeEditAssignment()">
+    <section class="join-dialog edit-dialog" role="dialog" aria-modal="true" aria-labelledby="edit-assignment-heading">
+      <button class="join-x" type="button" aria-label="Close" onclick="closeEditAssignment()">×</button>
+      <h2 id="edit-assignment-heading">Edit assignment</h2>
+      <p>Students are notified about the change. Existing submissions and grades are kept — re-run AI reviews if the requirements changed.</p>
+      <form id="edit-assignment-form" onsubmit="saveEditedAssignment(event)">
+        <label for="edit-assignment-title">TITLE</label>
+        <input id="edit-assignment-title" maxlength="250" required>
+        <label for="edit-assignment-date">DUE DATE</label>
+        <input id="edit-assignment-date" type="date" required>
+        <label for="edit-assignment-description">INSTRUCTIONS</label>
+        <textarea id="edit-assignment-description" rows="4"></textarea>
+        <label for="edit-assignment-rubric">EVALUATION RUBRIC (OPTIONAL)</label>
+        <textarea id="edit-assignment-rubric" rows="3"></textarea>
+        <label>ASSIGNMENT FILE</label>
+        <p id="edit-assignment-current-file" class="edit-file-note"></p>
+        <label class="edit-remove-file hidden" id="edit-remove-file-row"><input type="checkbox" id="edit-assignment-remove-file"> Remove the current file</label>
+        <input id="edit-assignment-file" type="file" accept=".pdf,.docx,.txt,.md,.zip,.py,.java,.js,.html,.json,.cpp">
+        <div id="edit-assignment-error" class="join-error" role="alert"></div>
+        <div class="join-buttons"><button type="button" class="join-cancel" onclick="closeEditAssignment()">Cancel</button><button id="edit-assignment-save" type="submit" class="join-submit">Save changes</button></div>
+      </form>
+    </section>
+  </div>
   <div id="join-course-overlay" class="join-overlay hidden" role="presentation" onclick="if(event.target===this)closeJoinCourseDialog()"><section class="join-dialog" role="dialog" aria-modal="true" aria-labelledby="join-dialog-title"><button class="join-x" type="button" aria-label="Close" onclick="closeJoinCourseDialog()">×</button><span class="join-icon">🎓</span><h2 id="join-dialog-title">Join a course</h2><p>Enter the course ID shared by your lecturer to join their class.</p><form id="join-course-form" onsubmit="submitJoinCourse(event)"><label for="join-course-id">COURSE ID</label><input id="join-course-id" placeholder="e.g. CRS-729" autocomplete="off" required maxlength="32"><div id="join-course-error" class="join-error" role="alert"></div><div class="join-buttons"><button type="button" class="join-cancel" onclick="closeJoinCourseDialog()">Cancel</button><button id="join-course-submit" type="submit" class="join-submit">Join course →</button></div></form></section></div>
 <script>
     let currentUser = null;
@@ -1338,6 +1375,7 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
     }
     document.addEventListener('keydown', event => {
       if (event.key === 'Escape' && !byId('join-course-overlay').classList.contains('hidden')) closeJoinCourseDialog();
+      if (event.key === 'Escape' && !byId('edit-assignment-overlay').classList.contains('hidden')) closeEditAssignment();
     });
 
     async function loadRealSessionsForCourse() {
@@ -1991,6 +2029,8 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
       const isStudent = currentUser.role === 'student';
       byId('student-assignment-tools').classList.toggle('hidden', !isStudent);
       byId('lecturer-assignment-tools').classList.toggle('hidden', isStudent);
+      byId('assignment-lecturer-actions').classList.toggle('hidden', isStudent);
+      currentAssignmentDetails = null;
       byId('assignment-instructions').textContent = 'Loading official assignment requirements…';
       byId('assignment-reference-link').classList.add('hidden');
       byId('assignment-rubric-text').classList.add('hidden');
@@ -2005,6 +2045,7 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
       loadAssignmentFeedbackForum();
     }
 
+    let currentAssignmentDetails = null;
     async function loadAssignmentDetails() {
       const id = currentAssignmentId;
       try {
@@ -2012,6 +2053,7 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
         const data = await res.json().catch(()=>({}));
         if (!res.ok) throw Error(data.detail || 'Failed to load assignment');
         if (id !== currentAssignmentId) return;
+        currentAssignmentDetails = data;
         byId('assignment-due').textContent = `DUE · ${data.due_date}`;
         byId('assignment-instructions').textContent = data.description || 'Instructions are included in the attached official brief.';
         const rubric = byId('assignment-rubric-text');
@@ -2059,6 +2101,65 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
       const review = document.createElement('p');
       review.textContent = extractReview(data.llm_review) || (data.ai_status==='pending_content' ? (data.ai_error || 'Your file could not be read. Try submitting it as PDF, DOCX, ZIP or source files.') : 'Your files are saved. The AI review will appear here as soon as it is ready.');
       box.appendChild(review);
+    }
+
+    function openEditAssignment() {
+      const d = currentAssignmentDetails;
+      if (!d) return showToast('Assignment details are still loading. Try again in a moment.', true);
+      byId('edit-assignment-title').value = d.title || '';
+      byId('edit-assignment-date').value = d.due_date || '';
+      byId('edit-assignment-description').value = d.description || '';
+      byId('edit-assignment-rubric').value = d.rubric || '';
+      byId('edit-assignment-file').value = '';
+      byId('edit-assignment-remove-file').checked = false;
+      byId('edit-assignment-current-file').textContent = d.reference_name
+        ? `Current file: ${d.reference_name}. Choose a new file below to replace it.` : 'No file attached. You can add one below.';
+      byId('edit-remove-file-row').classList.toggle('hidden', !d.reference_name);
+      byId('edit-assignment-error').textContent = '';
+      byId('edit-assignment-overlay').classList.remove('hidden');
+      byId('edit-assignment-title').focus();
+    }
+    function closeEditAssignment() { byId('edit-assignment-overlay').classList.add('hidden'); }
+
+    async function saveEditedAssignment(event) {
+      event.preventDefault();
+      const error = byId('edit-assignment-error');
+      const body = new FormData();
+      body.append('lecturer_email', currentUser.email);
+      body.append('title', byId('edit-assignment-title').value.trim());
+      body.append('due_date', byId('edit-assignment-date').value);
+      body.append('description', byId('edit-assignment-description').value.trim());
+      body.append('rubric', byId('edit-assignment-rubric').value.trim());
+      body.append('remove_file', byId('edit-assignment-remove-file').checked);
+      const file = byId('edit-assignment-file').files[0];
+      if (file) {
+        if (file.size > 50 * 1024 * 1024) { error.textContent = 'The file is larger than 50 MB.'; return; }
+        body.append('file', file);
+      }
+      const btn = byId('edit-assignment-save'); btn.disabled = true; btn.textContent = 'Saving…'; error.textContent = '';
+      try {
+        const res = await fetch(`${API_URL}/api/assignments/${currentAssignmentId}/update`, {method: 'POST', body});
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw Error(data.detail || 'Could not save the assignment');
+        closeEditAssignment();
+        byId('assignment-view-title').textContent = byId('edit-assignment-title').value.trim();
+        await loadAssignmentDetails();
+        showToast('✓ Assignment updated. Students were notified.');
+      } catch (e) { error.textContent = e.message; }
+      finally { btn.disabled = false; btn.textContent = 'Save changes'; }
+    }
+
+    async function deleteCurrentAssignment() {
+      const title = byId('assignment-view-title').textContent;
+      if (!confirm(`Delete "${title}"?\n\nAll student submissions, AI reviews and grades for this assignment will be deleted too. This cannot be undone.`)) return;
+      try {
+        const res = await fetch(`${API_URL}/api/assignments/${currentAssignmentId}?lecturer_email=${encodeURIComponent(currentUser.email)}`, {method: 'DELETE'});
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw Error(data.detail || 'Could not delete the assignment');
+        currentAssignmentId = null;
+        goBackToCourse();
+        showToast(`✓ Assignment deleted${data.deleted_submissions ? ` (with ${data.deleted_submissions} submissions)` : ''}.`);
+      } catch (e) { showToast(e.message, true); }
     }
 
     async function loadMyAssignmentSubmission() {

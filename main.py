@@ -307,32 +307,41 @@ def gemini_model() -> str:
     return (os.getenv("GEMINI_MODEL") or DEFAULT_GEMINI_MODEL).strip()
 
 
-def gemini_generate(parts: list, json_mode: bool = False, timeout: int = 90) -> str:
-    """Call Gemini generateContent and return the text. Raises GeminiError with Google's own message."""
-    key = gemini_key()
-    if not key:
-        raise GeminiError("Gemini API key is not configured. Add GEMINI_API_KEY to the server's environment variables")
+# Used automatically when the main model is overloaded (503) or rate-limited; override with GEMINI_FALLBACK_MODEL.
+DEFAULT_GEMINI_FALLBACK_MODEL = "gemini-3.5-flash-lite"
+RETRYABLE_STATUS = {429, 500, 502, 503, 504}
+
+
+def gemini_fallback_model() -> str:
+    return (os.getenv("GEMINI_FALLBACK_MODEL") or DEFAULT_GEMINI_FALLBACK_MODEL).strip()
+
+
+def _gemini_call(model: str, key: str, body: dict, timeout: int) -> str:
     import httpx
-    body = {"contents": [{"parts": parts}]}
-    if json_mode:
-        body["generationConfig"] = {"responseMimeType": "application/json"}
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{gemini_model()}:generateContent"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
     try:
         with httpx.Client(timeout=timeout) as client:
             resp = client.post(url, headers={"x-goog-api-key": key}, json=body)
     except httpx.TimeoutException:
-        raise GeminiError("Gemini did not answer in time. Try again, or use a shorter file")
+        err = GeminiError("Gemini did not answer in time. Try again, or use a shorter file")
+        err.status = 504
+        raise err
     except httpx.HTTPError as exc:
-        raise GeminiError(f"Could not reach Gemini ({type(exc).__name__})")
+        err = GeminiError(f"Could not reach Gemini ({type(exc).__name__})")
+        err.status = 502
+        raise err
     if resp.status_code != 200:
         try:
             message = resp.json().get("error", {}).get("message", "")
         except ValueError:
             message = resp.text[:200]
         hint = {400: "check the API key and the uploaded file", 403: "the API key is not allowed to use Gemini",
-                404: f"model '{gemini_model()}' is not available — set GEMINI_MODEL to a current model",
-                429: "quota exceeded — wait a minute or check billing"}.get(resp.status_code, "")
-        raise GeminiError(f"Gemini error {resp.status_code}: {message[:300]}" + (f" ({hint})" if hint else ""))
+                404: f"model '{model}' is not available — set GEMINI_MODEL to a current model",
+                429: "quota exceeded — wait a minute or check billing",
+                503: "Google's servers are busy — try again in a minute"}.get(resp.status_code, "")
+        err = GeminiError(f"Gemini error {resp.status_code}: {message[:300]}" + (f" ({hint})" if hint else ""))
+        err.status = resp.status_code
+        raise err
     data = resp.json()
     candidates = data.get("candidates") or []
     if not candidates:
@@ -342,6 +351,37 @@ def gemini_generate(parts: list, json_mode: bool = False, timeout: int = 90) -> 
     if not text:
         raise GeminiError("Gemini returned an empty answer")
     return text
+
+
+def gemini_generate(parts: list, json_mode: bool = False, timeout: int = 90) -> str:
+    """Call Gemini and return the text. Raises GeminiError with Google's own message.
+
+    Busy/rate-limit errors (429/5xx) and timeouts are retried once after a short pause, then the
+    fallback model is tried, so a temporary "high demand" spike does not fail the whole request."""
+    key = gemini_key()
+    if not key:
+        raise GeminiError("Gemini API key is not configured. Add GEMINI_API_KEY to the server's environment variables")
+    body = {"contents": [{"parts": parts}]}
+    if json_mode:
+        body["generationConfig"] = {"responseMimeType": "application/json"}
+    models = [gemini_model()]
+    if gemini_fallback_model() and gemini_fallback_model() not in models:
+        models.append(gemini_fallback_model())
+    last_error = None
+    for model_index, model in enumerate(models):
+        for attempt in range(2):
+            try:
+                return _gemini_call(model, key, body, timeout)
+            except GeminiError as exc:
+                last_error = exc
+                status = getattr(exc, "status", None)
+                if status == 404:
+                    break  # model unavailable → go straight to the fallback model
+                if status not in RETRYABLE_STATUS:
+                    raise
+                if attempt == 0:
+                    time.sleep(2 + 2 * model_index)
+    raise last_error
 
 
 def pdf_part(path: str | None, max_bytes: int = 15 * 1024 * 1024):
@@ -357,7 +397,7 @@ def pdf_part(path: str | None, max_bytes: int = 15 * 1024 * 1024):
 @app.get("/api/ai-status")
 def ai_status():
     """Quick check after deployment: is a key set and which model is used (the key itself is never returned)."""
-    return {"gemini_configured": bool(gemini_key()), "model": gemini_model()}
+    return {"gemini_configured": bool(gemini_key()), "model": gemini_model(), "fallback_model": gemini_fallback_model()}
 
 
 def gemini_grade(instructions: str, answer: str, rubric: str,
@@ -1392,6 +1432,75 @@ async def create_assignment_with_file(course_id: str = Form(...), title: str = F
     db.commit()
     return {"message": "Assignment published", "assignment_id": assignment.id,
             "reference_name": name, "extraction_note": note}
+
+
+@app.post("/api/assignments/{assignment_id}/update")
+async def update_assignment(assignment_id: int, lecturer_email: str = Form(...), title: str = Form(...),
+                            due_date: str = Form(...), description: str = Form(""), rubric: str = Form(""),
+                            remove_file: bool = Form(False), file: UploadFile | None = File(None),
+                            db: Session = Depends(get_db)):
+    """Lecturer edits an assignment. Existing submissions and grades are kept;
+    the lecturer can re-run AI reviews if the requirements changed."""
+    assignment = lecturer_assignment(db, assignment_id, lecturer_email)
+    title, description, rubric = title.strip(), description.strip(), rubric.strip()
+    if not title or len(title) > 250:
+        raise HTTPException(status_code=400, detail="Enter a title up to 250 characters")
+    try:
+        date.fromisoformat(due_date)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid due date")
+    brief = db.query(AssignmentBrief).filter(AssignmentBrief.assignment_id == assignment_id).first()
+    if not brief:
+        brief = AssignmentBrief(assignment_id=assignment_id, lecturer_email=lecturer_email, rubric="",
+                                extracted_instructions="")
+        db.add(brief)
+    file_text = ""
+    if file and file.filename:
+        stored, name, file_text, note = await store_upload(file, "brief")
+        if brief.reference_path:
+            Path(brief.reference_path).unlink(missing_ok=True)
+        brief.reference_path, brief.reference_name, brief.extraction_note = stored, name, note
+    elif remove_file and brief.reference_path:
+        Path(brief.reference_path).unlink(missing_ok=True)
+        brief.reference_path = brief.reference_name = brief.extraction_note = None
+    elif brief.reference_path and Path(brief.reference_path).is_file():
+        file_text, _ = extract_document_text(Path(brief.reference_path).read_bytes(),
+                                             Path(brief.reference_path).suffix.lower())
+    if not description and not file_text:
+        raise HTTPException(status_code=400, detail="Provide readable instructions or keep an assignment file")
+    assignment.title, assignment.due_date, assignment.description = title, due_date, description
+    brief.rubric = rubric
+    brief.extracted_instructions = (description + "\n\n" + file_text[:45000]).strip()
+    notify(db, course_members(db, assignment.course_id), assignment.course_id, "assignment_updated",
+           "Assignment updated", f"{title} · due {due_date}", "assignment", assignment.id)
+    db.commit()
+    return {"message": "Assignment updated", "assignment_id": assignment.id}
+
+
+@app.delete("/api/assignments/{assignment_id}")
+def delete_assignment(assignment_id: int, lecturer_email: str, db: Session = Depends(get_db)):
+    """Lecturer deletes an assignment with all its submissions, files, reviews and grades."""
+    assignment = lecturer_assignment(db, assignment_id, lecturer_email)
+    subs = db.query(models.Submission).filter(models.Submission.assignment_id == assignment_id).all()
+    sub_ids = [s.id for s in subs]
+    if sub_ids:
+        for meta in db.query(SubmissionDocument).filter(SubmissionDocument.submission_id.in_(sub_ids)).all():
+            if meta.stored_path:
+                Path(meta.stored_path).unlink(missing_ok=True)
+        db.query(SubmissionDocument).filter(SubmissionDocument.submission_id.in_(sub_ids)).delete(synchronize_session=False)
+    brief = db.query(AssignmentBrief).filter(AssignmentBrief.assignment_id == assignment_id).first()
+    if brief and brief.reference_path:
+        Path(brief.reference_path).unlink(missing_ok=True)
+    db.query(AssignmentBrief).filter(AssignmentBrief.assignment_id == assignment_id).delete(synchronize_session=False)
+    db.query(AssignmentComparisonReport).filter(AssignmentComparisonReport.assignment_id == assignment_id).delete(synchronize_session=False)
+    db.query(SmartNotification).filter(SmartNotification.target_type == "assignment",
+                                       SmartNotification.target_id == assignment_id).delete(synchronize_session=False)
+    course_id, title = assignment.course_id, assignment.title
+    db.delete(assignment)  # ORM cascade removes the submissions
+    notify(db, course_members(db, course_id), course_id, "assignment_deleted",
+           "Assignment removed", f"{title} was removed by the lecturer")
+    db.commit()
+    return {"message": "Assignment deleted", "deleted_submissions": len(sub_ids)}
 
 
 @app.get("/api/courses/{course_id}/assignments")
