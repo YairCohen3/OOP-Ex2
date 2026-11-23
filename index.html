@@ -532,6 +532,18 @@
 .edit-dialog .edit-file-note{margin:0 0 8px!important;font-size:12px!important}
 .edit-dialog .edit-remove-file{display:flex!important;align-items:center;gap:8px;letter-spacing:0!important;font-size:12px!important;font-weight:700!important;margin:0 0 8px!important}
 .edit-dialog .edit-remove-file input{width:auto;display:inline-block;margin:0}
+.att-check{margin:12px 0;padding:14px 15px;border-radius:13px;border:1px solid #e1e9f3;background:#f7f9fc;font-size:12px;line-height:1.65;color:#4a5f7a}
+.att-check strong{display:block;font-size:13px;margin-bottom:4px}
+.att-check.more_checkins{background:#fff3f4;border-color:#f1c4ca;color:#8d2f3e}
+.att-check.more_people,.att-check.match{background:#eefaf4;border-color:#bfe8d4;color:#1d6b4f}
+.att-check.approved{background:#eef5ff;border-color:#c9dcf4;color:#245a92}
+.att-check .att-nums{display:flex;gap:14px;margin:8px 0;font-weight:800}
+.att-check .att-nums span{padding:6px 10px;border-radius:9px;background:#ffffffb0}
+.att-check .att-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.att-check .att-actions button{min-height:36px;padding:0 12px;font-size:11px}
+.att-check a{font-weight:800;color:#2b6cb0}
+.att-student-closed{max-width:390px;margin:0 auto;padding:16px;border-radius:13px;text-align:center;font-size:13px;font-weight:750;line-height:1.6;background:#eefaf4;color:#1d6b4f}
+.att-student-closed.missed{background:#fff6ea;color:#8a5a14}
 </style>
 </head>
 <body>
@@ -736,7 +748,8 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
       <section id="student-active-tools" class="tool-panel hidden">
         <h3>Attendance check-in</h3>
         <div id="camera-container" class="hidden"><div id="qr-reader"></div><button class="danger-btn" type="button" onclick="stopCameraScanner()">Close camera</button></div>
-        <div style="width:min(100%,390px);margin:0 auto;display:grid;gap:10px;">
+        <div id="student-attendance-closed" class="att-student-closed hidden"></div>
+        <div id="student-checkin-controls" style="width:min(100%,390px);margin:0 auto;display:grid;gap:10px;">
           <button class="success-btn" type="button" onclick="startCameraScanner()">▣ Open camera to scan QR</button>
           <div style="text-align:center;color:#96a69f;font-size:10px;font-weight:700;">OR ENTER THE CODE MANUALLY</div>
           <input class="field-control" type="text" id="scan-qr-token" placeholder="QR-12345" />
@@ -749,7 +762,7 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
         <div class="sc-live-title"><div><h3>Live classroom dashboard</h3><p>QR check-ins, camera verification and student activity update automatically.</p></div><span class="live-indicator"><i></i> LIVE</span></div>
         <div class="sc-live-grid">
           <div class="sc-qr-card">
-            <div class="sc-card-eyebrow" style="display:flex;justify-content:space-between;align-items:center;gap:9px;flex-wrap:wrap"><span>STUDENT ATTENDANCE QR</span><button class="secondary-btn" id="qr-toggle-button" type="button" style="width:auto;padding:8px 12px" onclick="toggleAttendanceQr()">Pause QR</button></div>
+            <div class="sc-card-eyebrow" style="display:flex;justify-content:space-between;align-items:center;gap:9px;flex-wrap:wrap"><span>STEP 1 · ATTENDANCE QR</span><button class="secondary-btn" id="qr-toggle-button" type="button" style="width:auto;padding:8px 12px" onclick="toggleAttendanceQr()">Pause QR</button></div>
             <img id="live-qr-img" alt="Dynamic QR code for attendance" class="hidden" />
             <p id="live-qr-text" class="sc-qr-code">Loading…</p>
             <div class="timer-labels"><span>Next QR rotation</span><strong id="qr-timer-text">10s</strong></div>
@@ -762,7 +775,7 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
             <div class="sc-checkin-list" id="live-checkin-list"><span class="sc-muted">Waiting for the first student…</span></div>
           </div>
           <div class="sc-photo-card">
-            <div class="sc-card-eyebrow">CLASSROOM PHOTO · PHONE OR COMPUTER</div>
+            <div class="sc-card-eyebrow">STEP 2 · CLASSROOM PHOTO (PHONE OR COMPUTER)</div><p class="sc-hint" style="margin:-8px 0 12px">Taking the photo locks check-ins automatically (SESSION END).</p>
             <div class="sc-phone-qr-line"><img id="mobile-photo-qr" alt="QR link to phone photo uploader"/><div><strong>Scan with your phone</strong><p>Open a secure upload link on the phone and take a classroom photo.</p></div></div>
             <div class="sc-photo-actions"><button class="secondary-btn" type="button" onclick="copyMobilePhotoLink()">Copy phone link</button><a id="mobile-photo-link" href="#" target="_blank" rel="noopener noreferrer">Open upload page</a></div>
             <label class="field-label" for="class-photo-file" style="margin-top:15px">Or upload from this computer</label>
@@ -777,17 +790,12 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
             <div id="class-photo-progress" class="hidden"></div>
           </div>
           <div class="sc-verify-card">
-            <div class="sc-card-eyebrow">PHOTO ANALYSIS</div>
+            <div class="sc-card-eyebrow">STEP 3 · CROSS-CHECK & APPROVAL</div>
             <div class="sc-live-number"><strong id="live-detected-count">—</strong><span>estimated people in photo</span></div>
             <p id="live-detection-method" class="sc-hint">No photo analyzed yet.</p>
-            <p id="live-discrepancy" class="sc-feedback"></p>
-            <div id="attendance-mismatch-actions" class="sc-compose-card hidden" style="margin:12px 0;background:#fff5f6;border-color:#f2cbd0">
-              <strong style="font-size:12px;color:#a7394c">Attendance discrepancy — choose an action</strong>
-              <p class="sc-hint">You can retake the class photo, reset all check-ins under this lecture, or approve the discrepancy and export the report.</p>
-              <div class="session-form-row"><button type="button" class="secondary-btn" onclick="byId('class-photo-file').click()">Retake photo</button><button type="button" class="danger-btn" onclick="resetAttendanceFlow()">Restart attendance</button><button type="button" class="success-btn" onclick="closeSessionWithVision(true)">Approve & export</button></div>
-            </div>
+            <div id="attendance-crosscheck" class="att-check" aria-live="polite"></div>
             <div class="sc-correct-row"><input class="field-control" id="manual-people-count" type="number" min="0" max="1000" placeholder="Verified count" /><button class="secondary-btn" type="button" onclick="submitManualCount()">Update count</button></div>
-            <button class="danger-btn sc-end-btn" type="button" onclick="closeSessionWithVision()">End lecture & create attendance report</button>
+            <button class="danger-btn sc-end-btn" type="button" onclick="closeSessionWithVision()">End lecture</button>
           </div>
         </div>
       </section>
@@ -823,9 +831,9 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
           <p id="ai-summary-text">Loading summary…</p>
           <div id="summary-editor-box" class="hidden">
             <div class="sc-compose-card" style="margin:13px 0 16px"><strong style="display:block;color:#205182;font-size:13px;margin-bottom:8px">✧ Generate summary with Gemini</strong>
-              <p class="session-helper">Upload a short recording (up to 9 MB) or use a public YouTube link. Private Zoom/Classroom recordings must first be downloaded. Requires a Gemini API key and permission to process the recording.</p>
+              <p class="session-helper">Upload a lecture recording (up to 500 MB, about 1–2 hours) or use a public YouTube link. Private Zoom/Classroom recordings must first be downloaded. Long videos take a few minutes — you can keep working; the summary appears here when ready.</p>
               <label class="field-label" for="summary-video-url">Public YouTube URL (optional)</label><input id="summary-video-url" class="field-control" type="url" placeholder="https://www.youtube.com/watch?v=…" />
-              <label class="field-label" for="summary-video-file" style="margin-top:10px">Or select a short MP4 / WebM / MOV</label><input id="summary-video-file" class="field-control" type="file" accept=".mp4,.webm,.mov,video/mp4,video/webm" />
+              <label class="field-label" for="summary-video-file" style="margin-top:10px">Or select a video file (MP4, WebM, MOV, MPEG, AVI, WMV · up to 500 MB)</label><input id="summary-video-file" class="field-control" type="file" accept=".mp4,.webm,.mov,.mpeg,.mpg,.avi,.wmv,.3gp,video/*" />
               <div class="session-form-row"><button id="summarize-video-button" class="secondary-btn" type="button" onclick="generateVideoSummary()">✧ Generate AI summary</button></div>
               <p id="video-summary-status" class="sc-feedback" aria-live="polite"></p>
               <div id="video-summary-progress" class="hidden"></div>
@@ -911,7 +919,7 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
     let lastSyncRun = 0;
     let refreshInProgress = false;
     let mobilePhotoPath = '';
-    let lastAttendanceScans=0, lastAttendancePeople=null;
+    let lastAttendanceScans=0, lastAttendancePeople=null, lastAttendanceState=null;
     let activePollDrafts = new Map();
     let lastCoursePayload = '';
     let lastForumPayload = '';
@@ -1479,7 +1487,10 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
       loadSessionForum();
       loadSessionPolls();
       loadSessionSummary();
+      byId('video-summary-progress').classList.add('hidden');
+      resumeSummaryJobIfRunning();
       if (currentUser.role === 'lecturer') loadLecturerLiveState();
+      else if (isActive) { byId('student-checkin-controls').classList.remove('hidden'); byId('student-attendance-closed').classList.add('hidden'); refreshSessionStatus(); }
     }
 
     function goBackToCourse() {
@@ -1715,29 +1726,70 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
       } catch (error) { byId('ai-summary-text').textContent = 'Unable to load summary.'; }
     }
 
+    const SUMMARY_STAGES = {  // [start %, end %, label]
+      queued:      [35, 38, 'Starting'],
+      sending:     [38, 55, 'Sending the video to Gemini'],
+      processing:  [55, 72, 'Gemini is processing the video'],
+      summarizing: [72, 97, 'Gemini is writing the summary']
+    };
+    let summaryPollTimer = null;
+
     async function generateVideoSummary() {
       const status=byId('video-summary-status');
       const video=byId('summary-video-file').files[0];
       const url=byId('summary-video-url').value.trim();
       if (!video && !url) {status.textContent='Choose a video or paste a public YouTube URL.';return;}
-      if (video && video.size>9*1024*1024) {status.textContent='This demo supports videos up to 9 MB. Use a shorter clip.';return;}
+      if (video && video.size>500*1024*1024) {status.textContent=`This video is ${(video.size/1048576).toFixed(0)} MB — the limit is 500 MB. Compress it or upload a shorter part.`;return;}
       const body=new FormData();
       body.append('lecturer_email',currentUser.email);
       body.append('video_url',url);
       if (video) body.append('file',video);
       const button=byId('summarize-video-button');button.disabled=true;
       status.textContent='';
+      const {ok,data,bar}=await requestWithProgress({url:`${API_URL}/api/sessions/${currentSessionId}/summarize-video`, body,
+        holder:byId('video-summary-progress'), uploadLabel:'Uploading video', uploadOnly:true});
+      if (!ok) { button.disabled=false; showToast(data.detail||'Summary failed',true); return; }
+      pollSummaryJob(currentSessionId, bar);
+    }
+
+    function pollSummaryJob(sessionId, bar = null) {
+      clearTimeout(summaryPollTimer);
+      bar = bar || createProgress(byId('video-summary-progress'));
+      const button = byId('summarize-video-button');
+      button.disabled = true;
+      const tick = async () => {
+        if (sessionId !== currentSessionId) { button.disabled = false; return; }
+        try {
+          const job = await fetch(`${API_URL}/api/sessions/${sessionId}/summary-job`, {cache:'no-store'}).then(r => r.json());
+          if (job.state === 'running') {
+            const [from, to, label] = SUMMARY_STAGES[job.stage] || SUMMARY_STAGES.queued;
+            const expected = job.stage === 'summarizing' ? 90 : 40;   // seconds; longer videos take longer
+            const pct = from + (to - from) * (1 - Math.exp(-(job.stage_elapsed || 0) / expected));
+            bar.set(pct, `${label}… ${Math.round(pct)}% · ${Math.floor(job.elapsed / 60)}:${String(Math.round(job.elapsed % 60)).padStart(2,'0')} elapsed`);
+            summaryPollTimer = setTimeout(tick, 2000);
+            return;
+          }
+          button.disabled = false;
+          if (job.state === 'done') {
+            bar.done('✓ Summary ready · 100%');
+            byId('summary-video-file').value = '';
+            await loadSessionSummary();
+            showToast('✓ Lecture summary saved. Students were notified.');
+          } else if (job.state === 'error') {
+            bar.fail('✕ ' + job.error);
+            showToast(job.error, true);
+          }
+        } catch (e) { summaryPollTimer = setTimeout(tick, 4000); }
+      };
+      tick();
+    }
+
+    async function resumeSummaryJobIfRunning() {
+      if (!currentUser || currentUser.role !== 'lecturer' || !currentSessionId) return;
       try {
-        const {ok,data}=await requestWithProgress({url:`${API_URL}/api/sessions/${currentSessionId}/summarize-video`, body,
-          holder:byId('video-summary-progress'), expectedSeconds:45, uploadLabel:'Uploading video',
-          aiLabel:'Gemini is summarizing the lecture', doneLabel:'Summary ready'});
-        if (!ok) throw Error(data.detail||'Summary failed');
-        byId('summary-editor').value=data.ai_summary;
-        await loadSessionSummary();
-        status.textContent='✓ Summary saved. Students notified.';
-        showToast('✓ Lecture summary published');
-      }catch(error){status.textContent='';showToast(error.message,true);} // the red progress line already shows the reason
-      finally {button.disabled=false;}
+        const job = await fetch(`${API_URL}/api/sessions/${currentSessionId}/summary-job`, {cache:'no-store'}).then(r => r.json());
+        if (job.state === 'running') pollSummaryJob(currentSessionId);
+      } catch (e) {}
     }
 
     async function saveSessionSummary() {
@@ -1749,7 +1801,8 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.detail || 'Could not save summary');
         await loadSessionSummary();
-      } catch (error) { alert(error.message || 'Could not save summary.'); }
+        showToast('✓ Summary saved. Students can read it now.');
+      } catch (error) { showToast(error.message || 'Could not save summary.', true); }
     }
 
     async function scanAttendance() {
@@ -1776,10 +1829,13 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
           if (!endAnyway) { message.textContent='Add a classroom photo or a verified count, then end the lecture.'; return; }
           approveMismatch = true;
         }
-        if (lastAttendanceScans>lastAttendancePeople && !approveMismatch) {
-          byId('attendance-mismatch-actions').classList.remove('hidden');
-          message.textContent='Mismatch detected. Choose one of the three actions above.';
-          return;
+        if (lastAttendancePeople!==null && lastAttendanceScans>lastAttendancePeople && !approveMismatch) {
+          const c = (lastAttendanceState||{}).crosscheck || {};
+          if (!confirm((c.message || 'There are more check-ins than people in the photo.') + '\n\nEnd the lecture and export attendance anyway?')) {
+            message.textContent='Resolve the attendance discrepancy in Step 3, or end the lecture to export as is.';
+            return;
+          }
+          approveMismatch = true;
         }
         message.textContent='Closing lecture and creating the attendance report…';
         const url=`${API_URL}/api/sessions/${currentSessionId}/close?lecturer_email=${encodeURIComponent(currentUser.email)}&approve_mismatch=${Boolean(approveMismatch)}`;
@@ -1792,6 +1848,58 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
       }catch(e){message.textContent=e.message;}
     }
 
+    function renderAttendanceCrosscheck(state) {
+      const box = byId('attendance-crosscheck');
+      const c = state.crosscheck || {status: 'no_photo', message: ''};
+      const signature = JSON.stringify([c, state.attendance_approved, state.report_ready]);
+      if (box.dataset.signature === signature) return;
+      box.dataset.signature = signature;
+      box.className = 'att-check ' + (state.attendance_approved ? 'approved' : c.status);
+      box.replaceChildren();
+      const title = document.createElement('strong');
+      title.textContent = state.attendance_approved ? '✓ Attendance approved'
+        : {no_photo: 'Waiting for the classroom photo', more_checkins: '⚠ More check-ins than people in the photo',
+           more_people: '✓ More people in the photo than check-ins', match: '✓ Check-ins match the photo'}[c.status];
+      box.appendChild(title);
+      if (c.people != null) {
+        const nums = document.createElement('div'); nums.className = 'att-nums';
+        nums.innerHTML = `<span>QR check-ins: ${c.scanned}</span><span>People in photo: ${c.people}</span>`;
+        box.appendChild(nums);
+      }
+      const text = document.createElement('div'); text.textContent = c.message; box.appendChild(text);
+      const actions = document.createElement('div'); actions.className = 'att-actions';
+      const btn = (label, cls, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = cls; b.textContent = label; b.onclick = fn; actions.appendChild(b); };
+      if (state.attendance_approved) {
+        if (state.report_ready) {
+          const link = document.createElement('a');
+          link.href = `${API_URL}/api/sessions/${currentSessionId}/attendance-report?lecturer_email=${encodeURIComponent(currentUser.email)}`;
+          link.textContent = '↓ Download attendance Excel';
+          actions.appendChild(link);
+        }
+        btn('Restart attendance', 'secondary-btn', resetAttendanceFlow);
+      } else if (c.status === 'more_checkins') {
+        // Spec: (א) cancel & open a new attendance round, (ב) retake the photo, (ג) approve & export
+        btn('(א) Cancel & open new attendance', 'danger-btn', () => { if (confirm('Discard all check-ins of this round and open a new attendance QR?')) resetAttendanceFlow(); });
+        btn('(ב) Retake photo', 'secondary-btn', () => byId('class-photo-file').click());
+        btn('(ג) Approve & export Excel', 'success-btn', () => approveAttendance(true));
+      } else if (c.status === 'more_people' || c.status === 'match') {
+        btn('✓ Approve & export Excel', 'success-btn', () => approveAttendance(false));
+        btn('Retake photo', 'secondary-btn', () => byId('class-photo-file').click());
+      }
+      if (actions.childElementCount) box.appendChild(actions);
+    }
+
+    async function approveAttendance(approveMismatch) {
+      try {
+        const url = `${API_URL}/api/sessions/${currentSessionId}/attendance/approve?lecturer_email=${encodeURIComponent(currentUser.email)}&approve_mismatch=${Boolean(approveMismatch)}`;
+        const res = await fetch(url, {method: 'POST'});
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw Error(data.detail || 'Could not approve attendance');
+        await loadLecturerLiveState();
+        showToast('✓ Attendance approved · Excel report is ready to download');
+      } catch (e) { showToast(e.message, true); }
+    }
+
     async function resetAttendanceFlow() {
       if (!currentSessionId||currentUser.role!=='lecturer')return;
       const msg=byId('class-photo-message');
@@ -1800,7 +1908,6 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
         const res=await fetch(url,{method:'POST'});
         const data=await res.json().catch(()=>({}));
         if (!res.ok) throw Error(data.detail||'Could not restart attendance');
-        byId('attendance-mismatch-actions').classList.add('hidden');
         byId('class-photo-file').value='';
         applyQrResponse(data);
         await loadLecturerLiveState();
@@ -2359,10 +2466,11 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
     }
 
     function requestWithProgress({url, method = 'POST', body = null, holder, expectedSeconds = 30,
-                                  uploadLabel = 'Uploading', aiLabel = 'Gemini is working', doneLabel = 'Done'}) {
+                                  uploadLabel = 'Uploading', aiLabel = 'Gemini is working', doneLabel = 'Done',
+                                  uploadOnly = false}) {
       const bar = createProgress(holder);
       const hasUpload = body instanceof FormData && [...body.values()].some(v => v instanceof File);
-      const uploadShare = hasUpload ? 30 : 0;
+      const uploadShare = hasUpload ? (uploadOnly ? 35 : 30) : 0;
       let ticker = null;
       const startAiEstimate = () => {
         if (ticker) return;
@@ -2377,7 +2485,7 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
       return new Promise(resolve => {
         const xhr = new XMLHttpRequest();
         xhr.open(method, url);
-        xhr.timeout = 6 * 60 * 1000;
+        xhr.timeout = (uploadOnly ? 30 : 6) * 60 * 1000;
         if (hasUpload) {
           bar.set(0, `${uploadLabel}… 0%`);
           xhr.upload.onprogress = e => {
@@ -2385,13 +2493,13 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
             const p = e.loaded / e.total;
             bar.set(p * uploadShare, `${uploadLabel}… ${Math.round(p * 100)}%`);
           };
-          xhr.upload.onload = startAiEstimate;
+          xhr.upload.onload = () => { if (uploadOnly) bar.set(uploadShare, `${uploadLabel}… 100%`); else startAiEstimate(); };
         }
         const finish = (ok, status, data) => {
           clearInterval(ticker);
-          if (ok) bar.done(`✓ ${doneLabel} · 100%`);
-          else bar.fail(`✕ ${data.detail || 'Request failed'}`);
-          resolve({ok, status, data});
+          if (!ok) bar.fail(`✕ ${data.detail || 'Request failed'}`);
+          else if (!uploadOnly) bar.done(`✓ ${doneLabel} · 100%`);
+          resolve({ok, status, data, bar});
         };
         xhr.onload = () => {
           let data = {};
@@ -2402,7 +2510,7 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
         xhr.onerror = () => finish(false, 0, {detail: 'Network error — check your connection and try again'});
         xhr.ontimeout = () => finish(false, 0, {detail: 'The server took too long to answer. Try again'});
         xhr.send(body);
-        if (!hasUpload) startAiEstimate();
+        if (!hasUpload && !uploadOnly) startAiEstimate();
       });
     }
 
@@ -2518,10 +2626,12 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
       const id = currentSessionId;
       if (!id) return;
       try {
-        const response = await fetch(`${API_URL}/api/sessions/${id}/status`, {cache:'no-store'});
+        const who = currentUser.role === 'student' ? `?student_email=${encodeURIComponent(currentUser.email)}` : '';
+        const response = await fetch(`${API_URL}/api/sessions/${id}/status${who}`, {cache:'no-store'});
         if (!response.ok) return;
         const status = await response.json();
         if (id !== currentSessionId) return;
+        if (currentUser.role === 'student' && status.is_active) renderStudentAttendance(status);
         if (currentSessionIsActive && !status.is_active) {
           openSessionView(id, false);
           byId('btn-create-poll').classList.toggle('hidden',currentUser.role!=='lecturer');
@@ -2531,14 +2641,28 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
       } catch (error) { console.warn('Cannot refresh lecture status:', error); }
     }
 
+    function renderStudentAttendance(status) {
+      // Spec 3.4: the check-in disappears once the student reported and the lecturer closed the attendance session.
+      const closed = byId('student-attendance-closed');
+      const open = status.attendance_open !== false;
+      byId('student-checkin-controls').classList.toggle('hidden', !open);
+      closed.classList.toggle('hidden', open);
+      if (!open) {
+        if (byId('camera-container') && !byId('camera-container').classList.contains('hidden')) stopCameraScanner();
+        closed.classList.toggle('missed', !status.checked_in);
+        closed.textContent = status.checked_in ? '✓ You are checked in. Attendance for this lecture is closed.'
+          : 'Attendance for this lecture is closed. You did not check in — contact your lecturer if this is a mistake.';
+      }
+    }
+
     function updateQrToggleUI() {
       const button = byId('qr-toggle-button');
       if (!button) return;
-      button.textContent = qrIsEnabled ? '⏸ Pause QR' : '▶ Start QR';
+      button.textContent = qrIsEnabled ? '■ SESSION END · lock check-ins' : '▶ Reopen check-ins';
       button.setAttribute('aria-pressed',String(!qrIsEnabled));
       byId('live-qr-img').classList.toggle('hidden', !qrIsEnabled);
       if (!qrIsEnabled) {
-        byId('live-qr-text').textContent = 'QR paused';
+        byId('live-qr-text').textContent = 'Check-ins locked';
         byId('qr-timer-text').textContent = 'Paused';
         byId('qr-timer-bar').style.width = '0%';
       }
@@ -2558,7 +2682,8 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
         qrIsEnabled = Boolean(data.qr_enabled);
         updateQrToggleUI();
         if (qrIsEnabled) applyQrResponse(data);
-        showToast(qrIsEnabled ? 'Attendance QR resumed' : 'Attendance QR paused; scans are blocked');
+        showToast(qrIsEnabled ? 'Check-ins reopened' : 'SESSION END: check-ins are locked. Now take a classroom photo.');
+        await loadLecturerLiveState();
       } catch(e) { showToast(e.message,true); }
       finally { button.disabled = false; }
     }
@@ -2609,17 +2734,14 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
         if (id !== currentSessionId) return;
         lastAttendanceScans=Number(state.checked_in_count);
         lastAttendancePeople=state.detected_people==null?null:Number(state.detected_people);
-        byId('attendance-mismatch-actions').classList.toggle('hidden', lastAttendancePeople===null || lastAttendanceScans<=lastAttendancePeople);
+        lastAttendanceState=state;
+        if (typeof state.qr_enabled === 'boolean' && state.qr_enabled !== qrIsEnabled) { qrIsEnabled = state.qr_enabled; updateQrToggleUI(); }
+        renderAttendanceCrosscheck(state);
         byId('live-checkin-count').textContent = state.checked_in_count;
         byId('live-detected-count').textContent = state.detected_people == null ? '—' : state.detected_people;
         const info = state.detected_people == null ? 'No photo count available yet.'
           : `${state.detection_method} · ${state.detection_note || 'Verify the estimate visually.'}`;
         byId('live-detection-method').textContent = info;
-        const gap = byId('live-discrepancy');
-        gap.style.color = state.detected_people != null && state.checked_in_count > state.detected_people ? '#bf555b' : '#217e60';
-        gap.textContent = state.detected_people == null ? '' : state.checked_in_count > state.detected_people
-          ? `⚠ ${state.checked_in_count - state.detected_people} more check-ins than estimated people.`
-          : '✓ Check-ins do not exceed the photo estimate.';
         const list = byId('live-checkin-list');
         list.replaceChildren();
         if (!(state.students || []).length) {
@@ -2715,6 +2837,7 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
       message.textContent = data.detected_people == null
         ? 'Automatic counting is unavailable. Enter the verified count manually.'
         : `Photo analyzed: ${data.detected_people} estimated people (${data.detection_method}).`;
+      if (data.crosscheck) showToast(data.crosscheck.message, data.crosscheck.status === 'more_checkins');
       await loadLecturerLiveState();
       return true;
     }
@@ -2727,8 +2850,9 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
       const response = await fetch(url, {method:'POST'});
       if (!response.ok) { showToast('Could not save count.', true); return; }
       byId('manual-people-count').value = '';
+      const data = await response.json().catch(() => ({}));
       await loadLecturerLiveState();
-      showToast('✓ Verified count saved');
+      showToast(data.crosscheck ? data.crosscheck.message : '✓ Verified count saved', data.crosscheck && data.crosscheck.status === 'more_checkins');
     }
 
     const MAX_POLL_OPTIONS = 12;

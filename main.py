@@ -121,6 +121,17 @@ class SessionQRControl(Base):
     enabled = Column(Boolean, default=True, nullable=False)
 
 
+class AttendanceApproval(Base):
+    """The lecturer's approval of the attendance list (after the photo cross-check)."""
+    __tablename__ = "smartclass_attendance_approvals"
+    id = Column(Integer, primary_key=True)
+    session_id = Column(Integer, ForeignKey("sessions.id"), nullable=False, unique=True, index=True)
+    scanned = Column(Integer, nullable=False)
+    people = Column(Integer, nullable=True)
+    approved_with_discrepancy = Column(Boolean, default=False, nullable=False)
+    approved_at = Column(DateTime, default=datetime.utcnow)
+
+
 class PollSettings(Base):
     __tablename__ = "smartclass_poll_settings"
     id = Column(Integer, primary_key=True)
@@ -354,7 +365,8 @@ def _gemini_call(model: str, key: str, body: dict, timeout: int) -> str:
     return text
 
 
-def gemini_generate(parts: list, json_mode: bool = False, timeout: int = 90) -> str:
+def gemini_generate(parts: list, json_mode: bool = False, timeout: int = 90,
+                    generation_config: dict | None = None) -> str:
     """Call Gemini and return the text. Raises GeminiError with Google's own message.
 
     Busy/rate-limit errors (429/5xx) and timeouts are retried once after a short pause, then the
@@ -363,8 +375,11 @@ def gemini_generate(parts: list, json_mode: bool = False, timeout: int = 90) -> 
     if not key:
         raise GeminiError("Gemini API key is not configured. Add GEMINI_API_KEY to the server's environment variables")
     body = {"contents": [{"parts": parts}]}
+    config = dict(generation_config or {})
     if json_mode:
-        body["generationConfig"] = {"responseMimeType": "application/json"}
+        config["responseMimeType"] = "application/json"
+    if config:
+        body["generationConfig"] = config
     models = [gemini_model()]
     if gemini_fallback_model() and gemini_fallback_model() not in models:
         models.append(gemini_fallback_model())
@@ -378,6 +393,9 @@ def gemini_generate(parts: list, json_mode: bool = False, timeout: int = 90) -> 
                 status = getattr(exc, "status", None)
                 if status == 404:
                     break  # model unavailable → go straight to the fallback model
+                if status == 400 and "mediaResolution" in body.get("generationConfig", {}) and "esolution" in str(exc):
+                    body["generationConfig"].pop("mediaResolution")  # model doesn't accept the option → retry without it
+                    continue
                 if status not in RETRYABLE_STATUS:
                     raise
                 if attempt == 0:
@@ -685,6 +703,7 @@ def delete_course(course_id: str, lecturer_email: str, db: Session = Depends(get
             db.query(PollComment).filter(PollComment.poll_id.in_(poll_ids)).delete(synchronize_session=False)
             db.query(PollSettings).filter(PollSettings.poll_id.in_(poll_ids)).delete(synchronize_session=False)
         db.query(SessionPhotoState).filter(SessionPhotoState.session_id.in_(lecture_ids)).delete(synchronize_session=False)
+        db.query(AttendanceApproval).filter(AttendanceApproval.session_id.in_(lecture_ids)).delete(synchronize_session=False)
     assignment_ids = [r[0] for r in db.query(models.Assignment.id).filter(models.Assignment.course_id == course_id).all()]
     if assignment_ids:
         submission_ids = [r[0] for r in db.query(models.Submission.id).filter(models.Submission.assignment_id.in_(assignment_ids)).all()]
@@ -862,11 +881,18 @@ def refresh_qr(session_id: int, db: Session = Depends(get_db)):
 
 
 @app.get("/api/sessions/{session_id}/status")
-def get_session_status(session_id: int, db: Session = Depends(get_db)):
+def get_session_status(session_id: int, student_email: str | None = None, db: Session = Depends(get_db)):
     lecture = db.query(models.Session).filter(models.Session.id == session_id).first()
     if not lecture:
         raise HTTPException(status_code=404, detail="Lecture not found")
-    return {"session_id": lecture.id, "is_active": bool(lecture.is_active)}
+    approved = db.query(AttendanceApproval).filter(AttendanceApproval.session_id == session_id).first() is not None
+    result = {"session_id": lecture.id, "is_active": bool(lecture.is_active),
+              "attendance_open": bool(lecture.is_active) and qr_enabled(db, session_id) and not approved}
+    if student_email:
+        result["checked_in"] = db.query(models.AttendanceRecord).filter(
+            models.AttendanceRecord.session_id == session_id,
+            models.AttendanceRecord.student_email == student_email).first() is not None
+    return result
 
 
 @app.post("/api/attendance/scan")
@@ -912,7 +938,14 @@ def get_live_state(session_id: int, lecturer_email: str, db: Session = Depends(g
                   .filter(models.AttendanceRecord.session_id == session_id)
                   .order_by(models.AttendanceRecord.timestamp.desc()).all())
     state = session_photo_state(db, session_id, create=False)
+    approval = db.query(AttendanceApproval).filter(AttendanceApproval.session_id == session_id).first()
+    people = state.detected_people if state else None
     return {"session_id": session_id, "is_active": bool(lecture.is_active),
+            "qr_enabled": qr_enabled(db, session_id),
+            "crosscheck": attendance_crosscheck(len(attendance), people),
+            "attendance_approved": bool(approval),
+            "approved_at": approval.approved_at.isoformat() + "Z" if approval and approval.approved_at else None,
+            "report_ready": (REPORTS_DIR / f"attendance_session_{session_id}.xlsx").is_file(),
             "checked_in_count": len(attendance),
             "students": [{"name": r.student_name, "email": r.student_email,
                           "time": r.timestamp.isoformat() + "Z" if r.timestamp else None}
@@ -991,6 +1024,56 @@ def count_people_from_image(image_data: bytes):
         raise RuntimeError(f"Automatic counting failed — {str(error)[:250]}. Enter the verified count manually")
 
 
+def attendance_crosscheck(scanned: int, people: int | None) -> dict:
+    """Spec, feature 1 step 3: compare QR check-ins with the people counted in the classroom photo."""
+    if people is None:
+        return {"status": "no_photo", "scanned": scanned, "people": None, "difference": None,
+                "message": "No classroom photo yet. Press SESSION END to lock check-ins, then take a classroom photo."}
+    if scanned > people:
+        diff = scanned - people
+        return {"status": "more_checkins", "scanned": scanned, "people": people, "difference": diff,
+                "message": f"Discrepancy: {scanned} student{'s' if scanned != 1 else ''} checked in, but only {people} "
+                           f"{'person was' if people == 1 else 'people were'} detected in the photo — {diff} more "
+                           f"check-in{'s' if diff != 1 else ''} than people in the room. "
+                           "Choose: restart attendance, retake the photo, or approve and export."}
+    if people > scanned:
+        diff = people - scanned
+        return {"status": "more_people", "scanned": scanned, "people": people, "difference": diff,
+                "message": f"Attendance is valid: {people} people in the photo and {scanned} check-ins. "
+                           f"{diff} {'person was' if diff == 1 else 'people were'} in the room without checking in — "
+                           "students who did not scan in time are responsible for that. The list is approved for export."}
+    return {"status": "match", "scanned": scanned, "people": people, "difference": 0,
+            "message": f"Attendance is valid: {scanned} check-ins match the {people} people in the photo."}
+
+
+def lock_attendance(db: Session, session_id: int):
+    """SESSION END: stop accepting QR check-ins for this lecture (the lecture itself stays live)."""
+    control = db.query(SessionQRControl).filter(SessionQRControl.session_id == session_id).first()
+    if control is None:
+        db.add(SessionQRControl(session_id=session_id, enabled=False))
+    else:
+        control.enabled = False
+    lecture = db.query(models.Session).filter(models.Session.id == session_id).first()
+    if lecture:
+        lecture.current_qr_code = None
+
+
+def write_attendance_report(db: Session, session_id: int) -> str:
+    """Excel without ID numbers (privacy): name, institutional email, scan time, status."""
+    records = (db.query(models.AttendanceRecord).filter(models.AttendanceRecord.session_id == session_id)
+               .order_by(models.AttendanceRecord.timestamp).all())
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Attendance Report"
+    ws.append(["Student Name", "Institutional Email", "Timestamp", "Status"])
+    for record in records:
+        ws.append([record.student_name, record.student_email, str(record.timestamp), "Present"])
+    REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    filename = f"attendance_session_{session_id}.xlsx"
+    wb.save(REPORTS_DIR / filename)
+    return filename
+
+
 async def analyze_and_save_photo(data: bytes, session_id: int, db: Session):
     if not data or len(data) > 12_000_000:
         raise HTTPException(status_code=413, detail="Choose a photo under 12 MB")
@@ -1006,8 +1089,10 @@ async def analyze_and_save_photo(data: bytes, session_id: int, db: Session):
     state.detection_method = method
     state.detection_note = note
     state.updated_at = datetime.utcnow()
+    lock_attendance(db, session_id)  # the photo is taken after SESSION END, so late scans can't skew the comparison
+    scanned = db.query(models.AttendanceRecord).filter(models.AttendanceRecord.session_id == session_id).count()
     db.commit()
-    return photo_state_json(state)
+    return {**photo_state_json(state), "crosscheck": attendance_crosscheck(scanned, count)}
 
 
 @app.post("/api/sessions/{session_id}/photo")
@@ -1039,8 +1124,11 @@ def correct_photo_count(session_id: int, lecturer_email: str, people: int,
     state.detection_method = "Lecturer verified / corrected"
     state.detection_note = "Manual count approved by the lecturer"
     state.updated_at = datetime.utcnow()
+    if lecture.is_active:
+        lock_attendance(db, session_id)
+    scanned = db.query(models.AttendanceRecord).filter(models.AttendanceRecord.session_id == session_id).count()
     db.commit()
-    return photo_state_json(state)
+    return {**photo_state_json(state), "crosscheck": attendance_crosscheck(scanned, people)}
 
 
 @app.post("/api/sessions/{session_id}/close")
@@ -1062,17 +1150,11 @@ def close_session(session_id: int, lecturer_email: str, approve_mismatch: bool =
     lecture.current_qr_code = None
     for poll in db.query(models.Poll).filter(models.Poll.session_id == session_id).all():
         poll.is_active = False
+    if not db.query(AttendanceApproval).filter(AttendanceApproval.session_id == session_id).first():
+        db.add(AttendanceApproval(session_id=session_id, scanned=scanned, people=people,
+                                  approved_with_discrepancy=people is None or scanned > people))
     db.commit()
-    wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.title = "Attendance Report"
-    ws.append(["Student Name", "Institutional Email", "Timestamp", "Status"])
-    for record in records:
-        ws.append([record.student_name, record.student_email, str(record.timestamp), "Present"])
-    reports_dir = REPORTS_DIR
-    reports_dir.mkdir(parents=True, exist_ok=True)
-    filename = f"attendance_session_{session_id}.xlsx"
-    wb.save(reports_dir / filename)
+    filename = write_attendance_report(db, session_id)
     return {"status": "Lecture closed", "qr_scanned_count": scanned,
             "detected_people": people,
             "detection_method": state.detection_method if state else None,
@@ -1138,10 +1220,42 @@ def reset_attendance_session(session_id: int, lecturer_email: str, db: Session =
         state.updated_at = datetime.utcnow()
     control = db.query(SessionQRControl).filter(SessionQRControl.session_id == session_id).first()
     if control: control.enabled = True
+    db.query(AttendanceApproval).filter(AttendanceApproval.session_id == session_id).delete(synchronize_session=False)
+    (REPORTS_DIR / f"attendance_session_{session_id}.xlsx").unlink(missing_ok=True)
     new_qr = get_qr_status(session_id)
     lecture.current_qr_code = new_qr["qr_code"]
     db.commit()
     return {"message": "Attendance restarted. Old check-ins were discarded", **new_qr}
+
+
+@app.post("/api/sessions/{session_id}/attendance/approve")
+def approve_attendance(session_id: int, lecturer_email: str, approve_mismatch: bool = False,
+                       db: Session = Depends(get_db)):
+    """Spec, feature 1 step 4: the lecturer approves the list → Excel is created. The lecture stays live
+    (forum and polls continue); check-ins stay locked."""
+    lecture = db.query(models.Session).filter(models.Session.id == session_id).first()
+    if not lecture:
+        raise HTTPException(status_code=404, detail="Lecture not found")
+    lecturer_course(db, lecture.course_id, lecturer_email)
+    scanned = db.query(models.AttendanceRecord).filter(models.AttendanceRecord.session_id == session_id).count()
+    state = session_photo_state(db, session_id, create=False)
+    people = state.detected_people if state else None
+    check = attendance_crosscheck(scanned, people)
+    if people is None and not approve_mismatch:
+        raise HTTPException(status_code=409, detail="Take a classroom photo (or enter a verified count) before approving")
+    if check["status"] == "more_checkins" and not approve_mismatch:
+        raise HTTPException(status_code=409, detail=check["message"])
+    lock_attendance(db, session_id)
+    approval = db.query(AttendanceApproval).filter(AttendanceApproval.session_id == session_id).first()
+    if not approval:
+        approval = AttendanceApproval(session_id=session_id, scanned=scanned, people=people)
+        db.add(approval)
+    approval.scanned, approval.people = scanned, people
+    approval.approved_with_discrepancy = check["status"] in ("more_checkins", "no_photo")
+    approval.approved_at = datetime.utcnow()
+    db.commit()
+    filename = write_attendance_report(db, session_id)
+    return {"message": "Attendance approved", "excel_report_generated": filename, "crosscheck": check}
 
 
 @app.get("/api/sessions/{session_id}/attendance-report")
@@ -1174,7 +1288,7 @@ def mobile_photo_page():
     return MOBILE_PHOTO_HTML
 
 
-MOBILE_PHOTO_HTML = r'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SmartClass · Classroom photo</title><style>*{box-sizing:border-box}body{margin:0;background:#f4f7fc;color:#1b3559;font-family:system-ui,-apple-system,Segoe UI,sans-serif}.wrap{max-width:460px;margin:34px auto;padding:0 18px}.card{padding:30px;border:1px solid #dfe8f3;border-radius:22px;background:white;box-shadow:0 12px 38px #1d4d8520}.logo{font-weight:900;color:#2773bc;font-size:22px}h1{font-size:27px;line-height:1.2;margin:27px 0 12px}p{color:#718197;font-size:14px;line-height:1.7}.camera{display:block;text-align:center;border:2px dashed #b4cce8;border-radius:16px;background:#f4f9ff;padding:27px 18px;cursor:pointer;margin-top:23px;font-weight:750;color:#3476bd}.camera input{display:none}#preview{display:none;width:100%;max-height:380px;object-fit:contain;margin:14px 0;border-radius:14px}button{background:linear-gradient(100deg,#2d73c4,#2462ac);color:white;padding:15px;border:0;border-radius:12px;font-size:14px;font-weight:800;width:100%;margin-top:15px;cursor:pointer}button:disabled{opacity:.55;cursor:not-allowed}#msg{margin-top:18px;padding:13px;border-radius:12px;background:#f2f7ff;font-size:13px;display:none;line-height:1.6}.note{font-size:12px;color:#8493a8;margin-top:22px}</style></head><body><div class="wrap"><div class="card"><div class="logo">▣ SmartClass</div><h1>Upload a classroom photo</h1><p>Capture the class on your phone. The photo will be analyzed on the server, and the estimated number of people will appear on your lecturer's screen automatically.</p><label class="camera" for="photo">📷 Tap to take a photo or choose one<input id="photo" type="file" accept="image/*" capture="environment"></label><img id="preview" alt="Selected classroom photo"><button id="upload" disabled>Analyze & send to lecturer</button><div id="msg" role="status"></div><p class="note">Demo mode · Image content is processed for counting and is not stored by this app. The count is an estimate, not proof of attendance.</p></div></div><script>const q=new URLSearchParams(location.search),id=q.get('session_id'),token=q.get('token'),file=document.getElementById('photo'),msg=document.getElementById('msg'),btn=document.getElementById('upload'),preview=document.getElementById('preview');file.onchange=()=>{btn.disabled=!file.files.length;if(file.files.length){preview.src=URL.createObjectURL(file.files[0]);preview.style.display='block'}};btn.onclick=async()=>{if(!id||!token||!file.files.length)return;btn.disabled=true;btn.textContent='Analyzing photo…';msg.style.display='block';msg.textContent='Uploading and counting people. Please keep this page open.';try{const data=new FormData();data.append('file',file.files[0]);const res=await fetch('/api/sessions/'+encodeURIComponent(id)+'/photo?token='+encodeURIComponent(token),{method:'POST',body:data});const body=await res.json();if(!res.ok)throw Error(body.detail||'Could not analyze photo');msg.style.background='#ebfaf2';msg.textContent=body.detected_people===null?'Photo received, but automatic person counting is unavailable. Open the lecturer screen to enter a verified count.':'✓ Photo analyzed. Estimated people: '+body.detected_people+' ('+body.detection_method+'). Lecturer screen updated.';}catch(e){msg.style.background='#fff1f1';msg.textContent=e.message}finally{btn.disabled=false;btn.textContent='Analyze & send to lecturer'}};</script></body></html>'''
+MOBILE_PHOTO_HTML = r'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SmartClass · Classroom photo</title><style>*{box-sizing:border-box}body{margin:0;background:#f4f7fc;color:#1b3559;font-family:system-ui,-apple-system,Segoe UI,sans-serif}.wrap{max-width:460px;margin:34px auto;padding:0 18px}.card{padding:30px;border:1px solid #dfe8f3;border-radius:22px;background:white;box-shadow:0 12px 38px #1d4d8520}.logo{font-weight:900;color:#2773bc;font-size:22px}h1{font-size:27px;line-height:1.2;margin:27px 0 12px}p{color:#718197;font-size:14px;line-height:1.7}.camera{display:block;text-align:center;border:2px dashed #b4cce8;border-radius:16px;background:#f4f9ff;padding:27px 18px;cursor:pointer;margin-top:23px;font-weight:750;color:#3476bd}.camera input{display:none}#preview{display:none;width:100%;max-height:380px;object-fit:contain;margin:14px 0;border-radius:14px}button{background:linear-gradient(100deg,#2d73c4,#2462ac);color:white;padding:15px;border:0;border-radius:12px;font-size:14px;font-weight:800;width:100%;margin-top:15px;cursor:pointer}button:disabled{opacity:.55;cursor:not-allowed}#msg{margin-top:18px;padding:13px;border-radius:12px;background:#f2f7ff;font-size:13px;display:none;line-height:1.6}.note{font-size:12px;color:#8493a8;margin-top:22px}</style></head><body><div class="wrap"><div class="card"><div class="logo">▣ SmartClass</div><h1>Upload a classroom photo</h1><p>Capture the class on your phone. The photo will be analyzed on the server, and the estimated number of people will appear on your lecturer's screen automatically.</p><label class="camera" for="photo">📷 Tap to take a photo or choose one<input id="photo" type="file" accept="image/*" capture="environment"></label><img id="preview" alt="Selected classroom photo"><button id="upload" disabled>Analyze & send to lecturer</button><div id="msg" role="status"></div><p class="note">Demo mode · Image content is processed for counting and is not stored by this app. The count is an estimate, not proof of attendance.</p></div></div><script>const q=new URLSearchParams(location.search),id=q.get('session_id'),token=q.get('token'),file=document.getElementById('photo'),msg=document.getElementById('msg'),btn=document.getElementById('upload'),preview=document.getElementById('preview');file.onchange=()=>{btn.disabled=!file.files.length;if(file.files.length){preview.src=URL.createObjectURL(file.files[0]);preview.style.display='block'}};btn.onclick=async()=>{if(!id||!token||!file.files.length)return;btn.disabled=true;btn.textContent='Analyzing photo…';msg.style.display='block';msg.textContent='Uploading and counting people. Please keep this page open.';try{const data=new FormData();data.append('file',file.files[0]);const res=await fetch('/api/sessions/'+encodeURIComponent(id)+'/photo?token='+encodeURIComponent(token),{method:'POST',body:data});const body=await res.json();if(!res.ok)throw Error(body.detail||'Could not analyze photo');msg.style.background=(body.crosscheck&&body.crosscheck.status==='more_checkins')?'#fff1f1':'#ebfaf2';msg.textContent=body.detected_people===null?'Photo received, but automatic person counting is unavailable. Open the lecturer screen to enter a verified count.':'✓ Photo analyzed. Estimated people: '+body.detected_people+' ('+body.detection_method+'). '+(body.crosscheck?body.crosscheck.message:'Lecturer screen updated.');}catch(e){msg.style.background='#fff1f1';msg.textContent=e.message}finally{btn.disabled=false;btn.textContent='Analyze & send to lecturer'}};</script></body></html>'''
 
 
 @app.post("/api/forum/post")
@@ -1376,52 +1490,171 @@ def post_poll_comment(poll_id: int, email: str, name: str, message: str,
     return {"message": "Comment posted"}
 
 
-def summarize_video_with_gemini(raw: bytes | None, mime: str | None, video_url: str):
-    parts = [{"text": "Summarize this university lecture accurately, preserving key topics, definitions, and exercises. "
-                       "Use concise section headings and actionable study notes. Write in the language spoken in the "
-                       "lecture. Avoid invented claims."}]
-    if raw:
-        parts.append({"inline_data": {"mime_type": mime, "data": base64.b64encode(raw).decode("ascii")}})
-    else:
-        parts.append({"file_data": {"mime_type": "video/mp4", "file_uri": video_url}})
+# ---- Lecture video summaries ----
+# Videos go to Gemini through the Files API (handles large files) and the summary runs in the background,
+# so a long recording is not cut off by HTTP timeouts. The page polls /summary-job for the current stage.
+VIDEO_MAX_BYTES = 500 * 1024 * 1024
+VIDEO_MIME = {".mp4": "video/mp4", ".webm": "video/webm", ".mov": "video/quicktime", ".mpeg": "video/mpeg",
+              ".mpg": "video/mpeg", ".avi": "video/avi", ".wmv": "video/wmv", ".3gp": "video/3gpp"}
+VIDEO_JOBS: dict[int, dict] = {}  # lecture id → job state (in memory; the app runs as one replica)
+SUMMARY_PROMPT = ("Summarize this university lecture accurately, preserving key topics, definitions, and exercises. "
+                  "Use concise section headings and actionable study notes. Write in the language spoken in the "
+                  "lecture. Avoid invented claims.")
+GEMINI_FILES = "https://generativelanguage.googleapis.com"
+
+
+def _gemini_http_error(resp, action: str) -> GeminiError:
     try:
-        return gemini_generate(parts, timeout=180)[:35000]
+        message = resp.json().get("error", {}).get("message", "")
+    except ValueError:
+        message = resp.text[:200]
+    err = GeminiError(f"Gemini error {resp.status_code} while {action}: {message[:300]}")
+    err.status = resp.status_code
+    return err
+
+
+def gemini_upload_file(path: Path, mime: str, display_name: str) -> dict:
+    """Resumable upload to the Gemini Files API; returns the File resource."""
+    import httpx
+    size = path.stat().st_size
+    with httpx.Client(timeout=httpx.Timeout(900, connect=30)) as client:
+        start = client.post(f"{GEMINI_FILES}/upload/v1beta/files", headers={
+            "x-goog-api-key": gemini_key(), "X-Goog-Upload-Protocol": "resumable", "X-Goog-Upload-Command": "start",
+            "X-Goog-Upload-Header-Content-Length": str(size), "X-Goog-Upload-Header-Content-Type": mime,
+            "Content-Type": "application/json"}, json={"file": {"display_name": display_name}})
+        if start.status_code != 200 or not start.headers.get("x-goog-upload-url"):
+            raise _gemini_http_error(start, "starting the video upload")
+        with path.open("rb") as fh:
+            done = client.post(start.headers["x-goog-upload-url"], headers={
+                "Content-Length": str(size), "X-Goog-Upload-Offset": "0",
+                "X-Goog-Upload-Command": "upload, finalize"}, content=fh)
+        if done.status_code != 200:
+            raise _gemini_http_error(done, "uploading the video")
+        return done.json()["file"]
+
+
+def gemini_wait_until_active(file: dict, max_wait: int = 1200) -> dict:
+    import httpx
+    deadline = time.time() + max_wait
+    with httpx.Client(timeout=60) as client:
+        while file.get("state") != "ACTIVE":
+            if file.get("state") == "FAILED":
+                raise GeminiError("Gemini could not process this video file. Try MP4 (H.264)")
+            if time.time() > deadline:
+                raise GeminiError("Gemini took too long to process the video. Try a shorter or smaller file")
+            time.sleep(4)
+            resp = client.get(f"{GEMINI_FILES}/v1beta/{file['name']}", headers={"x-goog-api-key": gemini_key()})
+            if resp.status_code != 200:
+                raise _gemini_http_error(resp, "processing the video")
+            file = resp.json()
+    return file
+
+
+def gemini_delete_file(name: str):
+    try:
+        import httpx
+        with httpx.Client(timeout=30) as client:
+            client.delete(f"{GEMINI_FILES}/v1beta/{name}", headers={"x-goog-api-key": gemini_key()})
+    except Exception:
+        pass  # Gemini deletes uploaded files automatically after 48 hours anyway
+
+
+def _job_stage(job: dict, stage: str):
+    job.update(stage=stage, stage_started=time.time())
+
+
+def run_video_summary_job(session_id: int, path: Path | None, mime: str | None, video_url: str):
+    job = VIDEO_JOBS[session_id]
+    uploaded = None
+    try:
+        if path:
+            _job_stage(job, "sending")
+            uploaded = gemini_upload_file(path, mime, f"lecture-{session_id}")
+            _job_stage(job, "processing")
+            uploaded = gemini_wait_until_active(uploaded)
+            video_part = {"file_data": {"mime_type": mime, "file_uri": uploaded["uri"]}}
+        else:
+            video_part = {"file_data": {"mime_type": "video/mp4", "file_uri": video_url}}
+        _job_stage(job, "summarizing")
+        # Low media resolution keeps long lectures (1–2 hours) within the model's input limit.
+        summary = gemini_generate([video_part, {"text": SUMMARY_PROMPT}], timeout=900,
+                                  generation_config={"mediaResolution": "MEDIA_RESOLUTION_LOW"})[:35000]
+        db = SessionLocal()
+        try:
+            lecture = db.query(models.Session).filter(models.Session.id == session_id).first()
+            if lecture:
+                lecture.ai_summary = summary
+                notify(db, course_members(db, lecture.course_id), lecture.course_id, "new_summary",
+                       "New lecture summary available", "A recording summary is ready to read", "session", session_id)
+                db.commit()
+        finally:
+            db.close()
+        job.update(state="done", stage="done", finished=time.time())
     except GeminiError as exc:
-        status = 503 if not gemini_key() else 502
-        raise HTTPException(status_code=status, detail=f"Video summary failed — {exc}")
+        job.update(state="error", error=f"Video summary failed — {exc}")
+    except Exception as exc:
+        print(f"[SmartClass] video summary failed: {exc!r}")
+        job.update(state="error", error=f"Video summary failed ({type(exc).__name__}). Please try again")
+    finally:
+        if path:
+            path.unlink(missing_ok=True)
+        if uploaded and uploaded.get("name"):
+            gemini_delete_file(uploaded["name"])
 
 
 @app.post("/api/sessions/{session_id}/summarize-video")
-async def summarize_lecture_video(session_id: int, lecturer_email: str = Form(...),
-                                  video_url: str = Form(""), file: UploadFile | None = File(None),
-                                  db: Session = Depends(get_db)):
+async def summarize_lecture_video(session_id: int, background_tasks: BackgroundTasks,
+                                  lecturer_email: str = Form(...), video_url: str = Form(""),
+                                  file: UploadFile | None = File(None), db: Session = Depends(get_db)):
     lecture = db.query(models.Session).filter(models.Session.id == session_id).first()
     if not lecture:
         raise HTTPException(status_code=404, detail="Lecture not found")
     lecturer_course(db, lecture.course_id, lecturer_email)
-    raw, mime = None, None
+    if not gemini_key():
+        raise HTTPException(status_code=503, detail="Gemini API key is not configured. Add GEMINI_API_KEY to the server's environment variables")
+    if VIDEO_JOBS.get(session_id, {}).get("state") == "running":
+        raise HTTPException(status_code=409, detail="A summary for this lecture is already being generated")
+    path, mime = None, None
     if file and file.filename:
         extension = Path(file.filename).suffix.lower()
-        mime_by_ext = {".mp4": "video/mp4", ".webm": "video/webm", ".mov": "video/quicktime"}
-        if extension not in mime_by_ext:
-            raise HTTPException(status_code=415, detail="Please upload MP4, WebM or MOV")
-        raw = await file.read(9 * 1024 * 1024 + 1)
-        if not raw or len(raw) > 9 * 1024 * 1024:
-            raise HTTPException(status_code=413, detail="Video must be 9 MB or smaller in this demo; use a short clip")
-        mime = mime_by_ext[extension]
+        if extension not in VIDEO_MIME:
+            raise HTTPException(status_code=415, detail="Please upload MP4, WebM, MOV, MPEG, AVI, WMV or 3GP video")
+        mime = VIDEO_MIME[extension]
+        import tempfile
+        fd, tmp_name = tempfile.mkstemp(prefix=f"lecture-{session_id}-", suffix=extension)
+        path, size = Path(tmp_name), 0
+        with os.fdopen(fd, "wb") as out:
+            while chunk := await file.read(1024 * 1024):
+                size += len(chunk)
+                if size > VIDEO_MAX_BYTES:
+                    out.close()
+                    path.unlink(missing_ok=True)
+                    raise HTTPException(status_code=413, detail="The video is larger than 500 MB. Compress it or upload a shorter part")
+                out.write(chunk)
+        if size == 0:
+            path.unlink(missing_ok=True)
+            raise HTTPException(status_code=400, detail="The video file is empty")
     elif video_url.strip():
         video_url = video_url.strip()
         parsed = urlparse(video_url)
         if parsed.scheme != "https" or (parsed.hostname or "").lower() not in ("youtube.com", "www.youtube.com", "youtu.be", "m.youtube.com"):
-            raise HTTPException(status_code=422, detail="Only public YouTube links are supported directly. Download other recordings and upload a short MP4")
+            raise HTTPException(status_code=422, detail="Only public YouTube links are supported directly. Download other recordings and upload the video file")
     else:
-        raise HTTPException(status_code=400, detail="Upload a short video or provide a public YouTube link")
-    summary = await run_in_threadpool(summarize_video_with_gemini, raw, mime, video_url)
-    lecture.ai_summary = summary
-    notify(db, course_members(db, lecture.course_id), lecture.course_id, "new_summary",
-           "New lecture summary available", "A recording summary is ready to read", "session", session_id)
-    db.commit()
-    return {"message": "Summary generated and saved", "ai_summary": summary}
+        raise HTTPException(status_code=400, detail="Upload a video or provide a public YouTube link")
+    VIDEO_JOBS[session_id] = {"state": "running", "stage": "queued", "stage_started": time.time(),
+                              "started": time.time(), "error": None}
+    background_tasks.add_task(run_video_summary_job, session_id, path, mime, video_url)
+    return {"message": "Summary started", "state": "running"}
+
+
+@app.get("/api/sessions/{session_id}/summary-job")
+def get_summary_job(session_id: int):
+    job = VIDEO_JOBS.get(session_id)
+    if not job:
+        return {"state": "idle"}
+    return {"state": job["state"], "stage": job.get("stage"), "error": job.get("error"),
+            "stage_elapsed": round(time.time() - job.get("stage_started", time.time()), 1),
+            "elapsed": round(time.time() - job.get("started", time.time()), 1)}
 
 
 @app.post("/api/sessions/{session_id}/ai-summary")
