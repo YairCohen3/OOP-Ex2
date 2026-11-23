@@ -23,7 +23,7 @@ from collections import Counter
 from sqlalchemy import Boolean
 import random
 import openpyxl
-from database import engine, Base, get_db
+from database import engine, Base, get_db, DATA_DIR, DB_PATH
 import models
 
 # Extra tables are additive; existing course data and tables are left unchanged.
@@ -197,7 +197,8 @@ def lecturer_course(db: Session, course_id: str, lecturer_email: str):
 
 
 # Files live outside the served HTML tree. Production hosting must provide a persistent volume.
-UPLOAD_ROOT = Path(os.getenv("SMARTCLASS_UPLOAD_DIR", "smartclass_uploads")).resolve()
+UPLOAD_ROOT = Path(os.getenv("SMARTCLASS_UPLOAD_DIR") or (DATA_DIR / "smartclass_uploads")).resolve()
+REPORTS_DIR = DATA_DIR / "attendance_reports"
 ALLOWED_TEXT = {".txt", ".md", ".py", ".java", ".js", ".ts", ".jsx", ".tsx", ".html", ".css", ".json", ".csv", ".cpp", ".c", ".h", ".hpp", ".cs", ".sql", ".xml", ".ipynb"}
 ALLOWED_FILES = ALLOWED_TEXT | {".pdf", ".docx", ".zip"}
 MAX_UPLOAD = 50 * 1024 * 1024  # ZIPs often include data files; only text/code inside is sent to the AI
@@ -392,6 +393,13 @@ def pdf_part(path: str | None, max_bytes: int = 15 * 1024 * 1024):
     if len(raw) > max_bytes:
         return None
     return {"inline_data": {"mime_type": "application/pdf", "data": base64.b64encode(raw).decode("ascii")}}
+
+
+@app.get("/api/storage-status")
+def storage_status():
+    """After deployment: persistent should be true on Railway (data folder on a Volume)."""
+    return {"persistent": bool(os.getenv("SMARTCLASS_DATA_DIR")), "data_dir": str(DATA_DIR),
+            "database_exists": DB_PATH.exists()}
 
 
 @app.get("/api/ai-status")
@@ -889,16 +897,43 @@ def photo_upload_token(session_id: int, lecturer_email: str, db: Session = Depen
     return {"path": f"/mobile-photo?session_id={session_id}&token={state.upload_token}"}
 
 
+HEIC_BRANDS = (b"ftypheic", b"ftypheix", b"ftypheim", b"ftypheis", b"ftyphevc", b"ftyphevm",
+               b"ftyphevs", b"ftypmif1", b"ftypmsf1")
+
+
 def image_mime(data: bytes) -> str | None:
+    """Detect the image type from its content (the browser's declared type is often missing on Windows)."""
     if data[:3] == b"\xff\xd8\xff":
         return "image/jpeg"
     if data[:8] == b"\x89PNG\r\n\x1a\n":
         return "image/png"
     if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
         return "image/webp"
-    if data[4:12] in (b"ftypheic", b"ftypheix", b"ftypmif1", b"ftypmsf1", b"ftyphevc"):
+    if data[4:12] in HEIC_BRANDS:
         return "image/heic"
     return None
+
+
+def prepare_photo(data: bytes) -> tuple[bytes, str]:
+    """Return (image bytes, mime) that Gemini accepts. Converts other formats (AVIF, BMP, GIF, TIFF…)
+    to JPEG and shrinks very large photos so the upload to Gemini is fast."""
+    mime = image_mime(data)
+    if mime == "image/heic":
+        return data, mime  # Gemini reads HEIC directly; Pillow cannot open it without extra plugins
+    try:
+        from PIL import Image, ImageOps
+        with Image.open(io.BytesIO(data)) as img:
+            if mime and max(img.size) <= 2400:
+                return data, mime
+            img = ImageOps.exif_transpose(img).convert("RGB")
+            img.thumbnail((2400, 2400))
+            out = io.BytesIO()
+            img.save(out, "JPEG", quality=88)
+            return out.getvalue(), "image/jpeg"
+    except Exception:
+        if mime:
+            return data, mime
+        raise ValueError("This file is not a supported photo. Please upload a JPEG, PNG, WebP or HEIC image")
 
 
 def count_people_with_gemini(image_data: bytes, mime: str) -> int:
@@ -916,9 +951,7 @@ def count_people_with_gemini(image_data: bytes, mime: str) -> int:
 def count_people_from_image(image_data: bytes):
     """Count people in the classroom photo with Gemini vision.
     Never invents a count; the lecturer can always correct it manually."""
-    mime = image_mime(image_data)
-    if not mime:
-        raise ValueError("Unsupported image. Please upload a JPEG, PNG, WebP or HEIC photo")
+    image_data, mime = prepare_photo(image_data)
     try:
         return (count_people_with_gemini(image_data, mime), f"Gemini vision ({gemini_model()})",
                 "AI estimate of people in the photo; verify manually")
@@ -954,8 +987,7 @@ async def upload_mobile_photo(session_id: int, token: str, file: UploadFile = Fi
     state = session_photo_state(db, session_id, create=False)
     if not state or not secrets.compare_digest(state.upload_token, token):
         raise HTTPException(status_code=403, detail="Photo upload link is invalid")
-    if not (file.content_type or "").startswith("image/"):
-        raise HTTPException(status_code=400, detail="Please upload an image")
+    # The image type is checked from the file content in prepare_photo(), not the browser's label.
     data = await file.read(12_000_001)
     return {"message": "Photo received. Lecturer dashboard updated.",
             **(await analyze_and_save_photo(data, session_id, db))}
@@ -1005,8 +1037,8 @@ def close_session(session_id: int, lecturer_email: str, approve_mismatch: bool =
     ws.append(["Student Name", "Institutional Email", "Timestamp", "Status"])
     for record in records:
         ws.append([record.student_name, record.student_email, str(record.timestamp), "Present"])
-    reports_dir = Path("attendance_reports")
-    reports_dir.mkdir(exist_ok=True)
+    reports_dir = REPORTS_DIR
+    reports_dir.mkdir(parents=True, exist_ok=True)
     filename = f"attendance_session_{session_id}.xlsx"
     wb.save(reports_dir / filename)
     return {"status": "Lecture closed", "qr_scanned_count": scanned,
@@ -1048,7 +1080,7 @@ def remove_student_attendance_from_lecturer_sessions(student_email: str, lecture
     db.commit()
     # Existing exported spreadsheets are now stale; remove only those for impacted lectures.
     for session_id in affected:
-        path = Path("attendance_reports") / f"attendance_session_{session_id}.xlsx"
+        path = REPORTS_DIR / f"attendance_session_{session_id}.xlsx"
         try:
             path.unlink(missing_ok=True)
         except OSError as error:
@@ -1086,7 +1118,7 @@ def download_attendance_report(session_id: int, lecturer_email: str, db: Session
     if not lecture:
         raise HTTPException(status_code=404, detail="Lecture not found")
     lecturer_course(db, lecture.course_id, lecturer_email)
-    path = Path("attendance_reports") / f"attendance_session_{session_id}.xlsx"
+    path = REPORTS_DIR / f"attendance_session_{session_id}.xlsx"
     if not path.is_file():
         raise HTTPException(status_code=404, detail="Attendance report not created yet")
     return FileResponse(path, filename=path.name)

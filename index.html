@@ -2709,7 +2709,7 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
       const {ok, data} = await requestWithProgress({url: `${API_URL}/api/sessions/${currentSessionId}/photo?token=${encodeURIComponent(token)}`,
         body, holder, expectedSeconds: 8, uploadLabel: 'Uploading photo', aiLabel: 'Gemini is counting people', doneLabel: 'Photo analyzed'});
       byId(inputId).value = '';
-      if (!ok) { message.textContent = data.detail || 'Photo analysis failed'; return false; }
+      if (!ok) { message.textContent = ''; return false; } // the red line under the bar shows the reason
       message.textContent = data.detected_people == null
         ? 'Automatic counting is unavailable. Enter the verified count manually.'
         : `Photo analyzed: ${data.detected_people} estimated people (${data.detection_method}).`;
