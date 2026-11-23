@@ -1,4 +1,0 @@
-# Optional: enhanced people detection using YOLOv8.
-# Install: python -m pip install -r requirements-vision.txt
--r requirements.txt
-ultralytics>=8.3,<9.0
