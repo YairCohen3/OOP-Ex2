@@ -2507,7 +2507,7 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
         if (!response.ok) throw Error(result.detail || 'Photo analysis failed');
         byId(inputId).value = '';
         byId('class-photo-message').textContent = result.detected_people == null
-          ? 'Person detection could not run. Install YOLO on the server and retry.'
+          ? 'Automatic counting is unavailable. Enter the verified count manually.'
           : `Photo analyzed: ${result.detected_people} estimated people (${result.detection_method}).`;
         await loadLecturerLiveState();
         return true;

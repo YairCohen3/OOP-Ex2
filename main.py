@@ -15,7 +15,6 @@ from sqlalchemy.orm import Session
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Text
 from starlette.concurrency import run_in_threadpool
 from datetime import datetime, timezone, date, timedelta
-from functools import lru_cache
 from pathlib import Path
 import io, os, time, secrets, hmac, hashlib, math, socket
 import json, re, uuid, zipfile, statistics, base64
@@ -875,71 +874,16 @@ def count_people_with_gemini(image_data: bytes, mime: str) -> int:
 
 
 def count_people_from_image(image_data: bytes):
-    """Count people: YOLOv8 if installed → Gemini vision if a key is set → OpenCV HOG.
+    """Count people in the classroom photo with Gemini vision.
     Never invents a count; the lecturer can always correct it manually."""
     mime = image_mime(image_data)
     if not mime:
         raise ValueError("Unsupported image. Please upload a JPEG, PNG, WebP or HEIC photo")
-    problems = []
-    frame = None
     try:
-        import cv2
-        import numpy as np
-        frame = cv2.imdecode(np.frombuffer(image_data, dtype=np.uint8), cv2.IMREAD_COLOR)
-        if frame is not None:
-            h, w = frame.shape[:2]
-            if h * w > 35_000_000:
-                raise ValueError("Image resolution is too large")
-            if max(h, w) > 2000:
-                scale = 2000 / max(h, w)
-                frame = cv2.resize(frame, None, fx=scale, fy=scale)
-    except ImportError:
-        problems.append("OpenCV not installed")
-
-    # 1. YOLOv8 (optional install: requirements-vision.txt)
-    if frame is not None:
-        try:
-            model = get_yolo_model()
-            results = model.predict(frame, classes=[0], conf=0.20, imgsz=1280, verbose=False, device="cpu")
-            return (int(len(results[0].boxes)), "YOLOv8 person detector",
-                    "Estimated people visible in photo; verify manually (occluded students may be missed)")
-        except ImportError:
-            problems.append("YOLO not installed")
-        except Exception as error:
-            problems.append(f"YOLO failed: {str(error)[:120]}")
-
-    # 2. Gemini vision (uses the same GEMINI_API_KEY as summaries and reviews)
-    if gemini_key():
-        try:
-            return (count_people_with_gemini(image_data, mime), f"Gemini vision ({gemini_model()})",
-                    "AI estimate of people in the photo; verify manually")
-        except (GeminiError, ValueError) as error:
-            problems.append(str(error)[:200])
-    else:
-        problems.append("Gemini key not set")
-
-    # 3. OpenCV HOG — basic, tends to miss seated people
-    if frame is not None:
-        try:
-            import cv2
-            hog = cv2.HOGDescriptor()
-            hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
-            boxes, _ = hog.detectMultiScale(frame, winStride=(8, 8), padding=(8, 8), scale=1.05)
-            return (int(len(boxes)), "OpenCV HOG (basic)",
-                    "Basic detector — often misses seated people. Check and correct the count if needed")
-        except Exception as error:
-            problems.append(f"OpenCV failed: {str(error)[:120]}")
-    elif mime == "image/heic":
-        problems.append("HEIC photos need Gemini; or take the photo as JPEG")
-
-    raise RuntimeError("Automatic counting is unavailable (" + "; ".join(problems) +
-                       "). Enter the verified count manually")
-
-
-@lru_cache(maxsize=1)
-def get_yolo_model():
-    from ultralytics import YOLO
-    return YOLO(os.environ.get("SMARTCLASS_YOLO_MODEL", "yolov8n.pt"))
+        return (count_people_with_gemini(image_data, mime), f"Gemini vision ({gemini_model()})",
+                "AI estimate of people in the photo; verify manually")
+    except (GeminiError, ValueError) as error:
+        raise RuntimeError(f"Automatic counting failed — {str(error)[:250]}. Enter the verified count manually")
 
 
 async def analyze_and_save_photo(data: bytes, session_id: int, db: Session):
