@@ -510,6 +510,18 @@
 .poll-multi-toggle{display:flex!important;align-items:center;gap:8px;margin:12px 0 4px;font-size:12px;font-weight:750;color:#365a80;cursor:pointer}
 .poll-multi-toggle input{width:16px;height:16px;margin:0}
 .sc-poll-hint{font-size:10px;color:#3d78b8;font-weight:800;margin:4px 0 2px}
+#app-toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);max-width:min(92vw,560px);padding:13px 18px;border-radius:13px;background:#173765;color:#fff;font-size:13px;font-weight:700;line-height:1.5;box-shadow:0 14px 40px #0b23454d;z-index:20000;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;text-align:center}
+#app-toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto;cursor:pointer}
+#app-toast.error{background:#b3394c}
+.sc-progress{margin-top:12px}
+.sc-progress-track{height:10px;border-radius:99px;background:#e6eef8;overflow:hidden}
+.sc-progress-fill{height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#5b9be0,#2f70bd);transition:width .3s}
+.sc-progress.done .sc-progress-fill{background:#15966b}
+.sc-progress.failed .sc-progress-fill{background:#d84c5b}
+.sc-progress-label{margin-top:7px;font-size:12px;font-weight:750;color:#2f5f93;line-height:1.5}
+.sc-progress.done .sc-progress-label{color:#147955}
+.sc-progress.failed .sc-progress-label{color:#b3394c}
+.sr-file{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;overflow:hidden!important;pointer-events:none}
 </style>
 </head>
 <body>
@@ -671,7 +683,7 @@
           <div class="assignment-field"><label for="new-assignment-title">Assignment title *</label><input id="new-assignment-title" class="field-control" maxlength="250" placeholder="e.g. Data structures · Exercise 3" required /></div>
           <div class="assignment-field"><label for="new-assignment-date">Due date *</label><input id="new-assignment-date" class="field-control" type="date" required /></div>
           <div class="assignment-field full"><label for="new-assignment-description">Instructions and learning goals *</label><textarea id="new-assignment-description" class="field-control" rows="4" placeholder="Explain what students should build, submit, and demonstrate. You can also attach the brief below."></textarea><span class="hint">Include clear evaluation conditions. Either readable document content or text instructions are required.</span></div>
-          <div class="assignment-field full"><label for="new-assignment-brief">Official assignment file</label><label class="assignment-upload" for="new-assignment-brief"><span class="upload-icon">↥</span><span><strong>Choose your assignment document</strong><small id="assignment-brief-name">PDF, Word, ZIP or source file · up to 12 MB</small></span><input id="new-assignment-brief" type="file" accept=".pdf,.docx,.txt,.md,.zip,.py,.java,.js,.html,.json,.cpp" onchange="updateAssignmentBriefName()" /></label></div>
+          <div class="assignment-field full"><label for="new-assignment-brief">Official assignment file</label><label class="assignment-upload" for="new-assignment-brief"><span class="upload-icon">↥</span><span><strong>Choose your assignment document</strong><small id="assignment-brief-name">PDF, Word, ZIP or source file · up to 50 MB</small></span><input id="new-assignment-brief" type="file" accept=".pdf,.docx,.txt,.md,.zip,.py,.java,.js,.html,.json,.cpp" onchange="updateAssignmentBriefName()" /></label></div>
           <div class="assignment-field full"><label for="new-assignment-rubric">Evaluation rubric (optional)</label><textarea id="new-assignment-rubric" class="field-control" rows="3" placeholder="Correctness — 60%
 Code quality — 25%
 Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. The lecturer always approves the final grade.</span></div>
@@ -744,14 +756,15 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
             <div class="sc-phone-qr-line"><img id="mobile-photo-qr" alt="QR link to phone photo uploader"/><div><strong>Scan with your phone</strong><p>Open a secure upload link on the phone and take a classroom photo.</p></div></div>
             <div class="sc-photo-actions"><button class="secondary-btn" type="button" onclick="copyMobilePhotoLink()">Copy phone link</button><a id="mobile-photo-link" href="#" target="_blank" rel="noopener noreferrer">Open upload page</a></div>
             <label class="field-label" for="class-photo-file" style="margin-top:15px">Or upload from this computer</label>
-            <input class="hidden" type="file" id="class-photo-file" accept="image/*" onchange="uploadLecturerPhoto()" />
+            <input class="sr-file" type="file" id="class-photo-file" accept="image/*" onchange="uploadLecturerPhoto()" />
             <div class="sc-photo-actions">
               <button class="secondary-btn" type="button" onclick="byId('class-photo-camera').click()">📷 Take photo</button>
               <button class="secondary-btn" type="button" onclick="byId('class-photo-file').click()">↑ Choose photo</button>
             </div>
-            <input class="hidden" type="file" id="class-photo-camera" accept="image/*" capture="environment" onchange="uploadLecturerPhoto('class-photo-camera')" />
+            <input class="sr-file" type="file" id="class-photo-camera" accept="image/*" capture="environment" onchange="uploadLecturerPhoto('class-photo-camera')" />
             <button class="secondary-btn sc-upload-btn" type="button" onclick="uploadLecturerPhoto()">Analyze selected photo</button>
             <p id="class-photo-message" class="sc-feedback" aria-live="polite"></p>
+            <div id="class-photo-progress" class="hidden"></div>
           </div>
           <div class="sc-verify-card">
             <div class="sc-card-eyebrow">PHOTO ANALYSIS</div>
@@ -805,6 +818,7 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
               <label class="field-label" for="summary-video-file" style="margin-top:10px">Or select a short MP4 / WebM / MOV</label><input id="summary-video-file" class="field-control" type="file" accept=".mp4,.webm,.mov,video/mp4,video/webm" />
               <div class="session-form-row"><button id="summarize-video-button" class="secondary-btn" type="button" onclick="generateVideoSummary()">✧ Generate AI summary</button></div>
               <p id="video-summary-status" class="sc-feedback" aria-live="polite"></p>
+              <div id="video-summary-progress" class="hidden"></div>
             </div>
             <label for="summary-editor" class="field-label">Edit text summary (lecturer)</label><textarea id="summary-editor" placeholder="Write or paste lecture notes here…"></textarea><div class="session-form-row"><button class="secondary-btn" type="button" onclick="saveSessionSummary()">Save summary</button></div>
           </div>
@@ -823,8 +837,9 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
         <div>
           <section id="student-assignment-tools" class="assignment-detail-card hidden">
             <h3>Submit your solution</h3><p class="assignment-help">Choose your actual file. SmartClass will upload and save it, then request an AI assessment against the assignment brief when Gemini is configured.</p>
-            <div id="drop-zone" class="assignment-drop"><div style="font-size:25px">↥</div><strong>Click or drop your completed assignment</strong><p>PDF, DOCX, ZIP or text/source files · max 12 MB</p><input type="file" id="student-file-upload" class="hidden" accept=".pdf,.docx,.txt,.md,.zip,.py,.java,.js,.ts,.html,.json,.cpp,.c,.cs,.sql"/><p id="file-name-display" style="margin-top:12px;color:#15966b;font-weight:700"></p></div>
+            <div id="drop-zone" class="assignment-drop"><div style="font-size:25px">↥</div><strong>Click or drop your completed assignment</strong><p>PDF, DOCX, ZIP or text/source files · max 50 MB</p><input type="file" id="student-file-upload" class="sr-file" accept=".pdf,.docx,.txt,.md,.zip,.py,.java,.js,.ts,.html,.json,.cpp,.c,.cs,.sql"/><p id="file-name-display" style="margin-top:12px;color:#15966b;font-weight:700"></p></div>
             <button id="submit-assignment-button" class="primary-btn" style="width:100%;margin-top:13px" type="button" onclick="submitAssignment()">Upload and submit</button>
+            <div id="submit-progress" class="hidden" aria-live="polite"></div>
             <div id="student-feedback-box" class="assignment-submission-state hidden"></div>
           </section>
           <section id="lecturer-assignment-tools" class="assignment-detail-card hidden">
@@ -901,7 +916,7 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
         if (event.key === 'Enter' && !event.repeat) { event.preventDefault(); verifyOtp(); }
       });
       if (!dropZone || !fileInput) return;
-      dropZone.addEventListener('click', () => fileInput.click());
+      dropZone.addEventListener('click', (event) => { if (event.target !== fileInput) fileInput.click(); });
       dropZone.addEventListener('dragover', (event) => { event.preventDefault(); dropZone.style.borderColor = '#347bc2'; });
       dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = ''; });
       dropZone.addEventListener('drop', (event) => {
@@ -1673,16 +1688,17 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
       body.append('video_url',url);
       if (video) body.append('file',video);
       const button=byId('summarize-video-button');button.disabled=true;
-      status.textContent='Uploading the clip and requesting a summary from Gemini…';
+      status.textContent='';
       try {
-        const response=await fetch(`${API_URL}/api/sessions/${currentSessionId}/summarize-video`,{method:'POST',body});
-        const data=await response.json().catch(()=>({}));
-        if (!response.ok) throw Error(data.detail||'Summary failed');
+        const {ok,data}=await requestWithProgress({url:`${API_URL}/api/sessions/${currentSessionId}/summarize-video`, body,
+          holder:byId('video-summary-progress'), expectedSeconds:45, uploadLabel:'Uploading video',
+          aiLabel:'Gemini is summarizing the lecture', doneLabel:'Summary ready'});
+        if (!ok) throw Error(data.detail||'Summary failed');
         byId('summary-editor').value=data.ai_summary;
         await loadSessionSummary();
         status.textContent='✓ Summary saved. Students notified.';
         showToast('✓ Lecture summary published');
-      }catch(error){status.textContent=error.message;}
+      }catch(error){status.textContent='';showToast(error.message,true);} // the red progress line already shows the reason
       finally {button.disabled=false;}
     }
 
@@ -1926,7 +1942,7 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
 
     function updateAssignmentBriefName() {
       const file = byId('new-assignment-brief').files[0];
-      byId('assignment-brief-name').textContent = file ? file.name : 'PDF, Word, ZIP or source file · up to 12 MB';
+      byId('assignment-brief-name').textContent = file ? file.name : 'PDF, Word, ZIP or source file · up to 50 MB';
     }
 
     async function createCourseAssignment(event) {
@@ -1981,6 +1997,7 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
       if (isStudent) {
         byId('student-file-upload').value = '';
         byId('file-name-display').textContent = '';
+        byId('submit-progress').classList.add('hidden');
         byId('student-feedback-box').classList.add('hidden');
         loadMyAssignmentSubmission();
       } else loadAssignmentSubmissions();
@@ -2057,16 +2074,19 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
 
     async function submitAssignment() {
       const file=byId('student-file-upload').files[0];
-      if (!file) return showToast('Select your assignment file to submit.',true);
-      if (file.size > 12*1024*1024) return showToast('The file exceeds 12 MB.',true);
+      const holder=byId('submit-progress');
+      const fail=(msg)=>{createProgress(holder).fail('✕ '+msg);showToast(msg,true);};
+      if (!file) return fail('Choose your assignment file first (click the box above).');
+      if (file.size > 50*1024*1024) return fail(`The file is ${(file.size/1048576).toFixed(1)} MB — the limit is 50 MB. Remove videos/data files from the ZIP and keep the code.`);
       const body=new FormData();body.append('student_email',currentUser.email);body.append('file',file);
-      const btn=byId('submit-assignment-button');btn.disabled=true;btn.textContent='Uploading and reviewing…';
+      const btn=byId('submit-assignment-button');btn.disabled=true;btn.textContent='Submitting…';
       try {
-        const res=await fetch(`${API_URL}/api/assignments/${currentAssignmentId}/submit-file`,{method:'POST',body});
-        const data=await res.json().catch(()=>({}));
-        if (!res.ok) throw Error(data.detail || 'Could not upload file');
+        const {ok,data}=await requestWithProgress({url:`${API_URL}/api/assignments/${currentAssignmentId}/submit-file`, body, holder,
+          expectedSeconds:25, uploadLabel:'Uploading your file', aiLabel:'Gemini is reviewing your work', doneLabel:'Submitted'});
+        if (!ok) throw Error(data.detail || 'Could not upload file');
+        byId('file-name-display').textContent='';
         await Promise.all([loadMyAssignmentSubmission(),loadAssignmentFeedbackForum(),loadNotifications()]);
-        showToast(data.ai_status==='reviewed' ? '✓ Assignment reviewed · pending lecturer approval' : '✓ File saved. AI review pending.');
+        showToast(data.ai_status==='reviewed' ? '✓ Assignment submitted and reviewed · awaiting lecturer approval' : '✓ File submitted. AI review pending.');
       } catch(e) {showToast(e.message,true);}
       finally {btn.disabled=false;btn.textContent='Upload and submit';}
     }
@@ -2164,15 +2184,13 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
     }
 
     async function rerunSubmissionReview(submissionId, button) {
-      button.disabled=true;button.textContent='Reviewing with Gemini…';
-      try {
-        const res=await fetch(`${API_URL}/api/assignments/submission/${submissionId}/rerun-review?lecturer_email=${encodeURIComponent(currentUser.email)}`,{method:'POST'});
-        const data=await res.json().catch(()=>({}));
-        if (!res.ok) throw Error(data.detail||'Could not re-run the review');
-        byId('lecturer-submissions-container').dataset.signature='';
-        await loadAssignmentSubmissions();
-        showToast(data.ai_status==='reviewed'?'✓ AI review completed':(data.ai_error||'Review still pending'),data.ai_status!=='reviewed');
-      }catch(e){showToast(e.message,true);button.disabled=false;button.textContent='↻ Re-run AI review';}
+      button.disabled=true;
+      const holder=document.createElement('div');button.after(holder);
+      const {ok,data}=await requestWithProgress({url:`${API_URL}/api/assignments/submission/${submissionId}/rerun-review?lecturer_email=${encodeURIComponent(currentUser.email)}`,
+        holder, expectedSeconds:25, aiLabel:'Gemini is reviewing', doneLabel:'Review finished'});
+      if (!ok) { showToast(data.detail||'Could not re-run the review',true); button.disabled=false; return; }
+      showToast(data.ai_status==='reviewed'?'✓ AI review completed':(data.ai_error||'Review still pending'),data.ai_status!=='reviewed');
+      setTimeout(async()=>{byId('lecturer-submissions-container').dataset.signature='';await loadAssignmentSubmissions();},900);
     }
 
     async function runAiComparison(button) {
@@ -2202,12 +2220,87 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
     }
 
     /* Realtime helpers. Polling works for two separate browsers/devices sharing one server. */
+    // Messages pop up at the bottom of the screen so they are visible on every screen size
+    // (the small header label is hidden on phones and narrow windows).
+    let toastTimer = null;
     function showToast(message, isError = false) {
-      const node = byId('sync-label');
-      if (!node) return;
+      let node = byId('app-toast');
+      if (!node) {
+        node = document.createElement('div');
+        node.id = 'app-toast';
+        node.setAttribute('role', 'status');
+        node.setAttribute('aria-live', 'polite');
+        node.onclick = () => node.classList.remove('show');
+        document.body.appendChild(node);
+      }
       node.textContent = String(message);
-      node.style.color = isError ? '#ca5660' : '#20825f';
-      setTimeout(() => { if (node.textContent === message) { node.textContent = 'Auto sync · 5s'; node.style.color = ''; } }, 3400);
+      node.classList.toggle('error', Boolean(isError));
+      node.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => node.classList.remove('show'), isError ? 7000 : 3800);
+    }
+
+    /* Progress bar: real upload % (from the browser), then an estimated % while the AI works.
+       Gemini does not report its own progress, so the AI part is an estimate that slows down near
+       the end and jumps to 100% when the answer arrives. */
+    function createProgress(holder) {
+      holder.classList.remove('hidden');
+      holder.innerHTML = '<div class="sc-progress"><div class="sc-progress-track"><div class="sc-progress-fill"></div></div><div class="sc-progress-label"></div></div>';
+      const fill = holder.querySelector('.sc-progress-fill'), label = holder.querySelector('.sc-progress-label');
+      const box = holder.firstElementChild;
+      return {
+        set(pct, text) { fill.style.width = `${Math.max(0, Math.min(100, pct))}%`; label.textContent = text; },
+        done(text) { box.classList.add('done'); this.set(100, text); },
+        fail(text) { box.classList.add('failed'); label.textContent = text; }
+      };
+    }
+
+    function requestWithProgress({url, method = 'POST', body = null, holder, expectedSeconds = 30,
+                                  uploadLabel = 'Uploading', aiLabel = 'Gemini is working', doneLabel = 'Done'}) {
+      const bar = createProgress(holder);
+      const hasUpload = body instanceof FormData && [...body.values()].some(v => v instanceof File);
+      const uploadShare = hasUpload ? 30 : 0;
+      let ticker = null;
+      const startAiEstimate = () => {
+        if (ticker) return;
+        const start = Date.now();
+        const tick = () => {
+          const t = (Date.now() - start) / 1000;
+          const pct = uploadShare + (95 - uploadShare) * (1 - Math.exp(-t / expectedSeconds));
+          bar.set(pct, `${aiLabel}… ${Math.round(pct)}% (estimated)`);
+        };
+        tick(); ticker = setInterval(tick, 300);
+      };
+      return new Promise(resolve => {
+        const xhr = new XMLHttpRequest();
+        xhr.open(method, url);
+        xhr.timeout = 6 * 60 * 1000;
+        if (hasUpload) {
+          bar.set(0, `${uploadLabel}… 0%`);
+          xhr.upload.onprogress = e => {
+            if (!e.lengthComputable) return;
+            const p = e.loaded / e.total;
+            bar.set(p * uploadShare, `${uploadLabel}… ${Math.round(p * 100)}%`);
+          };
+          xhr.upload.onload = startAiEstimate;
+        }
+        const finish = (ok, status, data) => {
+          clearInterval(ticker);
+          if (ok) bar.done(`✓ ${doneLabel} · 100%`);
+          else bar.fail(`✕ ${data.detail || 'Request failed'}`);
+          resolve({ok, status, data});
+        };
+        xhr.onload = () => {
+          let data = {};
+          try { data = JSON.parse(xhr.responseText || '{}'); } catch (e) { data = {detail: `Server error (${xhr.status})`}; }
+          if (xhr.status === 413 && !data.detail) data.detail = 'The file is too large for the server';
+          finish(xhr.status >= 200 && xhr.status < 300, xhr.status, data);
+        };
+        xhr.onerror = () => finish(false, 0, {detail: 'Network error — check your connection and try again'});
+        xhr.ontimeout = () => finish(false, 0, {detail: 'The server took too long to answer. Try again'});
+        xhr.send(body);
+        if (!hasUpload) startAiEstimate();
+      });
     }
 
     function stopOtpTimer() {
@@ -2493,25 +2586,34 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
 
 
     async function uploadLecturerPhoto(inputId = 'class-photo-file') {
+      const message = byId('class-photo-message');
+      const holder = byId('class-photo-progress');
       const file = byId(inputId).files[0];
-      if (!file) { byId('class-photo-message').textContent = 'Choose a photo first.'; return false; }
-      if (!mobilePhotoPath) await loadMobilePhotoUrl();
-      const token = new URLSearchParams(mobilePhotoPath.split('?')[1] || '').get('token');
-      if (!token) { byId('class-photo-message').textContent = 'Upload link unavailable.'; return false; }
-      byId('class-photo-message').textContent = 'Analyzing selected photo…';
-      try {
-        const body = new FormData();
-        body.append('file', file);
-        const response = await fetch(`${API_URL}/api/sessions/${currentSessionId}/photo?token=${encodeURIComponent(token)}`, {method:'POST',body});
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok) throw Error(result.detail || 'Photo analysis failed');
+      if (!file) { message.textContent = 'Choose a photo first.'; return false; }
+      if (file.size > 12 * 1024 * 1024) {
         byId(inputId).value = '';
-        byId('class-photo-message').textContent = result.detected_people == null
-          ? 'Automatic counting is unavailable. Enter the verified count manually.'
-          : `Photo analyzed: ${result.detected_people} estimated people (${result.detection_method}).`;
-        await loadLecturerLiveState();
-        return true;
-      } catch (error) { byId(inputId).value = ''; byId('class-photo-message').textContent = error.message; return false; }
+        message.textContent = `The photo is ${(file.size/1048576).toFixed(1)} MB — please use a photo under 12 MB.`;
+        return false;
+      }
+      if (!mobilePhotoPath) await loadMobilePhotoUrl();
+      const token = mobilePhotoPath ? new URLSearchParams(mobilePhotoPath.split('?')[1] || '').get('token') : null;
+      if (!token) {
+        byId(inputId).value = '';
+        message.textContent = 'Could not prepare the photo upload. Make sure the lecture is still live, then refresh the page and try again.';
+        return false;
+      }
+      message.textContent = '';
+      const body = new FormData();
+      body.append('file', file);
+      const {ok, data} = await requestWithProgress({url: `${API_URL}/api/sessions/${currentSessionId}/photo?token=${encodeURIComponent(token)}`,
+        body, holder, expectedSeconds: 8, uploadLabel: 'Uploading photo', aiLabel: 'Gemini is counting people', doneLabel: 'Photo analyzed'});
+      byId(inputId).value = '';
+      if (!ok) { message.textContent = data.detail || 'Photo analysis failed'; return false; }
+      message.textContent = data.detected_people == null
+        ? 'Automatic counting is unavailable. Enter the verified count manually.'
+        : `Photo analyzed: ${data.detected_people} estimated people (${data.detection_method}).`;
+      await loadLecturerLiveState();
+      return true;
     }
 
     async function submitManualCount() {

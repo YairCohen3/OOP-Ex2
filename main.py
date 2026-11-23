@@ -200,7 +200,7 @@ def lecturer_course(db: Session, course_id: str, lecturer_email: str):
 UPLOAD_ROOT = Path(os.getenv("SMARTCLASS_UPLOAD_DIR", "smartclass_uploads")).resolve()
 ALLOWED_TEXT = {".txt", ".md", ".py", ".java", ".js", ".ts", ".jsx", ".tsx", ".html", ".css", ".json", ".csv", ".cpp", ".c", ".h", ".hpp", ".cs", ".sql", ".xml", ".ipynb"}
 ALLOWED_FILES = ALLOWED_TEXT | {".pdf", ".docx", ".zip"}
-MAX_UPLOAD = 12 * 1024 * 1024
+MAX_UPLOAD = 50 * 1024 * 1024  # ZIPs often include data files; only text/code inside is sent to the AI
 
 
 def course_members(db: Session, course_id: str):
@@ -249,7 +249,7 @@ async def store_upload(upload: UploadFile, prefix: str):
         raise HTTPException(status_code=415, detail="Unsupported file type. Use PDF, DOCX, ZIP, text or source code")
     raw = await upload.read(MAX_UPLOAD + 1)
     if not raw or len(raw) > MAX_UPLOAD:
-        raise HTTPException(status_code=413, detail="Upload must be between 1 byte and 12 MB")
+        raise HTTPException(status_code=413, detail="The file must be between 1 byte and 50 MB")
     UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)
     path = UPLOAD_ROOT / f"{prefix}-{uuid.uuid4().hex}{extension}"
     path.write_bytes(raw)
