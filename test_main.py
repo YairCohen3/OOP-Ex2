@@ -338,6 +338,18 @@ class TestAttendanceCheckIn:
         status = client.get(f"/api/sessions/{session_id}/status").json()
         assert status["attendance_open"] is False
 
+    def test_new_lecture_starts_open_even_if_old_id_is_reused(self, client, live_lecture):
+        """Deleting a course must not leave "check-ins closed" behind for a new lecture with the same id."""
+        course_id, session_id = live_lecture
+        client.post(f"/api/sessions/{session_id}/qr-control", params={"lecturer_email": LECTURER, "enabled": False})
+        assert client.delete(f"/api/courses/{course_id}", params={"lecturer_email": LECTURER}).status_code == 200
+        new_course = make_course(client)
+        new_session = start_lecture(client, new_course)
+        status = client.get(f"/api/sessions/{new_session}/status").json()
+        assert status["attendance_open"] is True
+        state = client.get(f"/api/sessions/{new_session}/live-state", params={"lecturer_email": LECTURER}).json()
+        assert state["qr_enabled"] is True and state["attendance_approved"] is False
+
     def test_no_check_in_after_lecture_closed(self, client, live_lecture):
         _, session_id = live_lecture
         close_lecture(client, session_id)

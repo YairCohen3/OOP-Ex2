@@ -773,6 +773,7 @@ def delete_course(course_id: str, lecturer_email: str, db: Session = Depends(get
         db.query(SessionPhotoState).filter(SessionPhotoState.session_id.in_(lecture_ids)).delete(synchronize_session=False)
         db.query(AttendanceApproval).filter(AttendanceApproval.session_id.in_(lecture_ids)).delete(synchronize_session=False)
         db.query(SessionTitle).filter(SessionTitle.session_id.in_(lecture_ids)).delete(synchronize_session=False)
+        db.query(SessionQRControl).filter(SessionQRControl.session_id.in_(lecture_ids)).delete(synchronize_session=False)
     assignment_ids = [r[0] for r in db.query(models.Assignment.id).filter(models.Assignment.course_id == course_id).all()]
     if assignment_ids:
         submission_ids = [r[0] for r in db.query(models.Submission.id).filter(models.Submission.assignment_id.in_(assignment_ids)).all()]
@@ -902,6 +903,12 @@ def start_session(course_id: str, lecturer_email: str, db: Session = Depends(get
     session = models.Session(course_id=course_id, is_active=True, current_qr_code="")
     db.add(session)
     db.flush()
+    # SQLite can reuse the id of a deleted lecture. Clear anything an old lecture with the same id left
+    # behind, otherwise the new lecture starts with check-ins closed, an old photo count or approval.
+    for table in (SessionPhotoState, AttendanceApproval, SessionQRControl, SessionTitle):
+        db.query(table).filter(table.session_id == session.id).delete(synchronize_session=False)
+    (REPORTS_DIR / f"attendance_session_{session.id}.xlsx").unlink(missing_ok=True)
+    VIDEO_JOBS.pop(session.id, None)
     qr_data = get_qr_status(session.id)
     session.current_qr_code = qr_data["qr_code"]
     notify(db, course_members(db, course_id), course_id, "new_session", "New lecture started",
