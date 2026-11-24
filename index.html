@@ -695,6 +695,44 @@ body.qr-projecting { overflow: hidden; }
 .notice-panel { color: var(--ink); text-align: left; }
 .notice-panel-head strong, .notice-entry strong { color: var(--ink); }
 
+
+/* ---------- Refinements (after the redesign) ---------- */
+.sc-live-title .live-indicator { display: none; }              /* the lecture header already says "Live now" */
+.roster-remove { display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 0; color: var(--ink-3); opacity: .7; }
+.roster-remove svg { width: 16px; height: 16px; }
+.roster-remove:hover { opacity: 1; color: var(--red); background: var(--red-tint); }
+.sub-grade { flex-wrap: wrap; }
+#student-feedback-box { padding: 0; border: 0; background: transparent; margin: 0; }
+.my-result-top { display: flex; align-items: center; gap: 20px; padding: 18px 20px; border-radius: var(--r); background: var(--tint); border-left: 4px solid var(--marker-edge); }
+.my-result-top.final { background: var(--live-tint); border-left-color: var(--live); }
+.my-grade { display: flex; align-items: baseline; gap: 3px; color: var(--ink); }
+.my-grade strong { font-family: var(--serif); font-size: 46px; line-height: 1; font-weight: 700; font-variant-numeric: tabular-nums; }
+.my-grade span { font-size: 16px; color: var(--ink-3); }
+.my-grade-meta { display: flex; flex-direction: column; gap: 6px; }
+.my-grade-meta small { color: var(--ink-3); font-size: 13.5px; }
+.my-status { align-self: flex-start; padding: 4px 10px; border-radius: 999px; font-size: 13.5px; font-weight: 600; background: #fff; color: var(--ink-2); }
+.my-status.final { color: var(--live-dark); }
+.my-status.pending { background: #fff6d6; color: var(--marker-ink); }
+#student-feedback-box h4 { margin: 22px 0 6px; font-size: 18px; }
+.my-review-text { margin: 0; color: var(--ink-2); line-height: 1.65; max-width: 70ch; }
+.my-review-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+.my-review-cols h5 { margin: 0 0 6px; font-size: 15px; font-weight: 600; color: var(--ink); }
+.my-review-cols ul { margin: 0; padding-left: 18px; color: var(--ink-2); line-height: 1.6; }
+.my-criteria { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
+.my-criteria th { text-align: left; color: var(--ink-3); font-weight: 500; padding: 6px 8px; border-bottom: 1px solid var(--rule); }
+.my-criteria td { padding: 8px; border-bottom: 1px solid var(--tint); vertical-align: top; }
+.resubmit-toggle { margin: 16px 0 2px; }
+#submit-area.collapsed { display: none; }
+#submit-area { margin-top: 4px; }
+@media (max-width: 640px) {
+  .my-review-cols { grid-template-columns: 1fr; }
+  .my-result-top { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .lecture-tile { padding: 12px; gap: 8px; }
+  .lecture-tile:not(.live) .lecture-status { display: none; }  /* every past lecture is "Finished"; no need to repeat it on a phone */
+  .lecture-mark { flex-basis: 34px; height: 34px; }
+  .lecture-tile-text strong { white-space: nowrap; }
+  .lecture-delete { flex-basis: 40px; }
+}
 </style>
 </head>
 <body>
@@ -907,7 +945,7 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
       </section>
 
       <section id="lecturer-active-tools" class="tool-panel sc-live-tools hidden">
-        <div class="sc-live-title"><div><h2>Attendance</h2><p>1. Students scan the QR · 2. SESSION END and take a classroom photo · 3. Check the numbers and approve.</p></div><span class="live-indicator"><i></i> Live</span></div>
+        <div class="sc-live-title"><div><h2>Attendance</h2><p>Students scan the QR. Then lock check-ins, photograph the class and approve the list.</p></div><span class="live-indicator"><i></i> Live</span></div>
         <div class="sc-live-grid">
           <div class="sc-qr-card">
             <div class="sc-card-eyebrow sc-qr-bar"><span>Step 1: Attendance QR</span><span class="sc-qr-actions"><button class="secondary-btn sc-project-btn" id="qr-project-button" type="button" onclick="toggleQrProjector()" aria-pressed="false" title="Show the QR on the whole screen for the projector"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span id="qr-project-label">Project full screen</span></button><button class="secondary-btn" id="qr-toggle-button" type="button" onclick="toggleAttendanceQr()">Pause QR</button></span></div><div class="sc-projector-head"><strong id="projector-course-title"></strong><span>Scan with SmartClass on your phone to check in</span></div>
@@ -1009,11 +1047,14 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
       <div class="assignment-detail-grid">
         <div>
           <section id="student-assignment-tools" class="assignment-detail-card hidden">
-            <h3>Submit your solution</h3><p class="assignment-help">Choose your actual file. SmartClass will upload and save it, then request an AI assessment against the assignment brief when Gemini is configured.</p>
+            <div id="student-feedback-box" class="assignment-submission-state hidden"></div>
+            <button id="resubmit-toggle" class="btn btn-quiet resubmit-toggle hidden" type="button" onclick="byId('submit-area').dataset.userOpened=1;toggleResubmit()">Submit a new version</button>
+            <div id="submit-area">
+            <h3 id="submit-area-title">Submit your solution</h3><p class="assignment-help">Upload your file. The AI reviews it against the assignment, and your lecturer approves the final grade.</p>
             <div id="drop-zone" class="assignment-drop"><div class="drop-icon" aria-hidden="true">↥</div><strong>Click or drop your completed assignment</strong><p>PDF, DOCX, ZIP or text/source files · max 50 MB</p><input type="file" id="student-file-upload" class="sr-file" accept=".pdf,.docx,.txt,.md,.zip,.py,.java,.js,.ts,.html,.json,.cpp,.c,.cs,.sql"/><p id="file-name-display" class="drop-file"></p></div>
             <button id="submit-assignment-button" class="btn btn-ink btn-lg btn-block" type="button" onclick="submitAssignment()">Upload and submit</button>
             <div id="submit-progress" class="hidden" aria-live="polite"></div>
-            <div id="student-feedback-box" class="assignment-submission-state hidden"></div>
+            </div>
           </section>
           <section id="lecturer-assignment-tools" class="assignment-detail-card hidden">
             <div class="panel-head"><h3>Student submissions</h3><button class="secondary-btn" type="button" onclick="loadAssignmentSubmissions()">↻ Refresh</button></div>
@@ -2596,7 +2637,7 @@ module.exports = QRCode;
         students.forEach(student => {
           const row = document.createElement('div');
           row.className = 'roster-row';
-          row.innerHTML = '<span style="display:flex;align-items:center;gap:9px;min-width:0;"><span class="roster-avatar"></span><span style="min-width:0;"><strong class="roster-name"></strong><small class="roster-email"></small></span></span><button type="button" class="roster-remove" title="Remove student from course">Remove</button>';
+          row.innerHTML = '<span style="display:flex;align-items:center;gap:9px;min-width:0;"><span class="roster-avatar"></span><span style="min-width:0;"><strong class="roster-name"></strong><small class="roster-email"></small></span></span><button type="button" class="roster-remove" title="Remove from course" aria-label="Remove from course"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>';
           row.querySelector('.roster-avatar').textContent = (student.name || student.email || 'S').slice(0,1).toUpperCase();
           row.querySelector('.roster-name').textContent = student.name || student.email;
           row.querySelector('.roster-email').textContent = student.email;
@@ -2912,7 +2953,7 @@ module.exports = QRCode;
       setSessionTab(isActive ? 'polls' : 'summary');
       byId('student-active-tools').classList.toggle('hidden', !isActive || currentUser.role !== 'student');
       byId('lecturer-active-tools').classList.toggle('hidden', !isActive || currentUser.role !== 'lecturer');
-      byId('session-attendance-summary').classList.toggle('hidden', currentUser.role !== 'lecturer');
+      byId('session-attendance-summary').classList.toggle('hidden', currentUser.role !== 'lecturer' || Boolean(isActive)); // step 3 shows these numbers during a live lecture
       byId('btn-create-poll').classList.toggle('hidden', currentUser.role !== 'lecturer');
       byId('poll-time-window').classList.toggle('hidden', isActive);
       byId('poll-compose-form').classList.add('hidden');
@@ -2920,7 +2961,7 @@ module.exports = QRCode;
       byId('session-header').classList.toggle('live', Boolean(isActive));
       byId('btn-delete-lecture').classList.toggle('hidden', Boolean(isActive) || currentUser.role !== 'lecturer');
       byId('session-status-text').textContent = isActive
-        ? '● Live lecture — check-ins and polls update automatically'
+        ? '● Live now · updates automatically'
         : 'Completed lecture · Questions and summary remain available';
       if (isActive && currentUser.role === 'lecturer') {
         qrIsEnabled = true;
@@ -3616,6 +3657,10 @@ module.exports = QRCode;
         byId('file-name-display').textContent = '';
         byId('submit-progress').classList.add('hidden');
         byId('student-feedback-box').classList.add('hidden');
+        byId('resubmit-toggle').classList.add('hidden');
+        byId('submit-area-title').textContent = 'Submit your solution';
+        delete byId('submit-area').dataset.userOpened;
+        toggleResubmit(true);
         loadMyAssignmentSubmission();
       } else loadAssignmentSubmissions();
       loadAssignmentDetails();
@@ -3659,27 +3704,70 @@ module.exports = QRCode;
       } catch(e) {return review;}
     }
 
+    function toggleResubmit(force = null) {
+      const area = byId('submit-area');
+      const open = force === null ? area.classList.contains('collapsed') : force;
+      area.classList.toggle('collapsed', !open);
+      byId('resubmit-toggle').textContent = open ? 'Cancel' : 'Submit a new version';
+    }
+
     function displayMySubmission(data) {
       const box = byId('student-feedback-box');
       box.classList.remove('hidden');
       box.replaceChildren();
-      const heading = document.createElement('strong');
-      heading.textContent = '✓ Your assignment was submitted'+(data.file_url ? ' · '+data.file_url : '');
-      box.appendChild(heading);
-      const state = document.createElement('p');
-      if (data.ai_status==='reviewed' || data.final_grade_approved) {
-        state.innerHTML = `<span class="${data.final_grade_approved ? 'graded' : 'pending'}">${data.final_grade_approved ? 'Approved final grade' : 'AI recommended grade · awaiting approval'}: ${escapeHtml(data.llm_grade ?? '—')}/100</span>`;
-      } else if (data.ai_status==='legacy_demo') {
-        state.textContent = 'Legacy submission detected. Resubmit the actual file to receive a new assessment.';
-      } else if (data.ai_status==='review_failed') {
-        state.innerHTML = '<span class="pending">Submitted · AI is busy, retrying automatically</span>';
-      } else {
-        state.innerHTML = '<span class="pending">Submitted · AI review pending</span>';
+      // Once submitted, the result comes first; the upload area becomes "Submit a new version".
+      byId('resubmit-toggle').classList.remove('hidden');
+      byId('submit-area-title').textContent = 'Submit a new version';
+      if (!byId('submit-area').dataset.userOpened) toggleResubmit(false);
+
+      const hasGrade = data.ai_status === 'reviewed' || data.final_grade_approved;
+      const top = document.createElement('div'); top.className = 'my-result-top' + (data.final_grade_approved ? ' final' : '');
+      const grade = document.createElement('div'); grade.className = 'my-grade';
+      grade.innerHTML = hasGrade ? `<strong>${escapeHtml(data.llm_grade ?? '—')}</strong><span>/100</span>` : '<strong>—</strong>';
+      const meta = document.createElement('div'); meta.className = 'my-grade-meta';
+      const status = document.createElement('span');
+      status.className = 'my-status ' + (data.final_grade_approved ? 'final' : hasGrade ? 'pending' : 'waiting');
+      status.textContent = data.final_grade_approved ? 'Final grade, approved by your lecturer'
+        : hasGrade ? 'AI-recommended grade, waiting for your lecturer'
+        : data.ai_status === 'review_failed' ? 'The AI was busy, retrying automatically'
+        : data.ai_status === 'legacy_demo' ? 'Old submission, please submit again' : 'Submitted, AI review in progress';
+      const file = document.createElement('small'); file.textContent = data.file_url ? `Submitted file: ${data.file_url}` : '';
+      meta.append(status, file);
+      top.append(grade, meta);
+      box.appendChild(top);
+
+      let parsed = null;
+      try { parsed = data.llm_review ? JSON.parse(data.llm_review) : null; } catch (e) { parsed = {review: data.llm_review}; }
+      if (!parsed) {
+        const note = document.createElement('p'); note.className = 'my-review-text';
+        note.textContent = data.ai_status === 'pending_content' ? (data.ai_error || 'Your file could not be read. Submit it as PDF, DOCX, ZIP or source files.')
+          : data.ai_status === 'review_failed' ? 'Your file is saved. The review is retried automatically in the next few minutes, and this page updates by itself.'
+          : 'Your file is saved. The review appears here as soon as it is ready.';
+        box.appendChild(note); return;
       }
-      box.appendChild(state);
-      const review = document.createElement('p');
-      review.textContent = extractReview(data.llm_review) || (data.ai_status==='pending_content' ? (data.ai_error || 'Your file could not be read. Try submitting it as PDF, DOCX, ZIP or source files.') : data.ai_status==='review_failed' ? 'Your file is saved. The AI service was busy, so the review will be retried automatically in the next few minutes — this page updates by itself.' : 'Your files are saved. The AI review will appear here as soon as it is ready.');
-      box.appendChild(review);
+      const h = document.createElement('h4'); h.textContent = 'AI review'; box.appendChild(h);
+      const text = document.createElement('p'); text.className = 'my-review-text'; text.textContent = parsed.review || ''; box.appendChild(text);
+      const lists = [['What works well', parsed.strengths], ['What to improve', parsed.improvements]].filter(([, items]) => Array.isArray(items) && items.length);
+      if (lists.length) {
+        const cols = document.createElement('div'); cols.className = 'my-review-cols';
+        lists.forEach(([title, items]) => {
+          const col = document.createElement('div'); const t = document.createElement('h5'); t.textContent = title;
+          const ul = document.createElement('ul'); items.forEach(item => { const li = document.createElement('li'); li.textContent = item; ul.appendChild(li); });
+          col.append(t, ul); cols.appendChild(col);
+        });
+        box.appendChild(cols);
+      }
+      if (Array.isArray(parsed.criteria) && parsed.criteria.length) {
+        const table = document.createElement('table'); table.className = 'my-criteria';
+        table.innerHTML = '<thead><tr><th>Criterion</th><th>Score</th><th>Notes</th></tr></thead>';
+        const body = document.createElement('tbody');
+        parsed.criteria.forEach(c => {
+          const tr = document.createElement('tr');
+          [c.name, c.max_score ? `${c.score}/${c.max_score}` : c.score, c.notes].forEach(v => { const td = document.createElement('td'); td.textContent = v ?? ''; tr.appendChild(td); });
+          body.appendChild(tr);
+        });
+        table.appendChild(body); box.appendChild(table);
+      }
     }
 
     function openEditAssignment() {
@@ -3765,6 +3853,7 @@ module.exports = QRCode;
           expectedSeconds:25, uploadLabel:'Uploading your file', aiLabel:'Gemini is reviewing your work', doneLabel:'Submitted'});
         if (!ok) throw Error(data.detail || 'Could not upload file');
         byId('file-name-display').textContent='';
+        delete byId('submit-area').dataset.userOpened;
         await Promise.all([loadMyAssignmentSubmission(),loadAssignmentFeedbackForum(),loadNotifications()]);
         showToast(data.ai_status==='reviewed' ? '✓ Assignment submitted and reviewed · awaiting lecturer approval' : data.ai_status==='review_failed' ? '✓ File submitted. The AI was busy — the review will retry automatically.' : '✓ File submitted. AI review pending.');
       } catch(e) {showToast(e.message,true);}
@@ -3856,9 +3945,17 @@ module.exports = QRCode;
           const grade=document.createElement('div');grade.className='sub-grade';
           const label=document.createElement('label');label.textContent='Final grade';label.className='field-label';
           const input=document.createElement('input');input.type='number';input.min='0';input.max='100';input.className='field-control grade-input';input.value=sub.llm_grade??'';
-          const approve=document.createElement('button');approve.type='button';approve.className='success-btn';approve.textContent=sub.final_grade_approved?'Update grade':'Approve grade';
-          approve.onclick=()=>updateGrade(sub.id,true,input.value);
-          grade.append(label,input,approve);card.append(grade);container.appendChild(card);
+          // Requirement: "Approve grade" confirms the AI grade; "Update grade" saves the number typed by the lecturer.
+          const aiGrade=sub.llm_grade??'';
+          const approve=document.createElement('button');approve.type='button';approve.className='btn btn-live btn-sm';
+          approve.textContent=sub.final_grade_approved?'✓ Approved':'Approve grade';
+          approve.disabled=!aiGrade||(sub.final_grade_approved&&String(input.value)===String(aiGrade));
+          approve.title=aiGrade?`Confirm ${aiGrade} as the final grade`:'No AI grade yet';
+          approve.onclick=()=>{input.value=aiGrade;updateGrade(sub.id,true,aiGrade);};
+          const update=document.createElement('button');update.type='button';update.className='btn btn-quiet btn-sm';update.textContent='Update grade';
+          update.title='Save the grade typed in the box as the final grade';
+          update.onclick=()=>updateGrade(sub.id,true,input.value);
+          grade.append(label,input,approve,update);card.append(grade);container.appendChild(card);
         });
       } catch(e) {container.textContent=e.message;}
     }
