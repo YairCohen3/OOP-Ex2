@@ -1,80 +1,133 @@
-# SmartClass - Web-Based Teaching Management Tool
+# SmartClass – Web-Based Teaching Tool
 
-> A smart web application designed for lecturers and students to manage university classrooms effortlessly.
+SmartClass is a web app for running a university class: attendance, questions, polls, lecture summaries and assignment reviews. Lecturers work from a laptop and a projector, and students use their phones with no app to install.
 
----
-
-## Problem Statement
-Current online tools used in university classrooms fail to provide a smooth, straightforward experience. Lecturers and students need simpler, smarter, and more direct tools to handle classroom presence, real-time engagement, and homework workflows without getting bogged down by cumbersome legacy portals.
-
----
-
-## Our Approach
-SmartClass offers a lightweight, end-to-end web platform built specifically for classroom environments. By removing complex external integrations and focusing on clean, mobile-first design for students and intuitive dashboards for lecturers, the platform streamlines the entire teaching and learning cycle.
+**Live demo:** https://oop-ex2-production.up.railway.app
+**Course:** Introduction to Software Engineering (OOP, OOD), Ex2: Vibe Coding & Deep Designing
+**Team:** Yair Cohen ([@YairCohen3](https://github.com/YairCohen3)), Yaari Meirovich ([@YaariMeirovich](https://github.com/YaariMeirovich))
 
 ---
 
-## Key Features for Smarter Classroom Management
+## Problem statement
 
-1. **Automated Attendance Tracking**
-   * Students scan a dynamic QR code displayed on the classroom screen by the lecturer.
-   * Following a session closure (`SESSION END`), the system cross-references QR scans with a physical head count of a classroom photo (Gemini vision, lecturer can correct it).
-   * Generates a clean Excel attendance report ensuring student privacy by using institutional emails instead of ID numbers.
+The online tools used in class today are slow and awkward. Taking attendance by calling names wastes class time and is easy to fake. Questions get lost, quick polls need a separate tool, recordings sit unwatched, and homework feedback arrives late. Lecturers and students need simpler, LLM-ready tools.
 
-2. **Real-Time & Offline Q&A Forum**
-   * A dedicated course forum where students can post questions or suggestions during the lecture or after hours.
-   * Lecturers and peers can reply and collaborate seamlessly.
+## Scope
 
-3. **Polls**
-   * Multiple-choice questions created by the lecturer featuring a live-updating results graph and an interactive discussion thread.
-   * Active during live classes or bounded by custom time limits for post-class reviews.
+**In scope:** the five features in the assignment, in one web app that runs in this class:
 
-4. **AI Lecture Summarization**
-   * Lecturers can upload a class recording or provide a link (Zoom / Google Classroom) to generate clear text summaries accessible to all students.
+| # | Feature | What SmartClass does |
+|---|---|---|
+| 1 | **Attendance** (main feature) | Students check in by scanning a QR code that changes every 10 seconds. The lecturer locks check-ins, takes one classroom photo, Gemini counts the people, and the system cross-checks the count against the check-ins. The approved list is exported to Excel (no ID numbers). |
+| 2 | **Q&A forum** | A forum for each lecture, open during and after class, with threaded replies. |
+| 3 | **Polls** | Quick multiple-choice polls with a live chart and a discussion thread. Live polls close with the lecture; polls on past lectures close after a time limit. |
+| 4 | **Lecture summary** | The lecturer uploads the recording (up to 500 MB) or a public YouTube link, and Gemini writes a summary that all students can read. |
+| 5 | **Assignment review** | Students submit their work, Gemini writes a deep review and recommends a grade, and the lecturer approves or changes it. Students see the grade only after approval. Anonymous feedback is shared with the class, and a comparison of all submissions is shown to the lecturer only. |
 
-5. **Assignment Submissions & LLM Feedback**
-   * Students submit homework and receive instant AI-generated deep reviews and recommended grades.
-   * Final grades remain strictly private and subject to lecturer approval, while verbal feedback is published to a shared course feedback forum.
+**Out of scope** (per the assignment guidelines): integration with Moodle, Zoom or personal-information systems, self sign-up, and production identity management.
 
 ---
 
-## Project Documents
+## Project documents
 
-| Document | Description |
+Each item in the assignment's To-Do list and where it is answered:
+
+| To-Do | Deliverable | Document |
+|---|---|---|
+| 1 | Repository, problem and scope | This README |
+| 3 | Technical tools report | [Technical Tools Report](Documents/Technical%20Tools%20Report.md) |
+| 4 | Statement of Work | [Statement of Work](Documents/Statement%20of%20Work.md) |
+| 5 | Software Requirements Specification | [SRS](Documents/SRS.md) |
+| 6 | Use cases and client stories | [Use Cases](Documents/Use%20Cases.md) |
+| 7 | Main software components | [Components & Class Diagram](Documents/Class%20Diagram.md), section 1 |
+| 8 | Class and sequence diagrams | [Class Diagram](Documents/Class%20Diagram.md), section 2, and [Sequence Diagrams](Documents/Sequence%20Diagrams.md) |
+| 9 | Testing strategy | [Testing Strategy](Documents/Testing%20Strategy.md) and [`test_main.py`](test_main.py) |
+| 10 | Demo web application | The code in this repository, deployed at the live demo link |
+| 11 | Demo in class | Demo script in [Testing Strategy](Documents/Testing%20Strategy.md), section 6 |
+| 12 | Conclusion | [Conclusion](Documents/Conclusion.md) |
+
+---
+
+## Technology
+
+| Part | Technology |
 |---|---|
-| [Statement of Work](Documents/Statment%20of%20Work.md) | Objectives, scope, milestones |
-| [Technical Tools Report](Documents/Technical%20Tools%20Report.md) | Tools tested and chosen |
-| [SRS](Documents/SRS.md) | Functional and non-functional requirements |
-| [Use Cases](Documents/Use%20Cases.md) | Actors, client stories, detailed use cases |
-| [Components & Class Diagram](Documents/Class%20Diagram.md) | Architecture and low-level class diagram |
-| [Sequence Diagrams](Documents/Sequence%20Diagrams.md) | Main flows step by step |
-| [Testing Strategy](Documents/Testing%20Strategy.md) | Test levels, coverage per class, demo checklist |
-| [Conclusion](Documents/Conclusion.md) | Results, decisions, limitations |
+| Backend | Python 3.12, FastAPI, SQLAlchemy, SQLite |
+| Frontend | One HTML page with plain JavaScript and CSS (no build step), mobile-first, Hebrew and English |
+| AI | Google Gemini API: people counting, video summaries, assignment reviews and comparison |
+| QR | `qrcode` (generated on our server), `html5-qrcode` (phone camera scanning) |
+| Files | `openpyxl` (Excel report), `pypdf` and `python-docx` (reading submissions), `Pillow` (photos) |
+| Hosting | Railway, with a persistent Volume for the database and uploaded files |
+| Tests | `pytest` with FastAPI `TestClient` |
+
+## Repository structure
+
+```
+├── main.py            FastAPI app: all API endpoints and business logic
+├── models.py          Core database classes (SQLAlchemy)
+├── database.py        Database connection and data folder
+├── index.html         The whole web interface (lecturer and student)
+├── test_main.py       Automated tests (unit and API)
+├── conftest.py        Test setup: temporary database, no AI calls
+├── requirements.txt   Python dependencies
+├── README.he.md       Run and deploy guide in Hebrew
+└── Documents/         Design documents (SoW, SRS, use cases, diagrams, tests, conclusion)
+```
 
 ---
 
-## Running Locally
+## Running locally
 
 ```bash
 python -m pip install -r requirements.txt
-python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000   # open http://127.0.0.1:8000
+python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000   # then open http://127.0.0.1:8000
 python -m pytest -v                                               # run the tests
 ```
 
-Set `GEMINI_API_KEY` to enable the AI features. More details (Hebrew): [README-SmartClass-HE.txt](README-SmartClass-HE.txt).
+### Environment variables
+
+| Variable | Required | Purpose |
+|---|---|---|
+| `GEMINI_API_KEY` | For the AI features | Without it, the AI features say they are not configured. They never invent a result. |
+| `GEMINI_MODEL` | No | Main model. Default: `gemini-3.5-flash` |
+| `GEMINI_FALLBACK_MODEL` | No | Used when the main model is busy. Default: `gemini-3.5-flash-lite` |
+| `SMARTCLASS_DATA_DIR` | On Railway | Folder for the database, uploads and Excel reports. Point it to the Volume (for example `/data`), or data is lost on every deploy. |
+| `SMARTCLASS_QR_SECRET` | With more than one server | Fixed secret for the dynamic QR codes. |
+
+The API key is set only on the server. It is never in the code or in the browser.
+
+### Deploying (Railway)
+
+1. Push to `master`. Railway deploys automatically.
+2. Add a Volume and set `SMARTCLASS_DATA_DIR` to its mount path.
+3. Set `GEMINI_API_KEY` under Variables.
+
+The phone camera needs HTTPS to scan the QR, which the Railway deployment provides.
 
 ---
 
-## How to Use the Platform
+## How to use
 
-### For Lecturers:
-1. **Log In:** Enter your institutional email and authenticate securely using the one-time verification code (OTP) sent to your inbox.
-2. **Create a Course:** Click **"Create Course"**, enter the course name and description, and distribute the generated unique `Course ID` to your students.
-3. **Manage Classes:** Open a new session at the beginning of class. Project the dynamic QR code for attendance, launch live polls, and post assignments.
-4. **Post-Class Actions:** Upload recording links/videos for automated summaries, review student assignment submissions, and manage the Q&A forum.
+### Lecturer
+1. **Log in** with your institutional email and the one-time code. Your role comes from the institution's list.
+2. **Create a course** and give students the Course ID (`CRS-…`).
+3. **Start a lecture.** The attendance QR fills the screen for the projector. When the students have checked in, press **End attendance**.
+4. **Take a classroom photo** (on the laptop, or on your phone through the upload QR). Gemini counts the people. Check the cross-check result and press **Approve & export Excel**.
+5. **During and after the lecture:** answer questions, run polls, and generate the summary from the recording.
+6. **Assignments:** publish an assignment, read the AI reviews, and approve or change each grade. You can also run the AI comparison of all submissions.
 
-### For Students:
-1. **Log In:** Enter your institutional email and verify your identity using the OTP code sent to your email.
-2. **Join a Course:** Go to **"My Courses"**, click **"Join Course"**, and enter the `Course ID` provided by your lecturer in class.
-3. **During Class:** Scan the active attendance QR code to log your presence, participate in live polls, and ask questions in the course forum.
-4. **Post-Class & Assignments:** Access lecture summaries, participate in offline polls before their timer expires, submit assignments, and review feedback.
+### Student
+1. **Log in** with your institutional email and the one-time code.
+2. **Join a course** with the Course ID from your lecturer.
+3. **In class:** open the live lecture, scan the QR to check in, ask questions and vote in polls.
+4. **After class:** read the lecture summary and submit assignments. Your grade and feedback appear after your lecturer approves them.
+
+---
+
+## Known limitations
+
+- For the demo, the one-time login code is shown on screen instead of being sent by email.
+- The list of authorized users is defined in the code (`AUTH_USERS` in `main.py`).
+- Live updates refresh every 5 seconds (polling), not over WebSockets.
+
+The full list is in the [Conclusion](Documents/Conclusion.md).

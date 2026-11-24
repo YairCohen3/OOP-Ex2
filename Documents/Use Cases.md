@@ -60,7 +60,7 @@ flowchart LR
 | CS-7 | lecturer | open a poll after class with a deadline | students can review the material at home |
 | CS-8 | lecturer | upload the lecture recording and get a summary | students get notes without extra work from me |
 | CS-9 | student | read summaries of all lectures | I can catch up on a lecture I missed |
-| CS-10 | student | get an AI review and recommended grade right after I submit | I know what to improve |
+| CS-10 | student | get a deep review of my work, checked by my lecturer | I know what to improve and the grade is fair |
 | CS-11 | lecturer | approve or change the AI grade | the final grade is still my decision |
 | CS-12 | student | read the feedback given to others (without grades) | I learn from my classmates' mistakes |
 | CS-13 | lecturer | see a comparison of all submissions | I find common gaps and suspicious similarity |
@@ -72,7 +72,7 @@ flowchart LR
 |---|---|
 | **Actors** | Lecturer, Student |
 | **Precondition** | The user's institutional email is in the authorized list. |
-| **Main flow** | 1. User chooses Student or Lecturer login. 2. User enters institutional email. 3. System creates a 4-digit OTP valid for 120 s and sends it (demo: shows it on screen). 4. User enters the code. 5. System verifies it and opens "My Courses" with the user's role. |
+| **Main flow** | 1. User enters the institutional email (there is no role choice). 2. System checks the email in the institution's list. 3. System creates a 4-digit OTP valid for 120 s and sends it (demo: shows it on screen). 4. User enters the code. 5. System verifies it and opens "My Courses" with the role from the list (lecturer or student). |
 | **Alternative flows** | 2a. Email not authorized → "Email not found in institution records". 4a. Wrong code → error, user can retry. 4b. Code expired → user presses "resend code". |
 | **Postcondition** | User is logged in. |
 | **Requirements** | FR-1.1 – FR-1.5 |
@@ -106,9 +106,9 @@ flowchart LR
 | | |
 |---|---|
 | **Actor** | Lecturer |
-| **Main flow** | 1. Lecturer presses "Create new lecture". 2. System creates an active (green) lecture, starts the dynamic QR and notifies students. … 3. At the end the lecturer closes the lecture; it turns grey and its live polls close. |
-| **Alternative flows** | 1a. A lecture is already active → the system opens the existing one instead of creating a duplicate. 3a. Attendance not yet verified → system asks for a photo count or explicit approval first. |
-| **Requirements** | FR-3.1 – FR-3.3 |
+| **Main flow** | 1. Lecturer presses "Start new lecture". 2. System creates an active (green) lecture, opens the dynamic QR full screen for the projector (UC-7) and notifies students. 3. (Optional) Lecturer renames the lecture, e.g. "Inheritance and interfaces". … 4. At the end the lecturer presses **End lecture**; it turns grey, its live polls close, and the lecturer returns to the course page. |
+| **Alternative flows** | 1a. A lecture is already active → the system opens the existing one instead of creating a duplicate. 4a. Attendance not yet verified → system asks for a photo count or explicit approval first. 5. A past lecture can be deleted with all its data. |
+| **Requirements** | FR-3.1 – FR-3.6 |
 
 ### UC-6: Check in with QR
 | | |
@@ -116,7 +116,7 @@ flowchart LR
 | **Actor** | Student |
 | **Precondition** | Student is a member of the course; the lecture is active; check-in is open. |
 | **Main flow** | 1. Student opens the green lecture and presses "Check in". 2. Phone camera opens; student scans the QR on the projector. 3. System validates the code and records the check-in with a timestamp. 4. Student sees "Check-in successful". |
-| **Alternative flows** | 3a. Code older than 10 s (+2 s grace) → "QR code expired. Scan the newest code". 3b. Not a course member → "Please join this course". 3c. Lecturer already pressed SESSION END → "Attendance QR is paused". 3d. Already checked in → "Attendance already recorded". |
+| **Alternative flows** | 3a. Code older than 10 s (+2 s grace) → "QR code expired. Scan the newest code". 3b. Not a course member → "Please join this course". 3c. Lecturer already pressed End attendance → "Attendance QR is paused". 3d. Already checked in → "Attendance already recorded". |
 | **Postcondition** | One attendance record for the student in this lecture. |
 | **Requirements** | FR-4.3 – FR-4.5 |
 
@@ -125,8 +125,8 @@ flowchart LR
 |---|---|
 | **Actors** | Lecturer, Gemini AI |
 | **Precondition** | Active lecture; students have checked in (UC-6). |
-| **Main flow** | 1. Lecturer projects the dynamic QR; the live count grows. 2. Lecturer presses **SESSION END**; check-ins are locked. 3. Lecturer takes a classroom photo (laptop camera, file, or phone via an upload QR). 4. System sends the photo to Gemini and gets the number of people. 5. System cross-checks check-ins vs. people. 6. If people ≥ check-ins, the list is valid; lecturer presses **Approve**. 7. System generates the Excel report (name, email, time, status). 8. Lecturer downloads the report. |
-| **Alternative flows** | 5a. **Check-ins > people** → system shows a discrepancy warning with three options: **(a)** restart attendance (check-ins deleted, new QR round, back to step 1); **(b)** retake the photo (back to step 3); **(c)** approve anyway and export (step 7, marked "approved with discrepancy"). 4a. AI counting fails or no key → system asks the lecturer to type a verified count; it never invents a number. 4b. Lecturer corrects the AI count manually → cross-check runs again. |
+| **Main flow** | 1. The dynamic QR fills the projector screen as soon as the lecture starts; the live count grows. The full-screen view cannot be closed until step 2. 2. Lecturer presses **End attendance** (SESSION END); check-ins are locked. 3. Lecturer takes a classroom photo (laptop camera, file, or phone via an upload QR). 4. System sends the photo to Gemini and gets the number of people. 5. System cross-checks check-ins vs. people. 6. If people ≥ check-ins, the list is valid; lecturer presses **Approve**. 7. System generates the Excel report (name, email, time, status). 8. The attendance section collapses into a one-line summary; the lecturer downloads the report from it. |
+| **Alternative flows** | 5a. **Check-ins > people** → system shows a discrepancy warning with three options: **(a)** restart attendance (check-ins deleted, new QR round, back to step 1); **(b)** retake the photo (back to step 3); **(c)** approve anyway and export (step 7, marked "approved with discrepancy"). 4a. AI counting fails or no key → system asks the lecturer to type a verified count; it never invents a number. 4b. Lecturer corrects the AI count manually → cross-check runs again. 2a. A student arrives late → lecturer presses "Reopen check-ins" (back to step 1). |
 | **Postcondition** | Approved attendance and an `.xlsx` report saved on the server. |
 | **Requirements** | FR-4.1 – FR-4.16 |
 
@@ -182,7 +182,7 @@ flowchart LR
 | | |
 |---|---|
 | **Actors** | Student, Gemini AI |
-| **Main flow** | 1. Student opens the assignment and uploads a file. 2. System stores the file and extracts its text. 3. Gemini reviews it against the instructions and rubric and returns a score and a deep review. 4. Student sees the recommended grade (marked "pending lecturer approval") and the review. 5. The verbal review (without grade) appears anonymously in the feedback forum. |
+| **Main flow** | 1. Student clicks the assignment; a popup opens and the student attaches up to 10 files. 2. System stores the files and extracts their text. 3. Gemini reviews the work against the instructions and rubric and returns a score and a deep review, which go to the lecturer. 4. Student sees "Waiting for your lecturer's grade" (no AI grade is shown). 5. After the lecturer approves the grade (UC-15), the student sees the final grade and the feedback. |
 | **Alternative flows** | 1a. Unsupported type or > 50 MB → error. 3a. Gemini fails → status "review failed"; system retries automatically 3 times; lecturer can re-run. 3b. No API key → status "pending configuration" (no fake grade). 1b. Student resubmits → previous submission and review are replaced. |
 | **Requirements** | FR-8.2 – FR-8.5, FR-8.7 |
 
@@ -190,14 +190,14 @@ flowchart LR
 | | |
 |---|---|
 | **Actor** | Lecturer |
-| **Main flow** | 1. Lecturer opens the submissions list. 2. Reads the AI review, keeps or changes the grade (0–100). 3. Presses Approve. 4. Student is notified and sees the final grade. |
-| **Requirements** | FR-8.4 |
+| **Main flow** | 1. Lecturer opens the submissions list. 2. Reads the AI review and the recommended grade. 3. Presses **Approve grade** to keep it, or types another grade (0–100) and presses **Update grade**. 4. Student is notified and sees the final grade and the feedback. 5. The verbal review (without grade or name) appears in the assignment's feedback forum. |
+| **Requirements** | FR-8.4, FR-8.5 |
 
 ### UC-16: Read feedback forum
 | | |
 |---|---|
 | **Actor** | Student |
-| **Main flow** | 1. Student opens the assignment's feedback forum. 2. Reads the reviews of all submissions, labelled "Submission N", with no grades or names. |
+| **Main flow** | 1. Student opens the assignment's feedback forum. 2. Reads the reviews of the submissions whose grades were approved, labelled "Submission N", with no grades or names. |
 | **Requirements** | FR-8.5 |
 
 ### UC-17: View comparison report

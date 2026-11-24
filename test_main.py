@@ -565,8 +565,15 @@ class TestLectureSummary:
 
     def test_students_read_saved_summary(self, client, live_lecture):
         _, session_id = live_lecture
-        client.post(f"/api/sessions/{session_id}/ai-summary", params={"summary_text": "Today: inheritance."})
+        client.post(f"/api/sessions/{session_id}/ai-summary",
+                    params={"summary_text": "Today: inheritance.", "lecturer_email": LECTURER})
         assert client.get(f"/api/sessions/{session_id}/ai-summary").json()["ai_summary"] == "Today: inheritance."
+
+    def test_student_cannot_edit_summary(self, client, live_lecture):
+        _, session_id = live_lecture
+        response = client.post(f"/api/sessions/{session_id}/ai-summary",
+                               params={"summary_text": "hacked", "lecturer_email": STUDENT})
+        assert response.status_code == 403
 
     def test_no_summary_yet(self, client, live_lecture):
         _, session_id = live_lecture

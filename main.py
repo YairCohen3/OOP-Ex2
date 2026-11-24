@@ -1441,15 +1441,6 @@ def post_forum_message(session_id: int, student_email: str, student_name: str,
     return {"message": "Forum post created successfully"}
 
 
-@app.post("/api/forum/reply")
-def reply_forum_message(post_id: int, reply: str, db: Session = Depends(get_db)):
-    post = db.query(models.ForumPost).filter(models.ForumPost.id == post_id).first()
-    if not post:
-        raise HTTPException(status_code=404, detail="Post not found")
-    post.reply = reply
-    db.commit()
-    return {"message": "Reply added successfully"}
-
 
 @app.get("/api/sessions/{session_id}/forum")
 def get_session_forum(session_id: int, db: Session = Depends(get_db)):
@@ -1790,10 +1781,11 @@ def get_summary_job(session_id: int):
 
 
 @app.post("/api/sessions/{session_id}/ai-summary")
-def upload_ai_summary(session_id: int, summary_text: str, db: Session = Depends(get_db)):
+def upload_ai_summary(session_id: int, summary_text: str, lecturer_email: str, db: Session = Depends(get_db)):
     session = db.query(models.Session).filter(models.Session.id == session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
+    lecturer_course(db, session.course_id, lecturer_email)  # only the course lecturer edits the summary
     session.ai_summary = summary_text
     db.commit()
     return {"message": "Summary saved successfully"}

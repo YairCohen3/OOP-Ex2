@@ -21,7 +21,7 @@ sequenceDiagram
     participant UI as Web UI
     participant API as FastAPI (main.py)
 
-    U->>UI: Choose role, enter institutional email
+    U->>UI: Enter institutional email (no role choice)
     UI->>API: POST /api/auth/request-otp?email
     alt email not in institution list
         API-->>UI: 403 "Email not found in institution records"
@@ -35,7 +35,7 @@ sequenceDiagram
             API-->>UI: 401 error (user may resend)
         else valid
             API->>API: compare_digest, remove code
-            API-->>UI: {email, name, role}
+            API-->>UI: {email, name, role from the institution list}
             UI-->>U: Open "My Courses"
         end
     end
@@ -57,8 +57,10 @@ sequenceDiagram
     L->>LUI: Create new lecture
     LUI->>API: POST /api/sessions/start?course_id&lecturer_email
     API->>DB: check ownership, no other active lecture
-    API->>DB: INSERT Session(is_active=true), notify students
+    API->>DB: INSERT Session(is_active=true)
+    API->>DB: clear leftover attendance state for this id, notify students
     API-->>LUI: {session_id, qr_code, expires_in_seconds}
+    LUI-->>L: QR full screen (locked until End attendance)
 
     loop every 10 s while attendance is open
         LUI->>API: GET /api/sessions/{id}/refresh-qr
@@ -89,7 +91,7 @@ sequenceDiagram
 
 ---
 
-## 3. SESSION END, classroom photo, cross-check and Excel (UC-7 – main flow)
+## 3. End attendance (SESSION END), classroom photo, cross-check and Excel (UC-7 – main flow)
 
 ```mermaid
 sequenceDiagram
@@ -99,10 +101,11 @@ sequenceDiagram
     participant DB as DB
     participant G as Gemini
 
-    L->>LUI: Press SESSION END
+    L->>LUI: Press End attendance
     LUI->>API: POST /api/sessions/{id}/qr-control?enabled=false
     API->>DB: SessionQRControl.enabled = false (check-ins locked)
     API-->>LUI: qr_enabled = false
+    LUI-->>L: Leave full screen, show "Classroom photo" step
 
     L->>LUI: Take / upload classroom photo
     LUI->>API: POST /api/sessions/{id}/photo (image, upload token)
@@ -146,6 +149,7 @@ sequenceDiagram
     API->>API: write_attendance_report() with openpyxl
     Note right of API: Columns: Student Name, Institutional Email,<br/>Timestamp, Status (no ID numbers)
     API-->>LUI: excel_report_generated
+    LUI-->>L: Attendance section collapses to a summary line
     L->>LUI: Download Excel
     LUI->>API: GET /api/sessions/{id}/attendance-report
     API-->>LUI: attendance_session_{id}.xlsx
@@ -246,7 +250,7 @@ sequenceDiagram
     participant LUI as Lecturer UI
     actor L as Lecturer
 
-    S->>SUI: Upload answer file
+    S->>SUI: Click assignment, attach up to 10 files in the popup
     SUI->>API: POST /api/assignments/{id}/submit-file
     API->>API: store_upload(): type & size check, extract text (PDF/DOCX/ZIP/code)
     API->>DB: upsert Submission + SubmissionDocument (ai_status = pending)
@@ -258,10 +262,8 @@ sequenceDiagram
         API->>DB: ai_status = review_failed
         API->>API: background retries after 20 s, 60 s, 180 s
     end
-    API-->>SUI: grade (pending approval) + review
-
-    SUI->>API: GET /api/assignments/{id}/feedback-forum
-    API-->>SUI: reviews of all submissions as "Submission N" (no grades)
+    API-->>SUI: "submitted" (no grade, no review)
+    SUI-->>S: "Waiting for your lecturer's grade"
 
     L->>LUI: Open submissions
     LUI->>API: GET /api/assignments/{id}/submissions
@@ -269,6 +271,11 @@ sequenceDiagram
     L->>LUI: Keep / change grade, Approve
     LUI->>API: POST /api/assignments/submission/{sid}/grade?grade&approved=true
     API->>DB: final grade saved, notify student
+
+    SUI->>API: GET /api/assignments/{id}/my-submission
+    API-->>SUI: final grade + review (only now, after approval)
+    SUI->>API: GET /api/assignments/{id}/feedback-forum
+    API-->>SUI: reviews of approved submissions as "Submission N" (no grades, no names)
 
     L->>LUI: Run AI comparison
     LUI->>API: POST /api/assignments/{id}/run-comparison

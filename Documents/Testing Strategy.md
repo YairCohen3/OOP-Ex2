@@ -37,16 +37,16 @@ Each class of the design and the tests that cover it:
 | `User` / `AUTH_USERS` | Only authorized emails get an OTP; role comes from the list; OTP expires after 120 s; OTP single-use; wrong code rejected. | `TestAuthentication` |
 | `Course` | Unique `CRS-` ID; empty name rejected; only lecturers create courses. | `TestCourses` |
 | `StudentCourse` | Join by Course ID; unknown course rejected; lecturer adds/removes students; only the course lecturer manages the list. | `TestCourses` |
-| `Session` (lecture) | Start returns a QR; only one active lecture per course; students cannot start; closing needs a photo count or explicit approval; closed lecture becomes past. | `TestLectures` |
-| `AttendanceRecord` | Check-in with current QR; no duplicates; old QR rejected; outsiders rejected; SESSION END locks check-ins; no check-in after the lecture closed. | `TestAttendanceCheckIn`, `TestQRCode` |
+| `Session` (lecture) | Start returns a QR; only one active lecture per course; students cannot start; closing needs a photo count or explicit approval; closed lecture becomes past; a new lecture that reuses a deleted lecture's id starts with check-ins open; deleting a past lecture removes its data. | `TestLectures`, `TestDeleteLecture`, `TestAttendanceCheckIn` |
+| `AttendanceRecord` | Check-in with current QR; no duplicates; old QR rejected; outsiders rejected; End attendance (SESSION END) locks check-ins; no check-in after the lecture closed. | `TestAttendanceCheckIn`, `TestQRCode` |
 | `SessionPhotoState`, `AttendanceApproval` | Cross-check rules (no photo / more check-ins / more people / match); discrepancy needs explicit approval; manual count; restart clears the round; invalid photo token rejected. | `TestAttendanceCrossCheck`, `TestAttendanceCrossCheckFlow` |
 | Excel report | Columns exactly `Student Name, Institutional Email, Timestamp, Status` (**no ID numbers**); content correct; only the lecturer can download. | `TestAttendanceCrossCheckFlow` |
 | `ForumPost`, `ForumThreadReply` | Post question; empty rejected; outsiders rejected; lecturer and students reply; forum open after the lecture. | `TestForum` |
 | `Poll`, `PollVote`, `PollComment`, `PollTimeWindow` | Vote and live results; change vote; multiple-answer toggle; invalid options; voting locks when the lecture closes; post-lecture poll needs a time limit and closes when time is up; discussion thread. | `TestPolls`, `TestPollChoices` |
-| `Session.ai_summary` (video summary) | Without an AI key the request is refused (503) and nothing is invented; only the lecturer can request; students read the saved summary. | `TestLectureSummary` |
+| `Session.ai_summary` (video summary) | Without an AI key the request is refused (503) and nothing is invented; only the lecturer can request a summary or edit its text; students read the saved summary. | `TestLectureSummary` |
 | `Assignment`, `AssignmentBrief` | Create; invalid due date; students cannot create. | `TestAssignments` |
-| `Submission`, `SubmissionDocument` | Upload; unsupported type rejected; lecturer/outsider cannot submit; resubmission replaces; no fake AI grade without a key; lecturer approves the final grade; invalid grades rejected; students cannot approve. | `TestAssignments` |
-| Feedback forum | Only reviewed submissions appear; entries contain label + review only (**no grade, no name**). | `TestAssignments` |
+| `Submission`, `SubmissionDocument` | Upload; unsupported type rejected; lecturer/outsider cannot submit; resubmission replaces; no fake AI grade without a key; lecturer approves the final grade; invalid grades rejected; students cannot approve; **the student cannot see the AI grade or review before the lecturer approves it**. | `TestAssignments` |
+| Feedback forum | Only reviewed submissions whose grade was approved appear for students; entries contain label + review only (**no grade, no name**). | `TestAssignments` |
 | `AssignmentComparisonReport` | Comparison visible **only to the lecturer**; overlap pairs; AI comparison needs ≥ 2 submissions. | `TestAssignments` |
 
 ## 5. Requirement Coverage (summary)
@@ -73,15 +73,16 @@ On the deployed Railway URL (HTTPS), with 2–3 real phones:
 3. ☐ Lecturer starts a lecture; QR on the projector changes every 10 s.
 4. ☐ Each phone scans the QR → "Check-in successful"; the lecturer's count updates within 5 s.
 5. ☐ A photo of the QR sent to someone outside the room fails after 10 s.
-6. ☐ SESSION END → a phone scan now fails with "paused".
+6. ☐ The QR stays full screen (Esc does not close it) → End attendance → a phone scan now fails with "paused".
 7. ☐ Classroom photo (use one from the course folder) → Gemini count appears.
 8. ☐ Force a discrepancy (manual count lower than check-ins) → warning with options (a)/(b)/(c); try "retake" and "restart".
-9. ☐ Approve → download Excel → open it: name, email, time, status, no ID column.
+9. ☐ Approve → the attendance section collapses to one line → download Excel → open it: name, email, time, status, no ID column.
 10. ☐ Student asks a forum question; lecturer replies; reply appears on the phone.
 11. ☐ Live poll → votes from phones → chart updates; close the lecture → voting locked.
 12. ☐ Past lecture: post-lecture poll with 2-minute limit; vote; wait → closed.
 13. ☐ Upload a short lecture video → summary appears; student reads it.
-14. ☐ Publish an assignment; submit 2 files from the assignment list → AI grade + review; lecturer approves; feedback forum shows reviews without grades; lecturer runs the comparison.
+14. ☐ Publish an assignment; submit 2 files from the assignment list → the student sees "Waiting for your lecturer's grade"; the lecturer sees the AI grade and review and approves; the student now sees the grade; the feedback forum shows reviews without grades; the lecturer runs the comparison.
+15a. ☐ End lecture → the lecturer is back on the course page; the lecture appears under past lectures.
 15. ☐ Repeat steps 3–4 on iPhone Safari and Android Chrome.
 
 ## 7. Entry / Exit Criteria
@@ -96,7 +97,14 @@ These were found by reviewing the API for the test plan. They do not affect the 
 
 | # | Issue | Related | Severity |
 |---|---|---|---|
-| 1 | `POST /api/forum/reply` (old single-reply endpoint) does not check who is replying. The UI uses the newer `/api/forum/{id}/replies`, which does. | FR-1.6 | Minor |
-| 2 | `POST /api/sessions/{id}/ai-summary` (manual summary text) does not check that the caller is the lecturer. | FR-1.6 | Minor |
-| 3 | `POST /api/students/enroll` does not check that the email belongs to a registered student. | FR-2.3 | Minor |
-| 4 | Authentication is email-based in each request (no session token) – acceptable for the demo, not for production. | NFR-4 | Known limitation |
+| 1 | `POST /api/students/enroll` does not check that the email belongs to a registered student. | FR-2.3 | Minor |
+| 2 | Authentication is email-based in each request (no session token) – acceptable for the demo, not for production. | NFR-4 | Known limitation |
+
+Fixed after review: the old single-reply endpoint `POST /api/forum/reply` (no permission check, not used by the UI) was removed, and `POST /api/sessions/{id}/ai-summary` now requires the course lecturer (covered by `test_student_cannot_edit_summary`).
+
+Issues found while testing the live site, fixed with a regression test:
+
+| Bug | Cause | Test |
+|---|---|---|
+| A new lecture opened with check-ins already closed | Deleting a course left its lectures' QR state behind; SQLite reused the lecture id | `test_new_lecture_starts_open_even_if_old_id_is_reused` |
+| The student saw the AI grade before the lecturer approved it | The API returned the AI grade to the student | `test_student_sees_grade_only_after_lecturer_approves` |

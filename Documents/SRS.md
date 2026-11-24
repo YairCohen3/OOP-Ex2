@@ -3,9 +3,9 @@
 | | |
 |---|---|
 | **Project** | SmartClass – Web-based teaching tool (Ex2, Introduction to Software Engineering) |
-| **Version** | 1.0 |
+| **Version** | 1.1 |
 | **Date** | 24/11/2026 |
-| **Related documents** | `README.md`, `Statment of Work.md`, `Technical Tools Report.md`, `Class Diagram.md`, `Use Cases.md`, `Sequence Diagrams.md`, `Testing Strategy.md` |
+| **Related documents** | `README.md`, `Statement of Work.md`, `Technical Tools Report.md`, `Class Diagram.md`, `Use Cases.md`, `Sequence Diagrams.md`, `Testing Strategy.md` |
 
 ---
 
@@ -30,7 +30,7 @@ SmartClass is a single web application (FastAPI backend + one responsive HTML/JS
 |---|---|
 | Course ID | Unique code generated for each course (e.g. `CRS-482`), given to students in class to join. |
 | Lecture / Session | One class meeting under a course. **Active** (green) while running, **past** (grey) after it is closed. |
-| SESSION END | The lecturer's action that locks QR check-ins before the classroom photo is taken. |
+| End attendance (SESSION END) | The lecturer's action that locks QR check-ins before the classroom photo is taken. |
 | Cross-check | Comparison between number of QR check-ins and number of people counted in the photo. |
 | OTP | One-time verification code used to log in. |
 | LLM | Large Language Model (Google Gemini). |
@@ -83,7 +83,7 @@ Priority: **M** = Must (needed for the demo), **S** = Should, **C** = Could.
 ### 3.1 Authentication and access (FR-1)
 | ID | Requirement | Priority |
 |---|---|---|
-| FR-1.1 | The home screen shall let the user choose **Student login** or **Lecturer login**. | M |
+| FR-1.1 | The login screen shall ask only for the institutional email. The role (lecturer or student) comes from the institution's list, so the user does not choose it. | M |
 | FR-1.2 | The user shall enter an institutional email; the system shall reject emails not in the institution's authorized list. | M |
 | FR-1.3 | The system shall generate a one-time code (OTP) valid for **120 seconds** and show a countdown with a "resend code" option. | M |
 | FR-1.4 | After a valid OTP the user shall be logged in with the role defined in the authorized list and redirected to "My Courses". | M |
@@ -107,18 +107,21 @@ Priority: **M** = Must (needed for the demo), **S** = Should, **C** = Could.
 |---|---|---|
 | FR-3.1 | A lecturer shall start a new lecture under a course. At most **one active lecture** per course is allowed. | M |
 | FR-3.2 | Course members shall be notified when a lecture starts. | S |
-| FR-3.3 | A lecturer shall close (end) the lecture; it then becomes a past lecture. Closing the lecture closes its live polls. | M |
+| FR-3.3 | A lecturer shall close (end) the lecture; it then becomes a past lecture and the lecturer returns to the course page. Closing the lecture closes its live polls. | M |
+| FR-3.4 | A lecturer shall rename a lecture (the default name is "Lecture #N") and rename a course. | S |
+| FR-3.5 | A lecturer shall delete a past lecture together with everything recorded in it. A live lecture must be ended first. | S |
+| FR-3.6 | A new lecture shall never inherit attendance state from a deleted lecture. | M |
 
 ### 3.4 Feature 1 – Smart attendance (FR-4) *(main feature)*
 | ID | Requirement | Priority |
 |---|---|---|
-| FR-4.1 | When a lecture is active the lecturer's screen shall show a **dynamic QR code** that changes every **10 seconds**, with a progress bar. | M |
+| FR-4.1 | When a lecture starts, the lecturer's screen shall show a **dynamic QR code** that changes every **10 seconds**, with a progress bar. The QR opens full screen for the projector and stays there until the lecturer presses **End attendance**. | M |
 | FR-4.2 | The QR value shall be derived from a server secret (HMAC of lecture ID and time slot) so it cannot be predicted or reused later. | M |
 | FR-4.3 | A student shall check in by scanning the QR code with the phone camera from inside their logged-in account. | M |
 | FR-4.4 | A check-in shall be accepted only if: the lecture is active, the student is a member of the course, check-in is not locked, and the code is the current one (or the previous one within a **2-second** grace period). | M |
 | FR-4.5 | A student can check in only once per lecture; a repeated scan shall return "already checked in" without creating a duplicate. | M |
 | FR-4.6 | The lecturer shall see the live count and list of checked-in students. | M |
-| FR-4.7 | The lecturer shall press **SESSION END** to lock check-ins; the lecture itself stays live (forum and polls continue). | M |
+| FR-4.7 | The lecturer shall press **End attendance** (SESSION END) to lock check-ins; the lecture itself stays live (forum and polls continue). Until attendance is approved, the lecturer may reopen check-ins. | M |
 | FR-4.8 | After SESSION END the lecturer shall take a classroom photo (or upload one), from the laptop or from a phone through a one-time upload link/QR. | M |
 | FR-4.9 | The system shall count the people in the photo using the AI vision model and show the count to the lecturer. JPEG, PNG, WebP and HEIC up to 12 MB are accepted. | M |
 | FR-4.10 | The lecturer shall be able to correct the count manually. If AI counting fails, the system shall say so and ask for a manual count — it shall never invent a number. | M |
@@ -128,6 +131,7 @@ Priority: **M** = Must (needed for the demo), **S** = Should, **C** = Could.
 | FR-4.14 | On approval the system shall generate an Excel file (`.xlsx`) with **Student Name, Institutional Email, Timestamp, Status** and **no ID numbers**. | M |
 | FR-4.15 | The Excel report shall be downloadable by the lecturer at any time from the active or past lecture (online and offline use). | M |
 | FR-4.16 | The student's check-in panel shall disappear after the student has checked in and the lecturer has locked attendance. | S |
+| FR-4.17 | After approval, the attendance section on the lecturer's screen shall be replaced by a one-line summary with the Excel download and a "Restart attendance" option. | S |
 
 ### 3.5 Feature 2 – Lecture Q&A forum (FR-5)
 | ID | Requirement | Priority |
@@ -160,10 +164,10 @@ Priority: **M** = Must (needed for the demo), **S** = Should, **C** = Could.
 | ID | Requirement | Priority |
 |---|---|---|
 | FR-8.1 | The lecturer shall create an assignment with title, description, due date, optional rubric and optional brief file; and may edit or delete it. | M |
-| FR-8.2 | A student shall submit a file (PDF, DOCX, ZIP, source/text files, up to 50 MB). Resubmitting replaces the earlier submission. | M |
+| FR-8.2 | A student shall submit up to 10 files (PDF, DOCX, ZIP, source/text files, 50 MB in total) from a popup on the assignment. Several files are packed into one ZIP. Resubmitting replaces the earlier submission. | M |
 | FR-8.3 | On submission the LLM shall return a **recommended grade (0–100)** and a **deep review** (per-criterion scores, strengths, improvements), following the lecturer's rubric if given. | M |
-| FR-8.4 | The grade shall be visible only to the student and the lecturer, and is **final only after lecturer approval**. The lecturer may change it. | M |
-| FR-8.5 | The verbal review (without the grade) shall be published automatically to the course's **feedback forum**, anonymized as "Submission N". | M |
+| FR-8.4 | The AI grade and review shall be shown **to the lecturer only**. The lecturer approves the grade or changes it. Until then the student sees "Waiting for your lecturer's grade"; after approval the student sees the final grade and the feedback. The grade is never shown to other students. | M |
+| FR-8.5 | The verbal review (without the grade) shall be published to the assignment's **feedback forum**, anonymized as "Submission N", once the lecturer has approved that submission's grade. | M |
 | FR-8.6 | The lecturer shall run an **LLM comparison** of all submissions (quality, strengths/weaknesses, similarity), visible **only to the lecturer**, with the average recommended grade and text-overlap indicators. | M |
 | FR-8.7 | A failed AI review shall be retried automatically (after 20 s, 60 s, 180 s) and can be re-run by the lecturer. | S |
 | FR-8.8 | The system shall not claim plagiarism; overlap figures are presented as indicators only. | M |
@@ -174,6 +178,12 @@ Priority: **M** = Must (needed for the demo), **S** = Should, **C** = Could.
 | FR-9.1 | Users shall receive in-app notifications for new lectures, polls, forum replies, summaries, reviews and approved grades. | C |
 | FR-9.2 | Users shall mark notifications as read (single, per course, all) and clear them. | C |
 
+### 3.10 Interface (FR-10)
+| ID | Requirement | Priority |
+|---|---|---|
+| FR-10.1 | The interface shall be available in English and Hebrew (right-to-left), switchable at any time; the choice is remembered on the device. | C |
+| FR-10.2 | On a desktop, a side bar shall list the user's courses under "My courses" for quick navigation. | C |
+
 ---
 
 ## 4. Non-Functional Requirements
@@ -183,9 +193,9 @@ Priority: **M** = Must (needed for the demo), **S** = Should, **C** = Could.
 | NFR-1 | Usability (KISS) | A student reaches check-in in at most 3 taps after login. The student UI is mobile-first; the lecturer UI is readable on a projector. |
 | NFR-2 | Performance | QR check-in responds in under 1 s. Lecture data (attendance, forum, polls) refreshes on screen at most every 5 s. |
 | NFR-3 | Performance | Photo counting returns within 60 s; assignment review within 120 s; video summaries run in the background without blocking the UI. |
-| NFR-4 | Security | OTP and QR codes are compared in constant time; the QR secret is a server-side HMAC key; the Gemini key is server-side only. |
+| NFR-4 | Security | OTP and QR codes are compared in constant time; the QR secret is a server-side HMAC key; the Gemini key is server-side only. Every lecturer action (including editing a summary) checks course ownership on the server. |
 | NFR-5 | Security | All uploaded content (submissions, briefs) is treated by the LLM as untrusted data, not instructions (prompt-injection guard). |
-| NFR-6 | Privacy | No national ID numbers are stored or exported. Grades are private to student and lecturer. The comparison report is lecturer-only. Classroom photos are not stored — only the count. |
+| NFR-6 | Privacy | No national ID numbers are stored or exported. AI grades and reviews are hidden from the student until the lecturer approves them; final grades are private to the student and the lecturer. The comparison report is lecturer-only. Classroom photos are not stored, only the count. |
 | NFR-7 | Reliability | Gemini failures (429/5xx) are retried and fall back to a secondary model. The AI never fabricates a count, grade or summary. |
 | NFR-8 | Portability | Runs locally (`uvicorn`) or on Railway; data folder configurable with `SMARTCLASS_DATA_DIR`; SQLite can be replaced by PostgreSQL. |
 | NFR-9 | Maintainability | Backend split into data models (`models.py`), DB access (`database.py`) and API (`main.py`); automated tests with `pytest`. |
@@ -202,7 +212,7 @@ Main entities (see `Class Diagram.md` for the full diagram):
 | User | email, name, role (lecturer / student) |
 | Course | course_id, title, description, lecturer_email |
 | StudentCourse | student_email, course_id |
-| Session (lecture) | id, course_id, is_active, current_qr_code, ai_summary |
+| Session (lecture) / SessionTitle | id, course_id, is_active, current_qr_code, ai_summary; custom lecture name |
 | AttendanceRecord | session_id, student_email, student_name, timestamp |
 | SessionPhotoState / AttendanceApproval | detected_people, detection method, approval time, approved_with_discrepancy |
 | Poll / PollVote / PollComment / PollTimeWindow | question, options, votes, comments, closes_at |
@@ -219,7 +229,7 @@ Excel attendance report columns: `Student Name | Institutional Email | Timestamp
 
 | Assignment feature | Requirements |
 |---|---|
-| 1. Attendance + photo count + spreadsheet (main) | FR-4.1 – FR-4.16 |
+| 1. Attendance + photo count + spreadsheet (main) | FR-4.1 – FR-4.17 |
 | 2. Comments / suggestions in real time and offline | FR-5.1 – FR-5.4 |
 | 3. On-the-spot KISS polls | FR-6.1 – FR-6.6 |
 | 4. ML summary of class video | FR-7.1 – FR-7.5 |

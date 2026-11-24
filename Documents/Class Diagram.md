@@ -44,7 +44,7 @@ flowchart TB
    * *Collaboration Engine:* Lecture Q&A forum with threaded replies, KISS polls (live or time-limited) with comments, in-app notifications.
 3. **Attendance Engine:**
    * Generates dynamic QR codes (HMAC of lecture ID + 10-second time slot).
-   * Validates check-ins, locks them on SESSION END.
+   * Opens the QR full screen when a lecture starts, validates check-ins, and locks them when the lecturer presses End attendance (SESSION END).
    * Sends the classroom photo to the **Gemini vision model** for a head count (the lecturer can correct it), runs the cross-check and the approval flow.
    * Generates the privacy-safe `.xlsx` report via `openpyxl`.
 4. **AI & LLM Service (Google Gemini API):**
@@ -94,6 +94,10 @@ classDiagram
         +bool is_active
         +str current_qr_code
         +str ai_summary
+    }
+    class SessionTitle {
+        +int session_id
+        +str title
     }
     class AttendanceRecord {
         +int id
@@ -208,6 +212,7 @@ classDiagram
     Course "1" -- "0..*" SmartNotification
     Session "1" *-- "0..*" AttendanceRecord
     Session "1" -- "0..1" SessionQRControl
+    Session "1" -- "0..1" SessionTitle
     Session "1" -- "0..1" SessionPhotoState
     Session "1" -- "0..1" AttendanceApproval
     Session "1" *-- "0..*" ForumPost
@@ -231,6 +236,7 @@ The business logic is grouped in functions that act on the classes above:
 | Access control | `lecturer_course`, `member_course`, `lecturer_assignment`, `assignment_for_member` |
 | Dynamic QR | `qr_at`, `get_qr_status`, `qr_enabled`, `lock_attendance` |
 | Attendance cross-check | `count_people_from_image`, `attendance_crosscheck`, `write_attendance_report` |
+| Assignment review | `review_submission`, `retry_review_in_background`, `review_for_response` (hides the AI grade from the student until it is approved) |
 | Polls | `poll_choices`, `poll_allows_multiple` |
 | AI (Gemini) | `gemini_generate`, `gemini_grade`, `gemini_compare_assignments`, `run_video_summary_job` |
 | Files | `store_upload`, `extract_document_text` |

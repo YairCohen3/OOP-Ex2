@@ -4086,7 +4086,7 @@ module.exports = QRCode;
       if (currentUser.role !== 'lecturer') return;
       const value = byId('summary-editor').value.trim();
       try {
-        const url = `${API_URL}/api/sessions/${currentSessionId}/ai-summary?summary_text=${encodeURIComponent(value)}`;
+        const url = `${API_URL}/api/sessions/${currentSessionId}/ai-summary?summary_text=${encodeURIComponent(value)}&lecturer_email=${encodeURIComponent(currentUser.email)}`;
         const response = await fetch(url, {method:'POST'});
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.detail || 'Could not save summary');

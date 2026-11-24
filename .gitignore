@@ -12,3 +12,6 @@ smartclass.db
 # Local backups and test cache
 backup/
 .pytest_cache/
+
+# Editor settings (PyCharm)
+.idea/
