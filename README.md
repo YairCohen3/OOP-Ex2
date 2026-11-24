@@ -18,7 +18,7 @@ SmartClass offers a lightweight, end-to-end web platform built specifically for 
 
 1. **Automated Attendance Tracking**
    * Students scan a dynamic QR code displayed on the classroom screen by the lecturer.
-   * Following a session closure (`SESSION END`), the system cross-references QR scans with physical head counts using AI computer vision.
+   * Following a session closure (`SESSION END`), the system cross-references QR scans with a physical head count of a classroom photo (Gemini vision, lecturer can correct it).
    * Generates a clean Excel attendance report ensuring student privacy by using institutional emails instead of ID numbers.
 
 2. **Real-Time & Offline Q&A Forum**
@@ -35,6 +35,33 @@ SmartClass offers a lightweight, end-to-end web platform built specifically for 
 5. **Assignment Submissions & LLM Feedback**
    * Students submit homework and receive instant AI-generated deep reviews and recommended grades.
    * Final grades remain strictly private and subject to lecturer approval, while verbal feedback is published to a shared course feedback forum.
+
+---
+
+## Project Documents
+
+| Document | Description |
+|---|---|
+| [Statement of Work](Documents/Statment%20of%20Work.md) | Objectives, scope, milestones |
+| [Technical Tools Report](Documents/Technical%20Tools%20Report.md) | Tools tested and chosen |
+| [SRS](Documents/SRS.md) | Functional and non-functional requirements |
+| [Use Cases](Documents/Use%20Cases.md) | Actors, client stories, detailed use cases |
+| [Components & Class Diagram](Documents/Class%20Diagram.md) | Architecture and low-level class diagram |
+| [Sequence Diagrams](Documents/Sequence%20Diagrams.md) | Main flows step by step |
+| [Testing Strategy](Documents/Testing%20Strategy.md) | Test levels, coverage per class, demo checklist |
+| [Conclusion](Documents/Conclusion.md) | Results, decisions, limitations |
+
+---
+
+## Running Locally
+
+```bash
+python -m pip install -r requirements.txt
+python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000   # open http://127.0.0.1:8000
+python -m pytest -v                                               # run the tests
+```
+
+Set `GEMINI_API_KEY` to enable the AI features. More details (Hebrew): [README-SmartClass-HE.txt](README-SmartClass-HE.txt).
 
 ---
 

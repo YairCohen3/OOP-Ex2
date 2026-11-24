@@ -8,3 +8,7 @@ attendance_reports/
 # The live database belongs on the server (Railway Volume), not in Git.
 # Only takes effect after: git rm --cached smartclass.db
 smartclass.db
+
+# Local backups and test cache
+backup/
+.pytest_cache/

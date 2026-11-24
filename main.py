@@ -631,6 +631,39 @@ def verify_otp(email: str, code: str):
     return {"email": email, "name": user_data["name"], "role": user_data["role"]}
 
 
+class MaintenanceRun(Base):
+    """Records one-time data maintenance steps so each runs only once per database."""
+    __tablename__ = "smartclass_maintenance_runs"
+    key = Column(String(100), primary_key=True)
+    ran_at = Column(DateTime, default=datetime.utcnow)
+
+
+MaintenanceRun.__table__.create(bind=engine, checkfirst=True)
+FRESH_START_KEY = "2026-11-24-fresh-start"
+
+
+def run_fresh_start_once(db: Session):
+    """Before the class demo: end every lecture that is still live and remove students from all
+    courses and lecture check-ins, so the demo starts clean. Runs once per database."""
+    if db.query(MaintenanceRun).filter(MaintenanceRun.key == FRESH_START_KEY).first():
+        return
+    for lecture in db.query(models.Session).filter(models.Session.is_active.is_(True)).all():
+        lecture.is_active = False
+        lecture.current_qr_code = None
+        for poll in db.query(models.Poll).filter(models.Poll.session_id == lecture.id).all():
+            poll.is_active = False
+    student_emails = [email for (email,) in db.query(models.User.email).filter(models.User.role == "student").all()]
+    student_emails += [email for email, user in AUTH_USERS.items() if user["role"] == "student"]
+    if student_emails:
+        db.query(models.StudentCourse).filter(models.StudentCourse.student_email.in_(student_emails)) \
+            .delete(synchronize_session=False)
+        db.query(models.AttendanceRecord).filter(models.AttendanceRecord.student_email.in_(student_emails)) \
+            .delete(synchronize_session=False)
+    db.add(MaintenanceRun(key=FRESH_START_KEY))
+    db.commit()
+    print(f"[SmartClass] One-time fresh start done: live lectures ended, {len(set(student_emails))} student(s) removed from courses")
+
+
 @app.on_event("startup")
 def load_seed_users():
     db = next(get_db())
@@ -639,6 +672,7 @@ def load_seed_users():
             if not db.query(models.User).filter(models.User.email == email).first():
                 db.add(models.User(email=email, name=user["name"], role=user["role"]))
         db.commit()
+        run_fresh_start_once(db)
     finally:
         db.close()
 
@@ -1142,7 +1176,8 @@ def close_session(session_id: int, lecturer_email: str, approve_mismatch: bool =
     state = session_photo_state(db, session_id, create=False)
     people = state.detected_people if state else None
     scanned = len(records)
-    if people is None and not approve_mismatch:
+    # Nobody checked in: there is nothing to verify, so no photo is needed to end the lecture.
+    if people is None and scanned > 0 and not approve_mismatch:
         raise HTTPException(status_code=409, detail="Analyze a class photo or enter a verified people count before closing")
     if people is not None and scanned > people and not approve_mismatch:
         raise HTTPException(status_code=409, detail="Discrepancy: more QR check-ins than detected people. Review, retake, restart or explicitly approve")
@@ -1152,7 +1187,8 @@ def close_session(session_id: int, lecturer_email: str, approve_mismatch: bool =
         poll.is_active = False
     if not db.query(AttendanceApproval).filter(AttendanceApproval.session_id == session_id).first():
         db.add(AttendanceApproval(session_id=session_id, scanned=scanned, people=people,
-                                  approved_with_discrepancy=people is None or scanned > people))
+                                  approved_with_discrepancy=(people is None and scanned > 0)
+                                  or (people is not None and scanned > people)))
     db.commit()
     filename = write_attendance_report(db, session_id)
     return {"status": "Lecture closed", "qr_scanned_count": scanned,
@@ -1162,6 +1198,34 @@ def close_session(session_id: int, lecturer_email: str, approve_mismatch: bool =
             "warning": "More check-ins than people in the photo" if people is not None and scanned > people
                        else ("No photo count is available" if people is None else "Review attendance before approval"),
             "excel_report_generated": filename}
+
+
+@app.delete("/api/sessions/{session_id}")
+def delete_past_lecture(session_id: int, lecturer_email: str, db: Session = Depends(get_db)):
+    """Delete a finished lecture with everything recorded in it (attendance, photo count, polls,
+    forum, summary, Excel report). Live lectures must be ended first."""
+    lecture = db.query(models.Session).filter(models.Session.id == session_id).first()
+    if not lecture:
+        raise HTTPException(status_code=404, detail="Lecture not found")
+    lecturer_course(db, lecture.course_id, lecturer_email)
+    if lecture.is_active:
+        raise HTTPException(status_code=409, detail="End the lecture before deleting it")
+    poll_ids = [pid for (pid,) in db.query(models.Poll.id).filter(models.Poll.session_id == session_id).all()]
+    if poll_ids:
+        for table in (PollComment, PollSettings, PollTimeWindow):
+            db.query(table).filter(table.poll_id.in_(poll_ids)).delete(synchronize_session=False)
+    post_ids = [pid for (pid,) in db.query(models.ForumPost.id).filter(models.ForumPost.session_id == session_id).all()]
+    if post_ids:
+        db.query(ForumThreadReply).filter(ForumThreadReply.post_id.in_(post_ids)).delete(synchronize_session=False)
+    for table in (SessionPhotoState, AttendanceApproval, SessionQRControl):
+        db.query(table).filter(table.session_id == session_id).delete(synchronize_session=False)
+    db.query(SmartNotification).filter(SmartNotification.target_type == "session",
+                                       SmartNotification.target_id == session_id).delete(synchronize_session=False)
+    db.delete(lecture)  # ORM cascade removes check-ins, polls (with votes) and forum posts
+    db.commit()
+    (REPORTS_DIR / f"attendance_session_{session_id}.xlsx").unlink(missing_ok=True)
+    VIDEO_JOBS.pop(session_id, None)
+    return {"message": "Lecture deleted", "session_id": session_id}
 
 
 @app.delete("/api/lecturers/attendance/students/{student_email}")
