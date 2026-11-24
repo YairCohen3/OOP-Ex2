@@ -1,7 +1,7 @@
 # Technical Tools Report & Real-World Testing
 
 ## 1. Objective & Scope
-The purpose of this report is to evaluate and test the technical tools selected for the **SmartClass** application, ensuring they meet the KISS (Keep It Simple, Stupid) guidelines and perform reliably under real classroom conditions (specifically addressing attendance head-counting and AI processing workflows).
+The purpose of this report is to evaluate and test the technical tools selected for the **SmartClass** application, ensuring they meet the KISS guidelines and perform reliably under real classroom conditions (specifically addressing attendance head-counting and AI processing workflows).
 
 ---
 
