@@ -837,6 +837,159 @@ body.qr-locked .sc-qr-card.projecting #qr-toggle-button { min-height: 72px; padd
   .logout-btn { padding: 0 9px; }
 }
 </style>
+<style id="sc-pages-r2">
+/* ===== Lecture & assignment pages, round 2 ===== */
+/* Attendance: progress steps */
+.att-steps { display: flex; gap: 6px; margin: 4px 0 16px; padding: 0; list-style: none; counter-reset: none; }
+.att-steps li { flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0; padding: 10px 14px; border-radius: 10px; background: var(--tint); color: var(--ink-3); font-size: 14px; font-weight: 600; }
+.att-steps li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.att-steps b { display: grid; place-items: center; flex: 0 0 26px; height: 26px; border-radius: 50%; background: #fff; border: 1.5px solid var(--rule-2); font-size: 13px; }
+#lecturer-active-tools[data-stage="qr"] .att-steps li[data-step="1"],
+#lecturer-active-tools[data-stage="verify"]:not([data-photo="1"]) .att-steps li[data-step="2"],
+#lecturer-active-tools[data-stage="verify"][data-photo="1"] .att-steps li[data-step="3"] { background: var(--board); color: var(--chalk); }
+#lecturer-active-tools[data-stage="qr"] .att-steps li[data-step="1"] b,
+#lecturer-active-tools[data-stage="verify"]:not([data-photo="1"]) .att-steps li[data-step="2"] b,
+#lecturer-active-tools[data-stage="verify"][data-photo="1"] .att-steps li[data-step="3"] b { background: var(--marker); border-color: var(--marker); color: var(--marker-ink); }
+#lecturer-active-tools[data-stage="verify"] .att-steps li[data-step="1"],
+#lecturer-active-tools[data-stage="verify"][data-photo="1"] .att-steps li[data-step="2"] { color: var(--live-dark); }
+#lecturer-active-tools[data-stage="verify"] .att-steps li[data-step="1"] b,
+#lecturer-active-tools[data-stage="verify"][data-photo="1"] .att-steps li[data-step="2"] b { background: var(--live); border-color: var(--live); color: transparent; position: relative; }
+#lecturer-active-tools[data-stage="verify"] .att-steps li[data-step="1"] b::after,
+#lecturer-active-tools[data-stage="verify"][data-photo="1"] .att-steps li[data-step="2"] b::after { content: "✓"; position: absolute; inset: 0; display: grid; place-items: center; color: #fff; }
+@media (max-width: 640px) { .att-steps li { padding: 8px; justify-content: center; } .att-steps li span { display: none; } }
+
+/* Attendance: verify stage layout: photo | cross-check, then the check-in list */
+#lecturer-active-tools[data-stage="verify"] .sc-photo-card { order: 1; }
+#lecturer-active-tools[data-stage="verify"] .sc-verify-card { order: 2; }
+#lecturer-active-tools[data-stage="verify"] .sc-attendance-card { order: 3; padding: 16px 22px; }
+#lecturer-active-tools[data-stage="verify"] .sc-attendance-card .sc-live-number strong { font-size: 30px; }
+#lecturer-active-tools[data-stage="verify"] .sc-attendance-card { display: grid; grid-template-columns: auto 1fr; align-items: start; gap: 4px 24px; }
+#lecturer-active-tools[data-stage="verify"] .sc-attendance-card .sc-card-eyebrow { grid-column: 1; margin: 0; }
+#lecturer-active-tools[data-stage="verify"] .sc-attendance-card .sc-live-number { grid-column: 1; }
+#lecturer-active-tools[data-stage="verify"] .sc-checkin-list { grid-column: 2; grid-row: 1 / span 2; display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 6px; max-height: 128px; }
+#lecturer-active-tools[data-stage="verify"] .sc-checkin-row { margin: 0; gap: 8px; }
+#lecturer-active-tools[data-stage="verify"] .sc-checkin-row span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#lecturer-active-tools[data-stage="verify"] .sc-checkin-row small { flex-shrink: 0; }
+@media (max-width: 700px) {
+  #lecturer-active-tools[data-stage="verify"] .sc-attendance-card { grid-template-columns: 1fr; }
+  #lecturer-active-tools[data-stage="verify"] .sc-checkin-list { grid-column: 1; grid-row: auto; }
+}
+.sc-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+.sc-card-head h3 { margin: 0; font-size: 19px; font-weight: 700; }
+.sc-photo-card .sc-hint-top { margin: 0 0 14px; }
+
+.photo-drop { display: grid; justify-items: center; gap: 4px; padding: 24px 18px 20px; border: 2px dashed var(--rule-2); border-radius: var(--r); background: var(--paper); text-align: center; transition: border-color .15s, background .15s; }
+.photo-drop svg { width: 34px; height: 34px; color: var(--ink-2); margin-bottom: 4px; }
+.photo-drop strong { font-size: 16px; }
+.photo-drop > span { color: var(--ink-3); font-size: 13.5px; }
+.photo-drop.dragging { border-color: var(--live); background: var(--live-tint); }
+.photo-drop-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 12px; }
+.photo-again { display: block; margin-top: 8px; }
+.phone-route { display: flex; align-items: center; gap: 14px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--rule); }
+.phone-route img { flex: 0 0 76px; width: 76px; height: 76px; padding: 3px; border: 1px solid var(--rule); border-radius: 8px; background: #fff; image-rendering: pixelated; }
+.phone-route strong { display: block; font-size: 14.5px; }
+.phone-route p { margin: 2px 0 0; color: var(--ink-3); font-size: 13.5px; }
+.phone-route .sc-photo-actions { margin-top: 8px; }
+
+/* Cross-check tally: the two counts side by side, on the board */
+.tally { display: grid; grid-template-columns: 1fr 1fr; margin: 12px 0 8px; border-radius: var(--r); background: var(--board); color: var(--chalk); overflow: hidden; }
+.tally-cell { display: grid; gap: 2px; padding: 16px 18px 14px; }
+.tally-cell + .tally-cell { border-inline-start: 1px dashed rgba(238,243,239,.28); }
+.tally-cell span { color: var(--chalk-dim); font-size: 13.5px; font-weight: 600; }
+.tally-cell strong { font-family: var(--serif); font-size: 52px; font-weight: 700; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.tally-photo strong { color: var(--marker); }
+.sc-verify-card #live-detection-method:empty { display: none; }
+.sc-verify-card .att-check .att-nums { display: none; }
+.sc-verify-card .field-label { margin-top: 14px; }
+.sc-verify-card .sc-correct-row { margin-top: 6px; }
+
+/* Lecture tabs content */
+.session-extra-card .panel-head { align-items: flex-start; margin-bottom: 14px; }
+.session-extra-card .panel-head .session-helper { margin: 4px 0 0; }
+
+/* Forum */
+.forum-composer { display: grid; grid-template-columns: auto 1fr auto; align-items: end; gap: 10px; margin-bottom: 6px; padding: 12px; border: 1px solid var(--rule); border-radius: var(--r); background: var(--paper); }
+.forum-composer .avatar { align-self: start; margin-top: 4px; }
+.forum-composer textarea { min-height: 46px; resize: vertical; background: #fff; }
+.forum-composer .btn { white-space: nowrap; }
+@media (max-width: 560px) { .forum-composer { grid-template-columns: auto 1fr; } .forum-composer .btn { grid-column: 1 / -1; } }
+.forum-thread .forum-post { display: grid; grid-template-columns: 34px 1fr; column-gap: 12px; padding: 16px 0; }
+.forum-thread .forum-post > .avatar { grid-row: 1 / span 2; background: var(--tint); color: var(--ink); }
+.forum-thread .forum-post > :not(.avatar) { grid-column: 2; }
+.forum-thread .forum-post > strong { font-size: 14px; }
+.forum-thread .forum-post > p { margin: 2px 0 6px; }
+.forum-thread .forum-post > .sc-text-btn { justify-self: start; }
+.forum-empty { display: grid; justify-items: center; gap: 4px; padding: 34px 16px; color: var(--ink-3); text-align: center; }
+.forum-empty strong { color: var(--ink); font-family: var(--serif); font-size: 18px; }
+
+/* Summary */
+#ai-summary-text { padding: 4px 0 6px; }
+.summary-tools { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 16px; margin-top: 22px; padding-top: 22px; border-top: 1px solid var(--rule); }
+.summary-tool { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 20px; border: 1px solid var(--rule); border-radius: var(--r); background: var(--paper); }
+.summary-tool h4 { margin: 0; font-size: 17px; }
+.summary-tool .session-helper { margin: 0; }
+.summary-tool .btn { align-self: flex-start; }
+.summary-tool .sc-hint { margin: -4px 0 0; }
+.video-drop { display: grid; justify-items: center; gap: 2px; padding: 20px 14px; border: 2px dashed var(--rule-2); border-radius: var(--r); background: #fff; text-align: center; cursor: pointer; }
+.video-drop:hover, .video-drop:focus-within { border-color: var(--ink-2); }
+.video-drop svg { width: 30px; height: 30px; color: var(--ink-2); margin-bottom: 4px; }
+.video-drop strong { font-size: 15px; overflow-wrap: anywhere; }
+.video-drop span { color: var(--ink-3); font-size: 13px; }
+.summary-edit textarea { flex: 1; min-height: 220px; background: #fff; font-size: 15px; line-height: 1.6; }
+@media (max-width: 900px) { .summary-tools { grid-template-columns: 1fr; } }
+
+/* Assignment: lecturer comparison */
+.comparison-panel { padding: 16px 18px; }
+.cmp-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.cmp-stats div { display: grid; padding: 10px 12px; border-radius: 10px; background: #fff; }
+.cmp-stats strong { font-family: var(--serif); font-size: 26px; line-height: 1.1; color: var(--ink); font-variant-numeric: tabular-nums; }
+.cmp-stats span { color: var(--ink-3); font-size: 12.5px; font-weight: 600; }
+@media (max-width: 560px) { .cmp-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.cmp-sub { display: block; margin: 14px 0 4px; color: var(--ink); font-size: 14px; }
+.cmp-pair { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--rule); font-size: 13.5px; }
+.cmp-pair span { overflow-wrap: anywhere; }
+.cmp-note { margin: 10px 0 0; color: var(--ink-3); font-size: 13px; }
+
+/* Assignment: one card per submission */
+.student-submission-card { padding: 18px 20px; border-inline-start: 4px solid var(--rule-2); }
+.student-submission-card.review { border-inline-start-color: var(--marker-edge); }
+.student-submission-card.approved { border-inline-start-color: var(--live); }
+.student-submission-card .sub-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 12px; flex-wrap: nowrap; }
+.sub-who { display: grid; min-width: 0; }
+.sub-who strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sub-who a { justify-self: start; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 600; }
+.sub-chip { padding: 4px 10px; border-radius: 999px; background: var(--tint); color: var(--ink-2); font-size: 12.5px; font-weight: 700; white-space: nowrap; }
+.sub-chip.review { background: var(--amber-tint); color: var(--amber-ink); }
+.sub-chip.approved { background: var(--live-tint); color: var(--live-dark); }
+.sub-score { display: grid; justify-items: center; min-width: 64px; }
+.student-submission-card .sub-score strong { font-family: var(--serif); font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums; }
+.sub-score span { color: var(--ink-3); font-size: 11.5px; font-weight: 600; }
+@media (max-width: 620px) {
+  .student-submission-card .sub-head { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .sub-chip { grid-column: 2; grid-row: 2; justify-self: start; }
+  .sub-score { grid-column: 3; grid-row: 1 / span 2; }
+}
+.student-submission-card .sub-review { margin: 14px 0 10px; }
+.sub-lists { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 12px; }
+.sub-lists h5 { margin: 0 0 4px; font-size: 13.5px; }
+.sub-lists ul { margin: 0; padding-inline-start: 18px; color: var(--ink-2); font-size: 14px; line-height: 1.55; }
+@media (max-width: 560px) { .sub-lists { grid-template-columns: 1fr; } }
+.student-submission-card .sub-grade { margin: 6px -20px -18px; padding: 12px 20px; border-top: 1px solid var(--rule); border-radius: 0 0 var(--r) var(--r); background: var(--paper); }
+.student-submission-card .grade-input { width: 90px; text-align: center; font-weight: 700; }
+
+/* Assignment: feedback forum quotes */
+.feedback-item { border: 0; border-inline-start: 3px solid var(--marker); border-radius: 0 var(--r) var(--r) 0; background: var(--paper); }
+html[dir="rtl"] .feedback-item { border-radius: var(--r) 0 0 var(--r); }
+
+/* Student: waiting for the lecturer's grade */
+.my-waiting { display: flex; gap: 16px; align-items: flex-start; padding: 22px; border: 1px solid #ecd9a6; border-radius: var(--r-lg); background: var(--amber-tint); }
+.my-waiting svg { flex: 0 0 34px; width: 34px; height: 34px; color: var(--amber-ink); }
+.my-waiting strong { display: block; font-family: var(--serif); font-size: 21px; color: var(--ink); }
+.my-waiting p { margin: 4px 0 6px; color: var(--ink-2); }
+.my-waiting small { color: var(--ink-3); overflow-wrap: anywhere; }
+.my-waiting.problem { border-color: #efc9c5; background: var(--red-tint); }
+.my-waiting.problem svg { color: var(--red); }
+</style>
 </head>
 <body>
   <header class="topbar">
@@ -1053,6 +1206,7 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
 
       <section id="lecturer-active-tools" class="tool-panel sc-live-tools hidden">
         <div class="sc-live-title"><div><h2>Attendance</h2><p>Students scan the QR. Then lock check-ins, photograph the class and approve the list.</p></div><span class="live-indicator"><i></i> Live</span></div>
+        <ol class="att-steps" aria-label="Attendance steps"><li data-step="1"><b>1</b><span>Students check in</span></li><li data-step="2"><b>2</b><span>Classroom photo</span></li><li data-step="3"><b>3</b><span>Cross-check and approve</span></li></ol>
         <div class="sc-live-grid">
           <div class="sc-qr-card">
             <div class="sc-card-eyebrow sc-qr-bar"><span>Step 1: Attendance QR</span><span class="sc-qr-actions"><button class="secondary-btn sc-project-btn" id="qr-project-button" type="button" onclick="toggleQrProjector()" aria-pressed="false" title="Show the QR on the whole screen for the projector"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span id="qr-project-label">Project full screen</span></button><button class="secondary-btn" id="qr-toggle-button" type="button" onclick="toggleAttendanceQr()">Pause QR</button></span></div><div class="sc-projector-head"><strong id="projector-course-title"></strong><span>Scan with SmartClass on your phone to check in</span></div>
@@ -1068,25 +1222,37 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
             <div class="sc-checkin-list" id="live-checkin-list"><span class="sc-muted">Waiting for the first student…</span></div>
           </div>
           <div class="sc-photo-card">
-            <div class="sc-card-eyebrow sc-step2-head"><span>Step 2: Classroom photo</span><button type="button" class="link-btn" onclick="reopenCheckins()">Reopen check-ins</button></div><p class="sc-hint sc-hint-top">Check-ins are closed. Take a photo of the class to verify the count.</p>
-            <div class="sc-phone-qr-line"><img id="mobile-photo-qr" alt="QR link to phone photo uploader"/><div><strong>Scan with your phone</strong><p>Open a secure upload link on the phone and take a classroom photo.</p></div></div>
-            <div class="sc-photo-actions"><button class="secondary-btn" type="button" onclick="copyMobilePhotoLink()">Copy phone link</button><a id="mobile-photo-link" href="#" target="_blank" rel="noopener noreferrer">Open upload page</a></div>
-            <label class="field-label sc-upload-label" for="class-photo-file">Or upload from this computer</label>
-            <input class="sr-file" type="file" id="class-photo-file" accept="image/*" onchange="uploadLecturerPhoto()" />
-            <div class="sc-photo-actions">
-              <button class="secondary-btn" type="button" onclick="byId('class-photo-camera').click()">📷 Take photo</button>
-              <button class="secondary-btn" type="button" onclick="byId('class-photo-file').click()">↑ Choose photo</button>
+            <div class="sc-card-head"><h3>Classroom photo</h3><button type="button" class="link-btn" onclick="reopenCheckins()">Reopen check-ins</button></div>
+            <p class="sc-hint sc-hint-top">Check-ins are closed. Take a photo of the class to verify the count.</p>
+            <div class="photo-drop" id="photo-drop">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+              <strong>Add a photo of the whole room</strong>
+              <span>Drop it here, or take one now. Gemini counts the people in it.</span>
+              <div class="photo-drop-actions">
+                <button class="btn btn-ink" type="button" onclick="byId('class-photo-camera').click()">Take photo</button>
+                <button class="btn btn-quiet" type="button" onclick="byId('class-photo-file').click()">Choose photo</button>
+              </div>
             </div>
+            <input class="sr-file" type="file" id="class-photo-file" accept="image/*" onchange="uploadLecturerPhoto()" />
             <input class="sr-file" type="file" id="class-photo-camera" accept="image/*" capture="environment" onchange="uploadLecturerPhoto('class-photo-camera')" />
-            <button class="secondary-btn sc-upload-btn" type="button" onclick="uploadLecturerPhoto()">Analyze selected photo</button>
+            <button id="photo-reanalyze" class="link-btn photo-again hidden" type="button" onclick="uploadLecturerPhoto()">Analyze the selected photo again</button>
             <p id="class-photo-message" class="sc-feedback" aria-live="polite"></p>
             <div id="class-photo-progress" class="hidden"></div>
+            <div class="phone-route">
+              <img id="mobile-photo-qr" alt="QR link to phone photo uploader"/>
+              <div><strong>Taking it with your phone?</strong><p>Scan this code to open the upload page on the phone.</p>
+                <div class="sc-photo-actions"><button class="btn btn-quiet btn-sm" type="button" onclick="copyMobilePhotoLink()">Copy phone link</button><a id="mobile-photo-link" href="#" target="_blank" rel="noopener noreferrer">Open upload page</a></div></div>
+            </div>
           </div>
           <div class="sc-verify-card">
-            <div class="sc-card-eyebrow">Step 3: Cross-check and approve</div>
-            <div class="sc-live-number"><strong id="live-detected-count">—</strong><span>estimated people in photo</span></div>
-            <p id="live-detection-method" class="sc-hint">No photo analyzed yet.</p>
+            <div class="sc-card-head"><h3>Cross-check and approve</h3></div>
+            <div class="tally">
+              <div class="tally-cell"><span>QR check-ins</span><strong id="verify-checkins">0</strong></div>
+              <div class="tally-cell tally-photo"><span>People in photo</span><strong id="live-detected-count">—</strong></div>
+            </div>
+            <p id="live-detection-method" class="sc-hint"></p>
             <div id="attendance-crosscheck" class="att-check" aria-live="polite"></div>
+            <label class="field-label" for="manual-people-count">Counted the room yourself?</label>
             <div class="sc-correct-row"><input class="field-control" id="manual-people-count" type="number" min="0" max="1000" placeholder="Verified count" /><button class="secondary-btn" type="button" onclick="submitManualCount()">Update count</button></div>
           </div>
         </div>
@@ -1096,11 +1262,13 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
       <nav class="session-tabs" role="tablist" aria-label="Lecture sections"><button type="button" role="tab" id="tab-forum" data-tab="forum" onclick="setSessionTab('forum')">Questions</button><button type="button" role="tab" id="tab-polls" data-tab="polls" onclick="setSessionTab('polls')">Polls</button><button type="button" role="tab" id="tab-summary" data-tab="summary" onclick="setSessionTab('summary')">Summary</button></nav>
       <div class="session-extras-grid">
         <section class="session-extra-card" data-panel="forum" role="tabpanel">
-          <div class="panel-head"><h3>Class forum</h3><button class="secondary-btn" type="button" onclick="loadSessionForum()">Refresh</button></div>
-          <p class="session-helper">Questions and answers stay available after the lecture.</p>
-          <div id="session-forum-posts" class="dynamic-list"></div>
-          <textarea id="session-forum-input" class="field-control" placeholder="Write a question or share an idea…"></textarea>
-          <div class="session-form-row"><button class="secondary-btn" type="button" onclick="postSessionForumMessage()">Post message</button></div>
+          <div class="panel-head"><div><h3>Class forum</h3><p class="session-helper">Questions and answers stay available after the lecture.</p></div><button class="btn btn-quiet btn-sm" type="button" onclick="loadSessionForum()">↻ Refresh</button></div>
+          <form class="forum-composer" onsubmit="event.preventDefault();postSessionForumMessage()">
+            <span class="avatar" id="forum-me-avatar" aria-hidden="true"></span>
+            <textarea id="session-forum-input" class="field-control" rows="2" placeholder="Write a question or share an idea…" onkeydown="if(event.key==='Enter'&&(event.ctrlKey||event.metaKey)){event.preventDefault();postSessionForumMessage();}"></textarea>
+            <button class="btn btn-ink" type="submit">Post message</button>
+          </form>
+          <div id="session-forum-posts" class="dynamic-list forum-thread"></div>
         </section>
         <section class="session-extra-card" data-panel="polls" role="tabpanel">
           <div class="panel-head"><h3>Class polls</h3><button id="btn-create-poll" class="secondary-btn hidden" type="button" onclick="togglePollComposer()">＋ New poll</button></div>
@@ -1120,18 +1288,31 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
         </section>
         <section class="session-extra-card session-extra-wide" data-panel="summary" role="tabpanel">
           <h3>Lecture summary</h3>
-          <p class="session-helper">Read the summary saved for this lecture. The lecturer can generate it from a recording with Gemini.</p>
-          <div id="ai-summary-text" class="sc-summary-body">Loading summary…</div>
-          <div id="summary-editor-box" class="hidden">
-            <div class="sc-compose-card sc-ai-card"><strong class="sc-ai-title">✧ Generate a summary with Gemini</strong>
-              <p class="session-helper">Upload a lecture recording (up to 500 MB, about 1–2 hours) or use a public YouTube link. Private Zoom/Classroom recordings must first be downloaded. Long videos take a few minutes — you can keep working; the summary appears here when ready.</p>
-              <label class="field-label" for="summary-video-url">Public YouTube URL (optional)</label><input id="summary-video-url" class="field-control" type="url" placeholder="https://www.youtube.com/watch?v=…" />
-              <label class="field-label" for="summary-video-file">Or select a video file (MP4, WebM, MOV, MPEG, AVI, WMV · up to 500 MB)</label><input id="summary-video-file" class="field-control" type="file" accept=".mp4,.webm,.mov,.mpeg,.mpg,.avi,.wmv,.3gp,video/*" />
-              <div class="session-form-row"><button id="summarize-video-button" class="secondary-btn" type="button" onclick="generateVideoSummary()">✧ Generate AI summary</button></div>
+          <p class="session-helper">The summary saved for this lecture. The lecturer can write it or generate it from the recording.</p>
+          <article id="ai-summary-text" class="sc-summary-body">Loading summary…</article>
+          <div id="summary-editor-box" class="summary-tools hidden">
+            <div class="summary-tool sc-ai-card">
+              <h4>✧ Generate a summary with Gemini</h4>
+              <p class="session-helper">Use the lecture recording, up to 500 MB (about 1–2 hours). Long videos take a few minutes; you can keep working and the summary appears here when it is ready.</p>
+              <label class="video-drop" for="summary-video-file">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg>
+                <strong id="video-drop-name">Choose a video file</strong>
+                <span>MP4, WebM, MOV, MPEG, AVI or WMV</span>
+                <input id="summary-video-file" class="sr-file" type="file" accept=".mp4,.webm,.mov,.mpeg,.mpg,.avi,.wmv,.3gp,video/*" onchange="byId('video-drop-name').textContent=this.files[0]?this.files[0].name:'Choose a video file'" />
+              </label>
+              <div class="or-line"><span>or a public YouTube link</span></div>
+              <input id="summary-video-url" class="field-control" type="url" placeholder="https://www.youtube.com/watch?v=…" aria-label="Public YouTube URL" />
+              <p class="sc-hint">Private Zoom or Classroom recordings must be downloaded first.</p>
+              <button id="summarize-video-button" class="btn btn-ink" type="button" onclick="generateVideoSummary()">✧ Generate AI summary</button>
               <p id="video-summary-status" class="sc-feedback" aria-live="polite"></p>
               <div id="video-summary-progress" class="hidden"></div>
             </div>
-            <label for="summary-editor" class="field-label">Edit text summary (lecturer)</label><textarea id="summary-editor" placeholder="Write or paste lecture notes here…"></textarea><div class="session-form-row"><button class="secondary-btn" type="button" onclick="saveSessionSummary()">Save summary</button></div>
+            <div class="summary-tool summary-edit">
+              <h4>Edit the summary</h4>
+              <p class="session-helper">Students see the text you save here. Lines that start with • become bullet points.</p>
+              <textarea id="summary-editor" class="field-control" placeholder="Write or paste lecture notes here…" aria-label="Lecture summary text"></textarea>
+              <button class="btn btn-ink" type="button" onclick="saveSessionSummary()">Save summary</button>
+            </div>
           </div>
         </section>
       </div>
@@ -1163,7 +1344,7 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
             <div id="lecturer-submissions-container" class="dynamic-list"></div>
           </section>
         </div>
-        <aside><section class="assignment-detail-card"><h3>Class feedback forum</h3><p class="assignment-help">Anonymized written feedback is shared with this class. No grades or student identities are shown here.</p><div id="assignment-feedback-list"><div class="course-empty">Loading feedback…</div></div></section></aside>
+        <aside><section class="assignment-detail-card"><h3>Class feedback forum</h3><p class="assignment-help" id="feedback-forum-help">Feedback on classmates' submissions, without names or grades. Each one appears after the lecturer approves its grade.</p><div id="assignment-feedback-list"><div class="course-empty">Loading feedback…</div></div></section></aside>
       </div>
   </main>
 
@@ -1409,6 +1590,55 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
     'Check-ins closed. Now take a photo of the class.': 'הרישום נסגר. עכשיו צלמו את הכיתה.',
     'Reopen check-ins? The QR will fill the screen again until you end attendance.': 'לפתוח את הרישום מחדש? ה-QR יוצג שוב על כל המסך עד שתסיימו את הנוכחות.',
     'Restart attendance': 'התחלת נוכחות מחדש', 'No photo count available yet.': 'עדיין אין ספירה מתמונה.',
+    // ---- round 2 pages
+    "Students check in": "הסטודנטים נרשמים",
+    "Classroom photo": "צילום הכיתה",
+    "Cross-check and approve": "הצלבה ואישור",
+    "Take photo": "צילום",
+    "Choose photo": "בחירת תמונה",
+    "Add a photo of the whole room": "הוסיפו תמונה של כל החדר",
+    "Drop it here, or take one now. Gemini counts the people in it.": "גררו אותה לכאן או צלמו עכשיו. Gemini סופר את האנשים בה.",
+    "Analyze the selected photo again": "ניתוח התמונה שנבחרה שוב",
+    "Taking it with your phone?": "מצלמים בטלפון?",
+    "Scan this code to open the upload page on the phone.": "סרקו את הקוד כדי לפתוח את דף ההעלאה בטלפון.",
+    "QR check-ins": "רישומי QR",
+    "People in photo": "אנשים בתמונה",
+    "Counted the room yourself?": "ספרתם את החדר בעצמכם?",
+    "No questions yet": "עדיין אין שאלות",
+    "Ask the first one above. Everyone in the course can answer.": "שאלו את הראשונה למעלה. כל מי שבקורס יכול לענות.",
+    "The summary saved for this lecture. The lecturer can write it or generate it from the recording.": "הסיכום השמור של ההרצאה. המרצה יכול לכתוב אותו או ליצור אותו מההקלטה.",
+    "Use the lecture recording, up to 500 MB (about 1–2 hours). Long videos take a few minutes; you can keep working and the summary appears here when it is ready.": "השתמשו בהקלטת ההרצאה, עד 500MB (בערך שעה-שעתיים). סרטון ארוך לוקח כמה דקות. אפשר להמשיך לעבוד, והסיכום יופיע כאן כשיהיה מוכן.",
+    "Choose a video file": "בחירת קובץ וידאו",
+    "MP4, WebM, MOV, MPEG, AVI or WMV": "MP4, WebM, MOV, MPEG, AVI או WMV",
+    "or a public YouTube link": "או קישור ציבורי ליוטיוב",
+    "Private Zoom or Classroom recordings must be downloaded first.": "הקלטות פרטיות מ-Zoom או מ-Classroom צריך להוריד קודם.",
+    "Edit the summary": "עריכת הסיכום",
+    "Students see the text you save here. Lines that start with • become bullet points.": "הסטודנטים רואים את הטקסט שתשמרו כאן. שורות שמתחילות ב-• יוצגו כרשימה.",
+    "Lecture summary text": "טקסט סיכום ההרצאה",
+    "Public YouTube URL": "קישור ציבורי ליוטיוב",
+    "Students see the feedback on a submission here, without names or grades, only after you approve its grade.": "הסטודנטים רואים כאן את המשוב על הגשה, בלי שמות ובלי ציונים, רק אחרי שתאשרו את הציון שלה.",
+    "Feedback on classmates' submissions, without names or grades. Each one appears after the lecturer approves its grade.": "משוב על הגשות של חברי הכיתה, בלי שמות ובלי ציונים. כל משוב מופיע אחרי שהמרצה מאשר את הציון.",
+    "No shared feedback yet.": "עדיין אין משוב משותף.",
+    "AI-reviewed": "נבדקו ב-AI",
+    "Grades approved": "ציונים אושרו",
+    "Average AI grade": "ציון AI ממוצע",
+    "Most similar text": "הטקסטים הדומים ביותר",
+    "Waiting for your approval": "ממתין לאישור שלך",
+    "AI busy · retrying": "ה-AI עמוס · מנסה שוב",
+    "File unreadable": "הקובץ לא נקרא",
+    "AI review pending": "סקירת AI בהמתנה",
+    "AI grade": "ציון AI",
+    "Feedback": "משוב",
+    "Your file could not be read": "לא הצלחנו לקרוא את הקובץ",
+    "Please submit again": "צריך להגיש שוב",
+    "Waiting for your lecturer's grade": "ממתין לציון המרצה",
+    "Your work was submitted. Your grade and feedback appear here after your lecturer approves them.": "העבודה הוגשה. הציון והמשוב יופיעו כאן אחרי שהמרצה יאשר אותם.",
+    "This is an old submission without a stored file.": "זו הגשה ישנה בלי קובץ שמור.",
+    "Waiting for grade": "ממתין לציון",
+    "✓ Submitted. Your grade appears after your lecturer approves it.": "✓ הוגש. הציון יופיע אחרי שהמרצה יאשר אותו.",
+    "Checking your files": "בודקים את הקבצים",
+    "Drop an image file (JPG, PNG, HEIC…)": "גררו קובץ תמונה (JPG, PNG, HEIC…)",
+    "Attendance steps": "שלבי הנוכחות",
     // ---- symbols that point in reading direction
     '›': '‹', '‹': '›', '→': '←', '←': '→',
   };
@@ -1429,6 +1659,7 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
     [/^↓ Download · (.+)$/, (m, f) => `↓ הורדה · ${f}`],
     [/^Evaluation rubric\n([\s\S]*)$/, (m, r) => `מחוון הערכה\n${r}`],
     [/^Submission (\d+)$/, (m, n) => `הגשה ${n}`],
+    [/^Grade: (\d+)$/, (m, n) => `ציון: ${n}`],
     [/^Submitted file: (.+)$/, (m, f) => `קובץ שהוגש: ${f}`],
     [/^Current file: (.+)\. Choose a new file below to replace it\.$/, (m, f) => `הקובץ הנוכחי: ${f}. אפשר לבחור קובץ חדש למטה כדי להחליף אותו.`],
     [/^Remove (.+)$/, (m, f) => `הסרת ${f}`],
@@ -3558,18 +3789,22 @@ module.exports = QRCode;
         if (signature === lastForumPayload) return;
         lastForumPayload = signature;
         container.replaceChildren();
+        byId('forum-me-avatar').textContent = initialsOf(currentUser.name || currentUser.email);
         if (!posts.length) {
-          container.innerHTML = '<div class="course-empty">No questions yet. Start the discussion.</div>';
+          container.innerHTML = '<div class="forum-empty"><strong>No questions yet</strong><span>Ask the first one above. Everyone in the course can answer.</span></div>';
           return;
         }
         posts.forEach(post => {
           const item = document.createElement('div');
           item.className = 'forum-post';
+          const who = post.student_name || post.student_email || '';
+          const face = document.createElement('span'); face.className = 'avatar'; face.setAttribute('aria-hidden', 'true');
+          face.textContent = initialsOf(who);
           const author = document.createElement('strong');
-          author.textContent = post.student_name || post.student_email;
+          author.textContent = who;
           const body = document.createElement('p');
           body.textContent = post.message;
-          item.append(author, body);
+          item.append(face, author, body);
           if (post.reply) {
             const oldReply = document.createElement('div');
             oldReply.className = 'forum-reply';
@@ -3619,6 +3854,11 @@ module.exports = QRCode;
       } catch (error) {
         if (!container.childElementCount) container.innerHTML = '<div class="course-empty">Forum is unavailable.</div>';
       }
+    }
+
+    function initialsOf(name) {
+      const parts = String(name || '?').split('@')[0].split(/[\s._-]+/).filter(Boolean);
+      return ((parts[0] || '?')[0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
     }
 
     async function postSessionForumMessage() {
@@ -3892,8 +4132,7 @@ module.exports = QRCode;
         const res=await fetch(url,{method:'POST'});
         const data=await res.json().catch(()=>({}));
         if (!res.ok) throw Error(data.detail||'Unable to end the lecture');
-        const id=currentSessionId;
-        openSessionView(id,false);
+        goBackToCourse();  // after ending, the lecturer lands back on the course page
         showToast(`Lecture finished · ${data.qr_scanned_count} check-ins · ${data.detected_people ?? 'no'} people counted`);
       }catch(e){message.textContent=e.message;}
     }
@@ -4120,7 +4359,7 @@ module.exports = QRCode;
             const mine = assignment.my_submission;
             const chip = document.createElement('span');
             chip.className = 'assignment-chip ' + (mine ? (mine.graded ? 'graded' : 'done') : 'todo');
-            chip.textContent = mine ? (mine.graded ? 'Graded' : 'Submitted') : 'Not submitted';
+            chip.textContent = mine ? (mine.graded ? (mine.grade != null ? `Grade: ${mine.grade}` : 'Graded') : 'Waiting for grade') : 'Not submitted';
             item.querySelector('.course-assignment-due').after(chip);
             item.addEventListener('click', () => mine ? openAssignmentView(assignment.id, assignment.title)
               : openSubmitPopup({id: assignment.id, title: assignment.title, due_date: assignment.due_date, submitted: false}));
@@ -4256,17 +4495,31 @@ module.exports = QRCode;
       byId('open-submit-popup').textContent = 'Submit a new version';
       if (currentAssignmentMeta && currentAssignmentMeta.id === currentAssignmentId) currentAssignmentMeta.submitted = true;
 
-      const hasGrade = data.ai_status === 'reviewed' || data.final_grade_approved;
-      const top = document.createElement('div'); top.className = 'my-result-top' + (data.final_grade_approved ? ' final' : '');
+      if (!data.final_grade_approved) {
+        // The AI grade is the lecturer's recommendation; the student sees a grade only after the lecturer approves it.
+        const wait = document.createElement('div'); wait.className = 'my-waiting';
+        const unreadable = data.ai_status === 'pending_content', legacy = data.ai_status === 'legacy_demo';
+        wait.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h10M7 21h10M8 3c0 5 8 5 8 9s-8 4-8 9M16 3c0 5-8 5-8 9"/></svg>';
+        const text = document.createElement('div');
+        const h = document.createElement('strong');
+        h.textContent = unreadable ? 'Your file could not be read' : legacy ? 'Please submit again' : 'Waiting for your lecturer\'s grade';
+        const p = document.createElement('p');
+        p.textContent = unreadable ? (data.ai_error || 'Submit it as PDF, DOCX, ZIP or source files.')
+          : legacy ? 'This is an old submission without a stored file.'
+          : 'Your work was submitted. Your grade and feedback appear here after your lecturer approves them.';
+        const file = document.createElement('small'); file.textContent = data.file_url ? `Submitted file: ${data.file_url}` : '';
+        text.append(h, p, file); wait.appendChild(text);
+        wait.classList.toggle('problem', unreadable || legacy);
+        box.appendChild(wait);
+        return;
+      }
+      const top = document.createElement('div'); top.className = 'my-result-top final';
       const grade = document.createElement('div'); grade.className = 'my-grade';
-      grade.innerHTML = hasGrade ? `<strong>${escapeHtml(data.llm_grade ?? '—')}</strong><span>/100</span>` : '<strong>—</strong>';
+      grade.innerHTML = `<strong>${escapeHtml(data.llm_grade ?? '—')}</strong><span>/100</span>`;
       const meta = document.createElement('div'); meta.className = 'my-grade-meta';
       const status = document.createElement('span');
-      status.className = 'my-status ' + (data.final_grade_approved ? 'final' : hasGrade ? 'pending' : 'waiting');
-      status.textContent = data.final_grade_approved ? 'Final grade, approved by your lecturer'
-        : hasGrade ? 'AI-recommended grade, waiting for your lecturer'
-        : data.ai_status === 'review_failed' ? 'The AI was busy, retrying automatically'
-        : data.ai_status === 'legacy_demo' ? 'Old submission, please submit again' : 'Submitted, AI review in progress';
+      status.className = 'my-status final';
+      status.textContent = 'Final grade, approved by your lecturer';
       const file = document.createElement('small'); file.textContent = data.file_url ? `Submitted file: ${data.file_url}` : '';
       meta.append(status, file);
       top.append(grade, meta);
@@ -4274,14 +4527,8 @@ module.exports = QRCode;
 
       let parsed = null;
       try { parsed = data.llm_review ? JSON.parse(data.llm_review) : null; } catch (e) { parsed = {review: data.llm_review}; }
-      if (!parsed) {
-        const note = document.createElement('p'); note.className = 'my-review-text';
-        note.textContent = data.ai_status === 'pending_content' ? (data.ai_error || 'Your file could not be read. Submit it as PDF, DOCX, ZIP or source files.')
-          : data.ai_status === 'review_failed' ? 'Your file is saved. The review is retried automatically in the next few minutes, and this page updates by itself.'
-          : 'Your file is saved. The review appears here as soon as it is ready.';
-        box.appendChild(note); return;
-      }
-      const h = document.createElement('h4'); h.textContent = 'AI review'; box.appendChild(h);
+      if (!parsed) return;  // graded by the lecturer without an AI review
+      const h = document.createElement('h4'); h.textContent = 'Feedback'; box.appendChild(h);
       const text = document.createElement('p'); text.className = 'my-review-text'; text.textContent = parsed.review || ''; box.appendChild(text);
       const lists = [['What works well', parsed.strengths], ['What to improve', parsed.improvements]].filter(([, items]) => Array.isArray(items) && items.length);
       if (lists.length) {
@@ -4434,7 +4681,7 @@ module.exports = QRCode;
       const btn = byId('submit-assignment-button'); btn.disabled = true; btn.textContent = 'Submitting…';
       try {
         const {ok, data} = await requestWithProgress({url: `${API_URL}/api/assignments/${m.id}/submit-file`, body, holder,
-          expectedSeconds: 25, uploadLabel: 'Uploading', aiLabel: 'Gemini is reviewing your work', doneLabel: 'Submitted'});
+          expectedSeconds: 25, uploadLabel: 'Uploading', aiLabel: 'Checking your files', doneLabel: 'Submitted'});
         if (!ok) throw Error(data.detail || 'Could not upload your files');
         btn.disabled = false;
         closeSubmitPopup();
@@ -4442,14 +4689,17 @@ module.exports = QRCode;
         if (currentAssignmentId !== m.id || byId('assignment-view-section').classList.contains('hidden')) openAssignmentView(m.id, m.title);
         else await Promise.all([loadMyAssignmentSubmission(), loadAssignmentFeedbackForum()]);
         loadNotifications();
-        showToast(data.ai_status === 'reviewed' ? '✓ Submitted and reviewed. Your lecturer approves the final grade.'
-          : data.ai_status === 'review_failed' ? '✓ Submitted. The AI was busy, so the review retries automatically.' : '✓ Submitted. The AI review is in progress.');
+        showToast(data.ai_status === 'pending_content' ? (data.ai_error || 'Your file could not be read. Submit it as PDF, DOCX, ZIP or source files.')
+          : '✓ Submitted. Your grade appears after your lecturer approves it.', data.ai_status === 'pending_content');
       } catch (e) { showToast(e.message, true); }
       finally { btn.disabled = false; renderPendingFiles(); }
     }
 
     async function loadAssignmentFeedbackForum() {
       const id=currentAssignmentId;
+      byId('feedback-forum-help').textContent = currentUser.role==='lecturer'
+        ? 'Students see the feedback on a submission here, without names or grades, only after you approve its grade.'
+        : "Feedback on classmates' submissions, without names or grades. Each one appears after the lecturer approves its grade.";
       const list=byId('assignment-feedback-list');
       try {
         const res=await fetch(`${API_URL}/api/assignments/${id}/feedback-forum?email=${encodeURIComponent(currentUser.email)}`,{cache:'no-store'});
@@ -4457,7 +4707,7 @@ module.exports = QRCode;
         const items=await res.json();
         if (id!==currentAssignmentId) return;
         list.replaceChildren();
-        if (!items.length) {list.innerHTML='<div class="course-empty">No shared AI feedback yet.</div>';return;}
+        if (!items.length) {list.innerHTML='<div class="course-empty">No shared feedback yet.</div>';return;}
         items.forEach(item=>{
           const node=document.createElement('div');node.className='feedback-item';
           const label=document.createElement('strong');label.textContent=item.label;
@@ -4486,16 +4736,28 @@ module.exports = QRCode;
         container.dataset.signature=signature;
         container.replaceChildren();
         const insights=document.createElement('div');insights.className='comparison-panel';
-        const top=document.createElement('strong');top.textContent=`Comparison · ${comparison.total_submissions} submitted · ${comparison.reviewed} AI-reviewed`;
-        const detail=document.createElement('p');detail.textContent=`Average recommended grade: ${comparison.average_recommended_grade??'Not yet available'}`;
-        const note=document.createElement('p');note.textContent=comparison.comparison_insights;
-        insights.append(top,detail,note);
-        (comparison.text_overlap_pairs||[]).slice(0,3).forEach(pair=>{
-          const line=document.createElement('div');line.textContent=`Text-token overlap: ${pair.student_a} / ${pair.student_b} · ${pair.token_overlap_percent}%`;
-          insights.appendChild(line);
+        const approvedCount=submissions.filter(x=>x.final_grade_approved).length;
+        const stats=document.createElement('div');stats.className='cmp-stats';
+        [[comparison.total_submissions,'Submitted'],[comparison.reviewed,'AI-reviewed'],[approvedCount,'Grades approved'],
+         [comparison.average_recommended_grade??'—','Average AI grade']].forEach(([n,label])=>{
+          const cell=document.createElement('div');const b=document.createElement('strong');b.textContent=n;
+          const l=document.createElement('span');l.textContent=label;cell.append(b,l);stats.appendChild(cell);
         });
+        insights.appendChild(stats);
+        const pairs=(comparison.text_overlap_pairs||[]).slice(0,3);
+        if (pairs.length) {
+          const h=document.createElement('strong');h.className='cmp-sub';h.textContent='Most similar text';insights.appendChild(h);
+          pairs.forEach(pair=>{
+            const line=document.createElement('div');line.className='cmp-pair';
+            const who=document.createElement('span');who.textContent=`${pair.student_a} / ${pair.student_b}`;
+            const pc=document.createElement('b');pc.textContent=`${pair.token_overlap_percent}%`;
+            line.append(who,pc);insights.appendChild(line);
+          });
+        }
+        const note=document.createElement('p');note.className='cmp-note';note.textContent=comparison.comparison_insights;
+        insights.appendChild(note);
         const aiButton=document.createElement('button');
-        aiButton.className='secondary-btn';aiButton.type='button';
+        aiButton.className='btn btn-quiet btn-sm';aiButton.type='button';
         aiButton.style.marginTop='12px';aiButton.textContent='✧ Generate AI comparative report';
         aiButton.onclick=()=>runAiComparison(aiButton);
         insights.appendChild(aiButton);
@@ -4512,27 +4774,46 @@ module.exports = QRCode;
         container.appendChild(insights);
         if (!submissions.length) {const e=document.createElement('div');e.className='course-empty';e.textContent='No submissions yet.';container.appendChild(e);return;}
         submissions.forEach(sub=>{
-          const card=document.createElement('div');card.className='student-submission-card';
+          const card=document.createElement('div');
+          const st=sub.final_grade_approved?'approved':sub.ai_status==='reviewed'?'review':'pending';
+          card.className='student-submission-card '+st;
           const header=document.createElement('div');header.className='sub-head';
+          const face=document.createElement('span');face.className='avatar';face.setAttribute('aria-hidden','true');face.textContent=initialsOf(sub.student_email);
+          const who=document.createElement('div');who.className='sub-who';
           const name=document.createElement('strong');name.textContent=sub.student_email;
           const download=document.createElement('a');download.href=`${API_URL}/api/assignments/submission/${sub.id}/file?email=${encodeURIComponent(currentUser.email)}`;
           download.textContent='↓ '+sub.file_url;download.target='_blank';download.rel='noopener';
-          header.append(name,download);card.append(header);
-          const state=document.createElement('div');state.className='sub-state';
-          state.textContent=sub.final_grade_approved?'✓ Grade approved':sub.ai_status==='reviewed'?'AI reviewed · awaiting final approval':`Status: ${sub.ai_status}`;
-          card.append(state);
+          who.append(name,download);
+          const chip=document.createElement('span');chip.className='sub-chip '+st;
+          chip.textContent=st==='approved'?'✓ Grade approved':st==='review'?'Waiting for your approval':
+            sub.ai_status==='review_failed'?'AI busy · retrying':sub.ai_status==='pending_content'?'File unreadable':'AI review pending';
+          const score=document.createElement('div');score.className='sub-score';
+          score.innerHTML=`<strong>${escapeHtml(sub.llm_grade??'—')}</strong><span>${st==='approved'?'Final grade':'AI grade'}</span>`;
+          header.append(face,who,chip,score);card.append(header);
+          let parsed=null;
+          try{parsed=sub.llm_review?JSON.parse(sub.llm_review):null;}catch(e){parsed={review:sub.llm_review};}
           const review=document.createElement('p');review.className='sub-review';
-          review.textContent=extractReview(sub.llm_review)||sub.ai_error||'No AI review yet.';
+          review.textContent=(parsed&&parsed.review)||sub.ai_error||'No AI review yet.';
           card.append(review);
+          const lists=[['What works well',parsed&&parsed.strengths],['What to improve',parsed&&parsed.improvements]].filter(([,items])=>Array.isArray(items)&&items.length);
+          if (lists.length) {
+            const cols=document.createElement('div');cols.className='sub-lists';
+            lists.forEach(([title,items])=>{
+              const col=document.createElement('div');const t=document.createElement('h5');t.textContent=title;
+              const ul=document.createElement('ul');items.forEach(i=>{const li=document.createElement('li');li.textContent=i;ul.appendChild(li);});
+              col.append(t,ul);cols.appendChild(col);
+            });
+            card.append(cols);
+          }
           if (sub.ai_status!=='reviewed' && sub.ai_status!=='legacy_demo') {
-            const rerun=document.createElement('button');rerun.type='button';rerun.className='secondary-btn';
+            const rerun=document.createElement('button');rerun.type='button';rerun.className='btn btn-quiet btn-sm';
             rerun.textContent='↻ Re-run AI review';rerun.style.marginBottom='8px';
             rerun.onclick=()=>rerunSubmissionReview(sub.id,rerun);
             card.append(rerun);
           }
           const grade=document.createElement('div');grade.className='sub-grade';
-          const label=document.createElement('label');label.textContent='Final grade';label.className='field-label';
-          const input=document.createElement('input');input.type='number';input.min='0';input.max='100';input.className='field-control grade-input';input.value=sub.llm_grade??'';
+          const label=document.createElement('label');label.textContent='Final grade';label.className='field-label';label.htmlFor=`grade-${sub.id}`;
+          const input=document.createElement('input');input.type='number';input.min='0';input.max='100';input.className='field-control grade-input';input.id=`grade-${sub.id}`;input.value=sub.llm_grade??'';
           // Requirement: "Approve grade" confirms the AI grade; "Update grade" saves the number typed by the lecturer.
           const aiGrade=sub.llm_grade??'';
           const approve=document.createElement('button');approve.type='button';approve.className='btn btn-live btn-sm';
@@ -5003,7 +5284,10 @@ module.exports = QRCode;
         byId('live-checkin-count').textContent = state.checked_in_count;
         byId('projector-checkin-count').textContent = state.checked_in_count;
         byId('live-detected-count').textContent = state.detected_people == null ? '—' : state.detected_people;
-        const info = state.detected_people == null ? 'No photo count available yet.'
+        byId('verify-checkins').textContent = state.checked_in_count;
+        byId('lecturer-active-tools').dataset.photo = state.detected_people == null ? '' : '1';
+        byId('photo-reanalyze').classList.toggle('hidden', !byId('class-photo-file').files.length);
+        const info = state.detected_people == null ? ''
           : `${state.detection_method} · ${state.detection_note || 'Verify the estimate visually.'}`;
         byId('live-detection-method').textContent = info;
         const list = byId('live-checkin-list');
@@ -5237,6 +5521,23 @@ module.exports = QRCode;
     }
 
   
+</script>
+<script>
+  // Classroom photo: drag a photo onto the box to analyze it.
+  (function () {
+    const drop = document.getElementById('photo-drop');
+    if (!drop) return;
+    ['dragenter', 'dragover'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.add('dragging'); }));
+    ['dragleave', 'drop'].forEach(e => drop.addEventListener(e, () => drop.classList.remove('dragging')));
+    drop.addEventListener('drop', ev => {
+      ev.preventDefault();
+      const file = [...(ev.dataTransfer.files || [])].find(f => f.type.startsWith('image/'));
+      if (!file) return showToast('Drop an image file (JPG, PNG, HEIC…)', true);
+      const dt = new DataTransfer(); dt.items.add(file);
+      document.getElementById('class-photo-file').files = dt.files;
+      uploadLecturerPhoto();
+    });
+  })();
 </script>
 </body>
 </html>

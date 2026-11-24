@@ -552,9 +552,10 @@ def retry_review_in_background(submission_id: int, submitted_at):
             if not assignment:
                 return
             review_submission(db, assignment, sub, meta)
-            if meta.ai_status == "reviewed":
-                notify(db, [sub.student_email], assignment.course_id, "review_ready", "AI review ready",
-                       f"Your AI review for {assignment.title} is ready", "assignment", assignment.id)
+            if meta.ai_status == "reviewed":  # the lecturer approves the grade; the student is told only then
+                notify(db, [find_course(db, assignment.course_id).lecturer_email], assignment.course_id, "review_ready",
+                       "AI review ready", f"The AI review of {sub.student_email} for {assignment.title} is ready",
+                       "assignment", assignment.id)
             db.commit()
             if meta.ai_status != "review_failed":
                 return
@@ -565,10 +566,14 @@ def retry_review_in_background(submission_id: int, submitted_at):
             db.close()
 
 
-def review_for_response(sub: models.Submission, meta: SubmissionDocument | None):
+def review_for_response(sub: models.Submission, meta: SubmissionDocument | None, for_student: bool = False):
+    """for_student=True: the grade and the AI review stay hidden until the lecturer approves the grade,
+    so the student sees "waiting for your lecturer" instead of the AI's recommendation."""
+    hidden = for_student and not sub.final_grade_approved
     return {"id": sub.id, "student_email": sub.student_email,
             "file_url": meta.filename if meta else sub.file_url,
-            "llm_grade": sub.llm_grade, "llm_review": sub.llm_review,
+            "llm_grade": None if hidden else sub.llm_grade,
+            "llm_review": None if hidden else sub.llm_review,
             "final_grade_approved": bool(sub.final_grade_approved),
             "ai_status": meta.ai_status if meta else "legacy_demo",
             "ai_error": meta.ai_error if meta else "Legacy submission has no uploaded file",
@@ -1933,7 +1938,8 @@ def get_course_assignments(course_id: str, student_email: str | None = None, db:
     if student_email and ids:
         for sub in db.query(models.Submission).filter(models.Submission.assignment_id.in_(ids),
                                                       models.Submission.student_email == student_email).all():
-            mine[sub.assignment_id] = {"graded": bool(sub.final_grade_approved), "ai_grade": sub.llm_grade}
+            approved = bool(sub.final_grade_approved)
+            mine[sub.assignment_id] = {"graded": approved, "grade": sub.llm_grade if approved else None}
     return [{"id": a.id, "title": a.title, "description": a.description,
              "due_date": a.due_date, "has_reference": bool(by_id.get(a.id) and by_id[a.id].reference_path),
              **({"my_submission": mine.get(a.id)} if student_email else {})}
@@ -2035,10 +2041,10 @@ async def submit_assignment_file(assignment_id: int, background_tasks: Backgroun
     db.commit()
     if meta.ai_status == "review_failed":
         background_tasks.add_task(retry_review_in_background, sub.id, meta.submitted_at)
+    # The AI grade goes to the lecturer only; the student sees it after the lecturer approves it.
     return {"message": "Submission uploaded and saved", "submission_id": sub.id,
             "ai_status": meta.ai_status, "ai_error": meta.ai_error,
-            "llm_review": sub.llm_review, "llm_grade": sub.llm_grade,
-            "final_grade_approved": bool(sub.final_grade_approved)}
+            "final_grade_approved": False}
 
 
 @app.get("/api/assignments/{assignment_id}/my-submission")
@@ -2050,7 +2056,7 @@ def get_my_submission(assignment_id: int, student_email: str,
     if not sub:
         return {"submitted": False}
     meta = db.query(SubmissionDocument).filter(SubmissionDocument.submission_id == sub.id).first()
-    return {"submitted": True, **review_for_response(sub, meta)}
+    return {"submitted": True, **review_for_response(sub, meta, for_student=True)}
 
 
 @app.get("/api/assignments/{assignment_id}/submissions")
@@ -2119,11 +2125,14 @@ async def rerun_submission_review(submission_id: int, lecturer_email: str, backg
 
 @app.get("/api/assignments/{assignment_id}/feedback-forum")
 def get_feedback_forum(assignment_id: int, email: str, db: Session = Depends(get_db)):
-    assignment_for_member(db, assignment_id, email)
+    assignment = assignment_for_member(db, assignment_id, email)
+    is_lecturer = find_course(db, assignment.course_id).lecturer_email == email
     subs = db.query(models.Submission).filter(models.Submission.assignment_id == assignment_id).all()
     result = []
     for i, sub in enumerate(subs):
         has_real_file = db.query(SubmissionDocument).filter(SubmissionDocument.submission_id == sub.id).first()
+        if not is_lecturer and not sub.final_grade_approved:
+            continue  # students see shared feedback only after the lecturer approved that grade
         if sub.llm_review and has_real_file and has_real_file.ai_status == "reviewed":
             try:
                 summary = json.loads(sub.llm_review).get("review", "")

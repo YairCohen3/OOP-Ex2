@@ -594,7 +594,7 @@ class TestAssignments:
         assert response.status_code == 200
         data = response.json()
         assert data["ai_status"] == "pending_configuration"
-        assert data["llm_grade"] is None and data["final_grade_approved"] is False
+        assert data.get("llm_grade") is None and data["final_grade_approved"] is False
 
     def test_unsupported_file_type_is_rejected(self, client, assignment):
         response = client.post(f"/api/assignments/{assignment}/submit-file", data={"student_email": STUDENT},
@@ -654,9 +654,33 @@ class TestAssignments:
             db.commit()
         finally:
             db.close()
+        # Before the lecturer approves, students see nothing of it.
+        assert client.get(f"/api/assignments/{assignment}/feedback-forum", params={"email": STUDENT_2}).json() == []
+        client.post(f"/api/assignments/submission/{submission_id}/grade",
+                    params={"grade": "88", "approved": True, "lecturer_email": LECTURER})
         forum = client.get(f"/api/assignments/{assignment}/feedback-forum", params={"email": STUDENT_2})
         assert forum.status_code == 200
         assert forum.json() == [{"label": "Submission 1", "review": "Clear code, add tests."}]
+
+    def test_student_sees_grade_only_after_lecturer_approves(self, client, assignment):
+        submission_id = self.submit(client, assignment).json()["submission_id"]
+        db = SessionLocal()
+        try:  # simulate a finished AI review
+            sub = db.query(models.Submission).filter(models.Submission.id == submission_id).first()
+            sub.llm_grade, sub.llm_review = "77", '{"score": 77, "review": "Good."}'
+            db.query(main.SubmissionDocument).filter(
+                main.SubmissionDocument.submission_id == submission_id).first().ai_status = "reviewed"
+            db.commit()
+        finally:
+            db.close()
+        mine = client.get(f"/api/assignments/{assignment}/my-submission", params={"student_email": STUDENT}).json()
+        assert mine["llm_grade"] is None and mine["llm_review"] is None and mine["final_grade_approved"] is False
+        lecturer_view = client.get(f"/api/assignments/{assignment}/submissions", params={"lecturer_email": LECTURER}).json()
+        assert lecturer_view[0]["llm_grade"] == "77"
+        client.post(f"/api/assignments/submission/{submission_id}/grade",
+                    params={"grade": "80", "approved": True, "lecturer_email": LECTURER})
+        mine = client.get(f"/api/assignments/{assignment}/my-submission", params={"student_email": STUDENT}).json()
+        assert mine["llm_grade"] == "80" and mine["final_grade_approved"] is True
 
     def test_unreviewed_submissions_are_not_in_feedback_forum(self, client, assignment):
         self.submit(client, assignment)
