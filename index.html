@@ -7,7 +7,7 @@
   <title>SmartClass | Learning workspace</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;600;700;800&family=Fira+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;600;700;800&family=Fira+Sans:wght@400;500;600;700&family=Frank+Ruhl+Libre:wght@500;700&family=Assistant:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <style>
 /* =========================================================================
@@ -28,8 +28,8 @@
   --red: #c8413a;        --red-tint: #fbecea;
   --amber-tint: #fff6e3; --amber-ink: #8a5a14;
   --spine-1: #1c2b4a;    --spine-2: #1e8e5e; --spine-3: #b0573a; --spine-4: #8a6d1d;
-  --serif: "Bitter", Rockwell, Georgia, serif;
-  --sans: "Fira Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --serif: "Bitter", "Frank Ruhl Libre", Rockwell, Georgia, serif;
+  --sans: "Fira Sans", "Assistant", "Segoe UI", system-ui, -apple-system, sans-serif;
   --r-sm: 8px; --r: 12px; --r-lg: 16px;
   --shadow: 0 1px 0 rgba(28,43,74,.04), 0 12px 32px -22px rgba(28,43,74,.35);
   --rail: 256px;
@@ -102,7 +102,7 @@ input[type="file"] { width: 100%; padding: 9px; border: 1px dashed var(--rule-2)
   height: 62px; padding: 0 16px; background: rgba(255,255,255,.96); border-bottom: 1px solid var(--rule); backdrop-filter: blur(10px);
 }
 body:has(#user-badge.hidden) .topbar { display: none; }
-.brand { display: flex; align-items: center; gap: 11px; min-width: 0; padding: 0; border: 0; background: none; text-align: left; }
+.brand { display: flex; align-items: center; gap: 11px; min-width: 0; padding: 0; border: 0; background: none; text-align: start; }
 .brand-mark { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 10px; background: var(--board); color: var(--marker); box-shadow: inset 0 -3px 0 rgba(0,0,0,.2); }
 .brand-mark svg { width: 21px; height: 21px; }
 .brand-name { display: block; font-family: var(--serif); font-size: 19px; font-weight: 700; color: var(--ink); line-height: 1.1; }
@@ -120,7 +120,7 @@ body:has(#user-badge.hidden) .topbar { display: none; }
   display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px;
   border-radius: 999px; background: var(--red); color: #fff; font-size: 11.5px; font-weight: 700;
 }
-.notice-total { position: absolute; top: -7px; right: -7px; border: 2px solid #fff; }
+.notice-total { position: absolute; top: -7px; inset-inline-end: -7px; border: 2px solid #fff; }
 #user-badge { display: flex; align-items: center; gap: 9px; min-width: 0; }
 .avatar { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--ink); color: var(--marker); font-size: 12.5px; font-weight: 700; flex-shrink: 0; }
 .badge-meta { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
@@ -131,7 +131,7 @@ body:has(#user-badge.hidden) .topbar { display: none; }
 
 /* Notifications panel */
 .notice-panel {
-  position: absolute; top: 50px; right: 0; z-index: 60; width: min(400px, calc(100vw - 24px)); max-height: min(600px, 78vh); overflow: auto;
+  position: absolute; top: 50px; inset-inline-end: 0; z-index: 60; width: min(400px, calc(100vw - 24px)); max-height: min(600px, 78vh); overflow: auto;
   background: #fff; border: 1px solid var(--rule); border-radius: var(--r); box-shadow: 0 24px 60px -20px rgba(28,43,74,.45);
 }
 .notice-panel-head { position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px; background: #fff; border-bottom: 1px solid var(--rule); }
@@ -139,7 +139,7 @@ body:has(#user-badge.hidden) .topbar { display: none; }
 .notice-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .notice-actions button { padding: 7px 10px; border: 0; border-radius: 8px; background: var(--tint); color: var(--ink); font-size: 12.5px; font-weight: 600; }
 .notice-actions .notice-delete { background: var(--red-tint); color: var(--red); }
-.notice-entry { display: flex; flex-direction: column; gap: 4px; width: 100%; padding: 13px 14px; border: 0; border-bottom: 1px solid var(--rule); background: #fff; text-align: left; }
+.notice-entry { display: flex; flex-direction: column; gap: 4px; width: 100%; padding: 13px 14px; border: 0; border-bottom: 1px solid var(--rule); background: #fff; text-align: start; }
 .notice-entry:hover { background: var(--tint); }
 .notice-entry.unread { background: #fffbea; box-shadow: inset 3px 0 var(--marker); }
 .notice-entry strong { font-size: 14px; }
@@ -148,7 +148,7 @@ body:has(#user-badge.hidden) .topbar { display: none; }
 .notice-empty { padding: 30px 16px; text-align: center; color: var(--ink-3); font-size: 14px; }
 
 @media (min-width: 1024px) {
-  body:has(#user-badge:not(.hidden)) { padding-left: var(--rail); }
+  body:has(#user-badge:not(.hidden)) { padding-inline-start: var(--rail); }
   body:has(#user-badge:not(.hidden)) .topbar {
     position: fixed; inset: 0 auto 0 0; width: var(--rail); height: auto; z-index: 50;
     flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 0; padding: 22px 14px 16px;
@@ -163,14 +163,14 @@ body:has(#user-badge.hidden) .topbar { display: none; }
   .side-nav-label { padding: 4px 12px 8px; color: var(--chalk-dim); font-size: 12.5px; }
   .side-link {
     position: relative; display: flex; align-items: center; gap: 11px; width: 100%; min-height: 44px; padding: 0 12px;
-    border: 0; border-radius: 10px; background: transparent; color: var(--chalk); text-align: left; font-size: 15px; font-weight: 500;
+    border: 0; border-radius: 10px; background: transparent; color: var(--chalk); text-align: start; font-size: 15px; font-weight: 500;
   }
   .side-link span { min-width: 0; padding: 9px 0; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .side-link svg { width: 19px; height: 19px; opacity: .85; }
   .side-link:hover { background: rgba(255,255,255,.06); }
   .side-link.current { background: rgba(255,255,255,.1); font-weight: 600; }
-  .side-link.current::before { content: ""; position: absolute; left: -14px; top: 9px; bottom: 9px; width: 4px; border-radius: 0 4px 4px 0; background: var(--marker); }
-  .side-link.side-sub { padding-left: 28px; min-height: 40px; font-size: 14px; }
+  .side-link.current::before { content: ""; position: absolute; inset-inline-start: -14px; top: 9px; bottom: 9px; width: 4px; border-radius: 0 4px 4px 0; background: var(--marker); }
+  .side-link.side-sub { padding-inline-start: 28px; min-height: 40px; font-size: 14px; }
   .side-link.side-sub svg { width: 17px; height: 17px; }
   .side-link.side-sub:not(.current) { cursor: default; }
   body:has(#user-badge:not(.hidden)) .topbar-right { margin-top: auto; flex-direction: column; align-items: stretch; gap: 4px; padding-top: 14px; border-top: 1px solid rgba(238,243,239,.12); }
@@ -181,8 +181,8 @@ body:has(#user-badge.hidden) .topbar { display: none; }
   body:has(#user-badge:not(.hidden)) .refresh-btn span:last-child { display: inline; }
   body:has(#user-badge:not(.hidden)) .notice-button:hover, body:has(#user-badge:not(.hidden)) .refresh-btn:hover { background: rgba(255,255,255,.06); }
   body:has(#user-badge:not(.hidden)) .notice-button::after { content: "Notifications"; }
-  body:has(#user-badge:not(.hidden)) .notice-total { position: static; order: 2; margin-left: auto; border: 0; }
-  body:has(#user-badge:not(.hidden)) .notice-panel { position: fixed; top: auto; bottom: 16px; left: calc(var(--rail) + 12px); right: auto; }
+  body:has(#user-badge:not(.hidden)) .notice-total { position: static; order: 2; margin-inline-start: auto; border: 0; }
+  body:has(#user-badge:not(.hidden)) .notice-panel { position: fixed; top: auto; bottom: 16px; inset-inline-start: calc(var(--rail) + 12px); inset-inline-end: auto; }
   body:has(#user-badge:not(.hidden)) .topbar-account { justify-content: space-between; gap: 8px; margin-top: 8px; padding: 10px; border-radius: 12px; background: rgba(0,0,0,.2); }
   body:has(#user-badge:not(.hidden)) #badge-name { color: var(--chalk); }
   body:has(#user-badge:not(.hidden)) #badge-role { color: var(--chalk-dim); }
@@ -216,8 +216,8 @@ body:has(#user-badge.hidden) .topbar { display: none; }
 .auth-intro { margin-bottom: 26px; color: var(--ink-3); font-size: 15.5px; }
 .auth-form .field-label { margin-top: 0; }
 .input-wrap { position: relative; }
-.input-wrap svg { position: absolute; left: 14px; top: 50%; width: 18px; height: 18px; transform: translateY(-50%); color: var(--ink-3); pointer-events: none; }
-.input-wrap .form-input { padding-left: 42px; min-height: 50px; }
+.input-wrap svg { position: absolute; inset-inline-start: 14px; top: 50%; width: 18px; height: 18px; transform: translateY(-50%); color: var(--ink-3); pointer-events: none; }
+.input-wrap .form-input { padding-inline-start: 42px; min-height: 50px; }
 .auth-submit { width: 100%; min-height: 50px; margin-top: 14px; font-size: 15.5px; }
 .otp-box { display: flex; gap: 10px; margin-top: 14px; }
 .otp-box .form-input { min-height: 50px; text-align: center; font-family: var(--serif); font-size: 22px; font-weight: 700; letter-spacing: .5em; }
@@ -284,7 +284,7 @@ body:has(#user-badge.hidden) .topbar { display: none; }
   transition: transform .15s, box-shadow .15s, border-color .15s;
 }
 .course-card::before { content: ""; position: absolute; inset: -1px auto -1px -1px; width: 16px; border-radius: 6px 0 0 6px; background: var(--spine); }
-.course-card::after { content: ""; position: absolute; top: 0; bottom: 0; left: 24px; width: 2px; background: rgba(200,65,58,.28); }
+.course-card::after { content: ""; position: absolute; top: 0; bottom: 0; inset-inline-start: 24px; width: 2px; background: rgba(200,65,58,.28); }
 .course-card:nth-child(4n+2) { --spine: var(--spine-2); }
 .course-card:nth-child(4n+3) { --spine: var(--spine-3); }
 .course-card:nth-child(4n+4) { --spine: var(--spine-4); }
@@ -294,8 +294,8 @@ body:has(#user-badge.hidden) .topbar { display: none; }
 .course-card-tools { position: relative; }
 .course-menu-btn { display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid var(--rule); border-radius: 8px; background: #fff; color: var(--ink-3); font-size: 18px; line-height: 1; }
 .course-menu-btn:hover, .course-menu-btn[aria-expanded="true"] { color: var(--ink); border-color: var(--rule-2); }
-.course-menu { position: absolute; z-index: 10; top: 38px; right: 0; width: 170px; padding: 5px; border: 1px solid var(--rule); border-radius: 10px; background: #fff; box-shadow: 0 16px 36px -14px rgba(28,43,74,.4); }
-.course-menu button { display: block; width: 100%; padding: 9px 11px; border: 0; border-radius: 7px; background: none; color: var(--ink); text-align: left; font-size: 14px; }
+.course-menu { position: absolute; z-index: 10; top: 38px; inset-inline-end: 0; width: 170px; padding: 5px; border: 1px solid var(--rule); border-radius: 10px; background: #fff; box-shadow: 0 16px 36px -14px rgba(28,43,74,.4); }
+.course-menu button { display: block; width: 100%; padding: 9px 11px; border: 0; border-radius: 7px; background: none; color: var(--ink); text-align: start; font-size: 14px; }
 .course-menu button:hover { background: var(--tint); }
 .course-menu .delete-course-action { color: var(--red); }
 .course-menu .delete-course-action:hover { background: var(--red-tint); }
@@ -313,7 +313,7 @@ body:has(#user-badge.hidden) .topbar { display: none; }
 /* ---------- 9. Course page ---------- */
 .stat-strip { display: grid; grid-template-columns: repeat(3, 1fr); margin-bottom: 24px; border: 1px solid var(--rule); border-radius: var(--r-lg); background: var(--sheet); box-shadow: var(--shadow); }
 .stat-strip > div { display: flex; align-items: baseline; gap: 9px; padding: 16px 22px; }
-.stat-strip > div + div { border-left: 1px solid var(--rule); }
+.stat-strip > div + div { border-inline-start: 1px solid var(--rule); }
 .stat-strip strong { font-family: var(--serif); font-size: 28px; font-weight: 700; line-height: 1; }
 .stat-strip span { color: var(--ink-3); font-size: 14px; }
 .course-layout { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(280px, 1fr); gap: 20px; align-items: start; }
@@ -322,7 +322,7 @@ body:has(#user-badge.hidden) .topbar { display: none; }
 .lecture-row { display: flex; align-items: stretch; gap: 8px; }
 .lecture-tile {
   flex: 1; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 16px;
-  border: 1px solid var(--rule); border-radius: var(--r); background: #f4f5f7; text-align: left; transition: border-color .15s, background .15s;
+  border: 1px solid var(--rule); border-radius: var(--r); background: #f4f5f7; text-align: start; transition: border-color .15s, background .15s;
 }
 .lecture-tile:hover { border-color: var(--rule-2); background: #eef0f3; }
 .lecture-tile.live { padding: 18px; border: 2px solid var(--live); background: var(--live-tint); }
@@ -342,7 +342,7 @@ body:has(#user-badge.hidden) .topbar { display: none; }
 .lecture-delete { flex: 0 0 44px; display: grid; place-items: center; border: 1px solid var(--rule); border-radius: var(--r); background: #fff; color: var(--ink-3); }
 .lecture-delete svg { width: 18px; height: 18px; }
 .lecture-delete:hover { border-color: #efc9c5; background: var(--red-tint); color: var(--red); }
-.course-assignment-tile { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; padding: 13px 14px; border: 1px solid var(--rule); border-radius: var(--r); background: #fff; text-align: left; }
+.course-assignment-tile { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; padding: 13px 14px; border: 1px solid var(--rule); border-radius: var(--r); background: #fff; text-align: start; }
 .course-assignment-tile:hover { border-color: var(--rule-2); background: var(--tint); }
 .assignment-mini-icon { display: grid; place-items: center; flex: 0 0 34px; width: 34px; height: 34px; border-radius: 9px; background: var(--tint); color: var(--ink); }
 .course-assignment-title { display: block; font-size: 15px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
@@ -379,7 +379,7 @@ body:has(#user-badge.hidden) .topbar { display: none; }
 .assignment-status { margin-top: 12px; color: var(--ink-2); font-size: 14px; font-weight: 600; }
 
 /* ---------- 10. Lecture page ---------- */
-.lecture-head { border-left: 0; }
+.lecture-head { border-inline-start: 0; }
 .session-course { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60ch; }
 .lecture-status-line { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; padding: 5px 12px; border-radius: 999px; background: #e7eaef; color: var(--ink-2); font-size: 14px; font-weight: 600; }
 .lecture-head.live .lecture-status-line { background: var(--live-tint); color: var(--live-dark); }
@@ -419,7 +419,7 @@ body:has(#user-badge.hidden) .topbar { display: none; }
   display: flex; flex-direction: column; align-items: center; text-align: center; color: var(--chalk); border: 0; border-bottom: 10px solid var(--tray);
   background: radial-gradient(ellipse at 30% 0%, rgba(255,255,255,.07), transparent 60%), var(--board);
 }
-.sc-qr-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; width: 100%; color: var(--chalk-dim); text-align: left; }
+.sc-qr-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; width: 100%; color: var(--chalk-dim); text-align: start; }
 .sc-qr-actions { display: inline-flex; gap: 8px; flex-wrap: wrap; }
 .sc-qr-card .sc-project-btn { background: rgba(0,0,0,.25); color: var(--chalk); border: 1px solid rgba(238,243,239,.35); }
 .sc-qr-card .sc-project-btn:hover { background: rgba(0,0,0,.4); border-color: var(--chalk); }
@@ -488,7 +488,7 @@ body:has(#user-badge.hidden) .topbar { display: none; }
 .forum-post:last-child { border-bottom: 0; }
 .forum-post > strong { font-size: 14px; color: var(--ink-2); }
 .forum-post > p { margin: 4px 0 6px; font-size: 15.5px; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
-.forum-reply { margin: 8px 0 0 4px; padding: 9px 12px; border-left: 3px solid var(--marker); border-radius: 0 8px 8px 0; background: #fffbea; color: var(--ink-2); font-size: 14.5px; white-space: pre-wrap; }
+.forum-reply { margin: 8px 0 0 4px; padding: 9px 12px; border-inline-start: 3px solid var(--marker); border-radius: 0 8px 8px 0; background: #fffbea; color: var(--ink-2); font-size: 14.5px; white-space: pre-wrap; }
 .forum-reply strong { display: block; margin-bottom: 2px; font-size: 13.5px; color: var(--ink); }
 .forum-reply p { margin: 0; }
 .sc-text-btn { padding: 6px 2px; border: 0; background: none; color: var(--ink-2); font-size: 13.5px; font-weight: 600; }
@@ -511,7 +511,7 @@ body:has(#user-badge.hidden) .topbar { display: none; }
 .poll-card > strong { display: block; font-family: var(--serif); font-size: 18px; font-weight: 700; line-height: 1.35; }
 .sc-poll-state { margin: 4px 0 10px; color: var(--ink-3); font-size: 13px; }
 .sc-poll-hint { margin-bottom: 6px; color: var(--ink-2); font-size: 13.5px; font-weight: 600; }
-.sc-poll-option { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; margin-top: 8px; padding: 11px 13px; border: 1px solid var(--rule); border-radius: 10px; background: #fff; color: var(--ink); text-align: left; font-size: 15px; font-weight: 500; }
+.sc-poll-option { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; margin-top: 8px; padding: 11px 13px; border: 1px solid var(--rule); border-radius: 10px; background: #fff; color: var(--ink); text-align: start; font-size: 15px; font-weight: 500; }
 button.sc-poll-option:hover { background: var(--tint); border-color: var(--rule-2); }
 .sc-poll-option.selected { border: 2px solid var(--ink); padding: 10px 12px; font-weight: 600; }
 .sc-poll-votes { color: var(--ink-3); font-size: 13px; white-space: nowrap; }
@@ -529,7 +529,7 @@ button.sc-poll-option:hover { background: var(--tint); border-color: var(--rule-
 .sc-summary-body h4 { margin: 22px 0 8px; font-size: 19px; }
 .sc-summary-body h4:first-child { margin-top: 2px; }
 .sc-summary-body p { margin: 0 0 12px; }
-.sc-summary-body ul, .sc-summary-body ol { margin: 0 0 14px; padding-left: 22px; }
+.sc-summary-body ul, .sc-summary-body ol { margin: 0 0 14px; padding-inline-start: 22px; }
 .sc-summary-body li { margin: 5px 0; }
 .sc-summary-body li::marker { color: var(--live); }
 .sc-summary-body code { padding: 1px 5px; border-radius: 4px; background: var(--tint); font-size: .92em; }
@@ -550,7 +550,7 @@ button.sc-poll-option:hover { background: var(--tint); border-color: var(--rule-
 /* ---------- 11. Projector mode ---------- */
 body.qr-projecting { overflow: hidden; }
 .sc-live-grid > .sc-qr-card.projecting {
-  position: fixed; inset: 0; z-index: 1000; margin: 0; border-radius: 0; border-bottom-width: 18px; overflow: auto; text-align: left;
+  position: fixed; inset: 0; z-index: 1000; margin: 0; border-radius: 0; border-bottom-width: 18px; overflow: auto; text-align: start;
   display: grid; grid-template-columns: auto minmax(280px, 520px); grid-template-rows: auto 1fr auto auto auto auto auto 1fr;
   grid-template-areas: "bar bar" "qr ." "qr head" "qr code" "qr tl" "qr tt" "qr count" "qr .";
   column-gap: clamp(28px, 5vw, 90px); justify-content: center; align-items: start; padding: clamp(16px, 3vh, 32px) clamp(20px, 4vw, 64px);
@@ -566,7 +566,7 @@ body.qr-projecting { overflow: hidden; }
 .sc-qr-card.projecting .timer-track { grid-area: tt; height: 14px; }
 .sc-qr-card.projecting .sc-hint { display: none; }
 .sc-qr-card.projecting .sc-projector-count { grid-area: count; display: block; margin-top: 26px; color: var(--chalk-dim); font-size: 21px; }
-.sc-projector-count strong { margin-right: 8px; font-family: var(--serif); font-size: 48px; color: var(--marker); vertical-align: -4px; }
+.sc-projector-count strong { margin-inline-end: 8px; font-family: var(--serif); font-size: 48px; color: var(--marker); vertical-align: -4px; }
 .sc-qr-card.projecting .sc-qr-actions { gap: 12px; }
 .sc-qr-card.projecting .sc-qr-actions .secondary-btn { min-height: 54px; padding: 0 22px; border-radius: 12px; font-size: 18px; }
 .sc-qr-card.projecting #qr-toggle-button { min-height: 64px; padding: 0 30px; font-size: 22px; box-shadow: 0 3px 0 var(--marker-edge); }
@@ -579,7 +579,7 @@ body.qr-projecting { overflow: hidden; }
 }
 
 /* ---------- 12. Assignment page ---------- */
-.assignment-intro { margin-bottom: 22px; padding: 20px 24px; border: 1px solid var(--rule); border-left: 5px solid var(--ink); border-radius: var(--r-lg); background: var(--sheet); box-shadow: var(--shadow); }
+.assignment-intro { margin-bottom: 22px; padding: 20px 24px; border: 1px solid var(--rule); border-inline-start: 5px solid var(--ink); border-radius: var(--r-lg); background: var(--sheet); box-shadow: var(--shadow); }
 .assignment-intro .due { display: inline-block; padding: 4px 10px; border-radius: 999px; background: var(--tint); color: var(--ink-2); font-size: 13px; font-weight: 600; }
 .assignment-intro p { margin-top: 12px; color: var(--ink); font-size: 15.5px; line-height: 1.7; white-space: pre-wrap; max-width: 75ch; }
 .assignment-intro .rubric { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--rule); color: var(--ink-2); font-size: 14px; }
@@ -619,8 +619,8 @@ body.qr-projecting { overflow: hidden; }
 
 /* ---------- 13. Dialogs and toast ---------- */
 .join-overlay { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(20,28,44,.55); backdrop-filter: blur(4px); }
-.join-dialog { position: relative; width: min(100%, 440px); padding: 30px; border-radius: 18px; background: #fff; box-shadow: 0 30px 80px -20px rgba(15,22,38,.6); text-align: left; }
-.join-x { position: absolute; top: 14px; right: 16px; width: 36px; height: 36px; border: 0; border-radius: 9px; background: var(--tint); color: var(--ink-2); font-size: 22px; line-height: 1; }
+.join-dialog { position: relative; width: min(100%, 440px); padding: 30px; border-radius: 18px; background: #fff; box-shadow: 0 30px 80px -20px rgba(15,22,38,.6); text-align: start; }
+.join-x { position: absolute; top: 14px; inset-inline-end: 16px; width: 36px; height: 36px; border: 0; border-radius: 9px; background: var(--tint); color: var(--ink-2); font-size: 22px; line-height: 1; }
 .join-icon { display: grid; place-items: center; width: 50px; height: 50px; margin-bottom: 16px; border-radius: 12px; background: var(--tint); font-size: 24px; }
 .join-dialog h2 { margin-bottom: 8px; font-size: 25px; font-weight: 700; }
 .join-dialog p { margin-bottom: 20px; color: var(--ink-3); font-size: 15px; line-height: 1.6; }
@@ -692,7 +692,7 @@ body.qr-projecting { overflow: hidden; }
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
 .page-actions:not(:has(> :not(.hidden))) { display: none; }
-.notice-panel { color: var(--ink); text-align: left; }
+.notice-panel { color: var(--ink); text-align: start; }
 .notice-panel-head strong, .notice-entry strong { color: var(--ink); }
 
 
@@ -703,8 +703,8 @@ body.qr-projecting { overflow: hidden; }
 .roster-remove:hover { opacity: 1; color: var(--red); background: var(--red-tint); }
 .sub-grade { flex-wrap: wrap; }
 #student-feedback-box { padding: 0; border: 0; background: transparent; margin: 0; }
-.my-result-top { display: flex; align-items: center; gap: 20px; padding: 18px 20px; border-radius: var(--r); background: var(--tint); border-left: 4px solid var(--marker-edge); }
-.my-result-top.final { background: var(--live-tint); border-left-color: var(--live); }
+.my-result-top { display: flex; align-items: center; gap: 20px; padding: 18px 20px; border-radius: var(--r); background: var(--tint); border-inline-start: 4px solid var(--marker-edge); }
+.my-result-top.final { background: var(--live-tint); border-inline-start-color: var(--live); }
 .my-grade { display: flex; align-items: baseline; gap: 3px; color: var(--ink); }
 .my-grade strong { font-family: var(--serif); font-size: 46px; line-height: 1; font-weight: 700; font-variant-numeric: tabular-nums; }
 .my-grade span { font-size: 16px; color: var(--ink-3); }
@@ -717,13 +717,10 @@ body.qr-projecting { overflow: hidden; }
 .my-review-text { margin: 0; color: var(--ink-2); line-height: 1.65; max-width: 70ch; }
 .my-review-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
 .my-review-cols h5 { margin: 0 0 6px; font-size: 15px; font-weight: 600; color: var(--ink); }
-.my-review-cols ul { margin: 0; padding-left: 18px; color: var(--ink-2); line-height: 1.6; }
+.my-review-cols ul { margin: 0; padding-inline-start: 18px; color: var(--ink-2); line-height: 1.6; }
 .my-criteria { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
-.my-criteria th { text-align: left; color: var(--ink-3); font-weight: 500; padding: 6px 8px; border-bottom: 1px solid var(--rule); }
+.my-criteria th { text-align: start; color: var(--ink-3); font-weight: 500; padding: 6px 8px; border-bottom: 1px solid var(--rule); }
 .my-criteria td { padding: 8px; border-bottom: 1px solid var(--tint); vertical-align: top; }
-.resubmit-toggle { margin: 16px 0 2px; }
-#submit-area.collapsed { display: none; }
-#submit-area { margin-top: 4px; }
 @media (max-width: 640px) {
   .my-review-cols { grid-template-columns: 1fr; }
   .my-result-top { flex-direction: column; align-items: flex-start; gap: 10px; }
@@ -733,6 +730,93 @@ body.qr-projecting { overflow: hidden; }
   .lecture-tile-text strong { white-space: nowrap; }
   .lecture-delete { flex-basis: 40px; }
 }
+
+.submit-dialog { width: min(100%, 540px); max-height: calc(100vh - 40px); overflow: auto; }
+.submit-dialog h2 { padding-inline-end: 36px; }
+.assignment-drop.dragging { border-color: var(--ink); background: #fff; }
+.pending-files { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 7px; }
+.pending-files li { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border: 1px solid var(--rule); border-radius: 10px; background: var(--paper); font-size: 14px; }
+.pending-files li span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.pending-files li small { color: var(--ink-3); }
+.pending-files li button { width: 28px; height: 28px; border: 0; border-radius: 8px; background: transparent; color: var(--ink-3); font-size: 18px; }
+.pending-files li button:hover { background: var(--red-tint); color: var(--red); }
+.submit-replace-note { margin: 12px 0 0 !important; padding: 9px 12px; border-radius: 10px; background: #fff6d6; color: var(--marker-ink) !important; font-size: 13.5px !important; }
+.my-empty p { margin: 0 0 14px; color: var(--ink-2); }
+#open-submit-popup { margin-top: 16px; }
+.assignment-chip { display: inline-block; margin-top: 6px; padding: 2px 9px; border-radius: 999px; font-size: 12.5px; font-weight: 600; }
+.assignment-chip.todo { background: #fff6d6; color: var(--marker-ink); }
+.assignment-chip.done { background: var(--tint); color: var(--ink-2); }
+.assignment-chip.graded { background: var(--live-tint); color: var(--live-dark); }
+.join-buttons { align-items: center; }
+.join-buttons > button { min-height: 44px; }
+
+/* ---------- Hebrew (RTL) ---------- */
+.lang-toggle .lang-icon { font-weight: 700; font-size: 13px; }
+.login-panel { position: relative; }
+.login-lang { position: absolute; top: 18px; inset-inline-end: 18px; display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 12px; border: 1px solid var(--rule); border-radius: 10px; background: #fff; color: var(--ink-2); font-weight: 600; }
+html[dir="rtl"] .side-link.current::before { border-radius: 4px 0 0 4px; }
+html[dir="rtl"] .crumb { margin: 0 -4px 12px 0; }
+html[dir="rtl"] .crumb svg { transform: scaleX(-1); }
+html[dir="rtl"] .course-card { padding: 18px 34px 16px 20px; border-radius: 14px 6px 6px 14px; }
+html[dir="rtl"] .course-card::before { inset: -1px -1px -1px auto; border-radius: 0 6px 6px 0; }
+html[dir="rtl"] .forum-reply { margin: 8px 4px 0 0; border-radius: 8px 0 0 8px; }
+html[dir="rtl"] .notice-entry.unread { box-shadow: inset -3px 0 var(--marker); }
+/* emails and codes keep their own direction inside Hebrew text */
+.roster-email, #course-code-value, .sc-qr-code, #badge-name { unicode-bidi: plaintext; }
+@media (min-width: 1024px) {
+  html[dir="rtl"] body:has(#user-badge:not(.hidden)) .topbar { inset: 0 0 0 auto; }
+}
+
+@media (min-width: 1024px) { html[lang="he"] body:has(#user-badge:not(.hidden)) .notice-button::after { content: "התראות"; } }
+/* User content (course names, questions, reviews…) keeps its own direction inside the Hebrew interface,
+   so English text and its punctuation display correctly */
+html[dir="rtl"] :is(#current-course-title, #course-description-text, #assignment-view-title, #assignment-instructions, #assignment-rubric-text,
+  .course-title, .course-description, .course-assignment-title, .poll-card > strong, .sc-poll-option > span:first-child, .sc-poll-comment span,
+  .forum-post > p, .forum-post > strong, .forum-reply, .feedback-item p, .my-review-text, .my-review-cols li, .my-criteria td, #ai-summary-text,
+  .roster-name, .sc-checkin-row, .side-link span, #session-course-name, .notice-entry span) { unicode-bidi: plaintext; }
+
+/* rename in place */
+.title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.rename-btn { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid transparent; border-radius: 10px; background: transparent; color: var(--ink-3); }
+.rename-btn svg { width: 19px; height: 19px; }
+.rename-btn:hover { border-color: var(--rule); background: #fff; color: var(--ink); }
+.title-row.editing > h1, .title-row.editing > .rename-btn { display: none; }
+.title-edit { display: flex; align-items: center; gap: 8px; flex: 1; min-width: min(100%, 320px); }
+.title-edit input { flex: 1; min-width: 0; height: 52px; padding: 0 14px; border: 2px solid var(--ink); border-radius: 12px; font: 700 26px var(--serif); color: var(--ink); background: #fff; }
+
+/* ---------- automatic attendance stages ---------- */
+#qr-project-button { display: none; }                      /* the QR opens full screen by itself */
+#lecturer-active-tools[data-stage="verify"] .sc-qr-card { display: none; }
+#lecturer-active-tools[data-stage="verify"] .sc-live-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+#lecturer-active-tools[data-stage="verify"] .sc-attendance-card { grid-column: 1 / -1; }
+#lecturer-active-tools[data-stage="verify"] .sc-checkin-list { max-height: 160px; }
+#lecturer-active-tools[data-stage="qr"] .sc-photo-card, #lecturer-active-tools[data-stage="qr"] .sc-verify-card { display: none; }
+body.qr-locked .sc-qr-card.projecting #qr-toggle-button { min-height: 72px; padding: 0 40px; font-size: 24px; }
+.sc-step2-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.link-btn { border: 0; background: none; padding: 4px 2px; color: var(--ink-2); font-size: 13.5px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.link-btn:hover { color: var(--ink); }
+#session-attendance-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+#session-attendance-summary.hidden { display: none; }
+.summary-actions { display: flex; align-items: center; gap: 16px; }
+@media (max-width: 760px) {
+  #lecturer-active-tools[data-stage="verify"] .sc-live-grid { grid-template-columns: 1fr; }
+}
+
+/* ---------- sidebar: My courses list ---------- */
+.side-caret { width: 16px !important; height: 16px !important; margin-inline-start: auto; opacity: .7; transition: transform .2s ease; }
+.side-link.expanded .side-caret { transform: rotate(180deg); }
+@media (prefers-reduced-motion: reduce) { .side-caret { transition: none; } }
+.side-course-list { display: flex; flex-direction: column; gap: 2px; margin: 2px 0 6px; padding-inline-start: 22px; }
+.side-course-list.hidden { display: none; }
+.side-course { position: relative; display: flex; align-items: center; width: 100%; min-height: 36px; padding: 6px 12px; border: 0; border-radius: 9px; background: transparent; color: var(--chalk-dim, #c9d3cd); font-size: 14px; text-align: start; cursor: pointer; }
+.side-course span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.side-course::before { content: ""; position: absolute; inset-inline-start: -10px; top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: currentColor; opacity: .35; }
+.side-course-all::before { display: none; }
+.side-course:hover { background: rgba(255,255,255,.06); color: var(--chalk, #eef3ef); }
+.side-course.in-course { color: var(--chalk, #eef3ef); font-weight: 600; }
+.side-course.current { background: rgba(255,255,255,.1); }
+.side-course.in-course::before { background: var(--marker); opacity: 1; }
+.side-course-empty { padding: 6px 12px; color: var(--chalk-dim, #c9d3cd); font-size: 13.5px; opacity: .8; }
 </style>
 </head>
 <body>
@@ -745,7 +829,8 @@ body.qr-projecting { overflow: hidden; }
     </button>
     <nav class="side-nav" aria-label="Main">
       <span class="side-nav-label">Navigate</span>
-      <button type="button" id="nav-home" class="side-link" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5zM13 4h5.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H13z"/></svg><span>My courses</span></button>
+      <button type="button" id="nav-home" class="side-link" onclick="toggleSideCourses()" aria-expanded="false" aria-controls="side-course-list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5zM13 4h5.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H13z"/></svg><span>My courses</span><svg class="side-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+      <div id="side-course-list" class="side-course-list hidden"></div>
       <button type="button" id="nav-course" class="side-link hidden" onclick="goBackToCourse()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 9 9-5 9 5-9 5-9-5Z"/><path d="M7 11.3v5.1c2.9 2.2 7.1 2.2 10 0v-5.1"/></svg><span id="nav-course-title">Course</span></button>
       <button type="button" id="nav-lecture" class="side-link side-sub hidden" onclick="void 0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg><span id="nav-lecture-title">Lecture</span></button>
       <button type="button" id="nav-assignment" class="side-link side-sub hidden" onclick="void 0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM15 3v5h4M9 12h7M9 16h5"/></svg><span id="nav-assignment-title">Assignment</span></button>
@@ -764,6 +849,7 @@ body.qr-projecting { overflow: hidden; }
       <div id="sync-controls" class="sync-controls hidden">
         <span id="sync-label" class="sync-label" aria-live="polite">Auto sync · 5s</span>
         <button id="refresh-btn" class="refresh-btn" type="button" onclick="refreshCurrentView(true)" title="Refresh this view" aria-label="Refresh"><span aria-hidden="true">↻</span><span>Refresh</span></button>
+        <button class="refresh-btn lang-toggle" type="button" onclick="SC_I18N.toggle()" title="עברית / English"><span class="lang-icon" aria-hidden="true">עב</span><span class="lang-label">עברית</span></button>
       </div>
       <span class="topbar-label">Academic management platform</span>
       <div class="topbar-account">
@@ -792,6 +878,7 @@ body.qr-projecting { overflow: hidden; }
       <p class="login-foot">SmartClass · Ariel University demo · 2026</p>
     </aside>
     <div class="login-panel">
+      <button class="lang-toggle login-lang" type="button" onclick="SC_I18N.toggle()"><span class="lang-icon" aria-hidden="true">עב</span><span class="lang-label">עברית</span></button>
         <div class="auth-form">
           <span class="form-eyebrow">Welcome to SmartClass</span>
           <h2>Sign in to continue</h2>
@@ -856,7 +943,7 @@ body.qr-projecting { overflow: hidden; }
     <header class="page-head">
       <div class="page-head-main">
         <button class="crumb" type="button" onclick="goHome()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>My courses</button>
-        <h1 id="current-course-title">Course</h1>
+        <div class="title-row"><h1 id="current-course-title">Course</h1><button id="btn-rename-course" class="rename-btn hidden" type="button" onclick="renameCurrentCourse()" title="Rename course" aria-label="Rename course"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg></button></div>
         <p id="course-description-text" class="page-sub">Your lectures, assignments and learning materials in one place.</p>
         <div class="page-meta">
           <span class="chip" id="course-role-chip">Course</span>
@@ -922,10 +1009,11 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
     <header id="session-header" class="page-head lecture-head">
       <div class="page-head-main">
         <button class="crumb" type="button" onclick="goBackToCourse()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg><span id="session-course-name" class="session-course">Course</span></button>
-        <h1>Lecture #<span id="view-session-id"></span></h1>
+        <div class="title-row"><h1 id="lecture-title"><span id="lecture-title-custom" class="hidden"></span><span id="lecture-title-default">Lecture #<span id="view-session-id"></span></span></h1><button id="btn-rename-lecture" class="rename-btn hidden" type="button" onclick="renameCurrentLecture()" title="Rename lecture" aria-label="Rename lecture"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg></button></div>
         <p id="session-status-text" class="lecture-status-line">Status: Past session</p>
       </div>
       <div class="page-actions">
+        <button id="btn-end-lecture" class="btn btn-danger-quiet hidden" type="button" onclick="closeSessionWithVision()">End lecture</button>
         <button id="btn-delete-lecture" class="btn btn-danger-quiet hidden" type="button" onclick="deleteCurrentLecture()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>Delete lecture</button>
       </div>
     </header>
@@ -961,7 +1049,7 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
             <div class="sc-checkin-list" id="live-checkin-list"><span class="sc-muted">Waiting for the first student…</span></div>
           </div>
           <div class="sc-photo-card">
-            <div class="sc-card-eyebrow">Step 2: Classroom photo</div><p class="sc-hint sc-hint-top">Taking the photo locks check-ins automatically (SESSION END).</p>
+            <div class="sc-card-eyebrow sc-step2-head"><span>Step 2: Classroom photo</span><button type="button" class="link-btn" onclick="reopenCheckins()">Reopen check-ins</button></div><p class="sc-hint sc-hint-top">Check-ins are closed. Take a photo of the class to verify the count.</p>
             <div class="sc-phone-qr-line"><img id="mobile-photo-qr" alt="QR link to phone photo uploader"/><div><strong>Scan with your phone</strong><p>Open a secure upload link on the phone and take a classroom photo.</p></div></div>
             <div class="sc-photo-actions"><button class="secondary-btn" type="button" onclick="copyMobilePhotoLink()">Copy phone link</button><a id="mobile-photo-link" href="#" target="_blank" rel="noopener noreferrer">Open upload page</a></div>
             <label class="field-label sc-upload-label" for="class-photo-file">Or upload from this computer</label>
@@ -981,11 +1069,10 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
             <p id="live-detection-method" class="sc-hint">No photo analyzed yet.</p>
             <div id="attendance-crosscheck" class="att-check" aria-live="polite"></div>
             <div class="sc-correct-row"><input class="field-control" id="manual-people-count" type="number" min="0" max="1000" placeholder="Verified count" /><button class="secondary-btn" type="button" onclick="submitManualCount()">Update count</button></div>
-            <button class="danger-btn sc-end-btn" type="button" onclick="closeSessionWithVision()">End lecture</button>
           </div>
         </div>
       </section>
-      <section id="session-attendance-summary" class="sc-summary-strip hidden" aria-live="polite"><span id="summary-count-text"></span><a id="attendance-report-link" href="#" class="hidden">↓ Download attendance Excel</a></section>
+      <section id="session-attendance-summary" class="sc-summary-strip hidden" aria-live="polite"><span id="summary-count-text"></span><span class="summary-actions"><a id="attendance-report-link" href="#" class="hidden">↓ Download attendance Excel</a><button id="summary-restart" type="button" class="link-btn hidden" onclick="if(confirm('Discard all check-ins of this round and open a new attendance QR?'))resetAttendanceFlow()">Restart attendance</button></span></section>
 
       <nav class="session-tabs" role="tablist" aria-label="Lecture sections"><button type="button" role="tab" id="tab-forum" data-tab="forum" onclick="setSessionTab('forum')">Questions</button><button type="button" role="tab" id="tab-polls" data-tab="polls" onclick="setSessionTab('polls')">Polls</button><button type="button" role="tab" id="tab-summary" data-tab="summary" onclick="setSessionTab('summary')">Summary</button></nav>
       <div class="session-extras-grid">
@@ -1048,13 +1135,8 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
         <div>
           <section id="student-assignment-tools" class="assignment-detail-card hidden">
             <div id="student-feedback-box" class="assignment-submission-state hidden"></div>
-            <button id="resubmit-toggle" class="btn btn-quiet resubmit-toggle hidden" type="button" onclick="byId('submit-area').dataset.userOpened=1;toggleResubmit()">Submit a new version</button>
-            <div id="submit-area">
-            <h3 id="submit-area-title">Submit your solution</h3><p class="assignment-help">Upload your file. The AI reviews it against the assignment, and your lecturer approves the final grade.</p>
-            <div id="drop-zone" class="assignment-drop"><div class="drop-icon" aria-hidden="true">↥</div><strong>Click or drop your completed assignment</strong><p>PDF, DOCX, ZIP or text/source files · max 50 MB</p><input type="file" id="student-file-upload" class="sr-file" accept=".pdf,.docx,.txt,.md,.zip,.py,.java,.js,.ts,.html,.json,.cpp,.c,.cs,.sql"/><p id="file-name-display" class="drop-file"></p></div>
-            <button id="submit-assignment-button" class="btn btn-ink btn-lg btn-block" type="button" onclick="submitAssignment()">Upload and submit</button>
-            <div id="submit-progress" class="hidden" aria-live="polite"></div>
-            </div>
+            <div id="student-not-submitted" class="my-empty hidden"><p>You have not submitted this assignment yet.</p></div>
+            <button id="open-submit-popup" class="btn btn-ink btn-lg" type="button" onclick="openSubmitPopup()">Submit assignment</button>
           </section>
           <section id="lecturer-assignment-tools" class="assignment-detail-card hidden">
             <div class="panel-head"><h3>Student submissions</h3><button class="secondary-btn" type="button" onclick="loadAssignmentSubmissions()">↻ Refresh</button></div>
@@ -1089,8 +1171,389 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
       </form>
     </section>
   </div>
+  <div id="submit-assignment-overlay" class="join-overlay hidden" role="presentation" onclick="if(event.target===this)closeSubmitPopup()">
+    <section class="join-dialog submit-dialog" role="dialog" aria-modal="true" aria-labelledby="submit-popup-title">
+      <button class="join-x" type="button" aria-label="Close" onclick="closeSubmitPopup()">×</button>
+      <h2 id="submit-popup-title">Submit assignment</h2>
+      <p id="submit-popup-meta">Add your files. The AI reviews your work right after you submit.</p>
+      <div id="drop-zone" class="assignment-drop"><div class="drop-icon" aria-hidden="true">↥</div><strong>Click to add files, or drop them here</strong><p>PDF, Word, ZIP or code files · up to 10 files, 50 MB in total</p><input type="file" id="student-file-upload" class="sr-file" multiple accept=".pdf,.docx,.txt,.md,.zip,.py,.java,.js,.ts,.html,.json,.cpp,.c,.cs,.sql"/><p id="file-name-display" class="drop-file"></p></div>
+      <ul id="pending-files-list" class="pending-files"></ul>
+      <p id="submit-replace-note" class="submit-replace-note hidden">Submitting again replaces your previous files, review and grade.</p>
+      <div id="submit-progress" class="hidden" aria-live="polite"></div>
+      <div class="join-buttons"><button type="button" class="join-cancel" onclick="closeSubmitPopup()">Cancel</button><button id="submit-assignment-button" type="button" class="join-submit" onclick="submitAssignment()">Submit</button></div>
+    </section>
+  </div>
   <div id="join-course-overlay" class="join-overlay hidden" role="presentation" onclick="if(event.target===this)closeJoinCourseDialog()"><section class="join-dialog" role="dialog" aria-modal="true" aria-labelledby="join-dialog-title"><button class="join-x" type="button" aria-label="Close" onclick="closeJoinCourseDialog()">×</button><span class="join-icon">🎓</span><h2 id="join-dialog-title">Join a course</h2><p>Enter the course ID shared by your lecturer to join their class.</p><form id="join-course-form" onsubmit="submitJoinCourse(event)"><label for="join-course-id">COURSE ID</label><input id="join-course-id" placeholder="e.g. CRS-729" autocomplete="off" required maxlength="32"><div id="join-course-error" class="join-error" role="alert"></div><div class="join-buttons"><button type="button" class="join-cancel" onclick="closeJoinCourseDialog()">Cancel</button><button id="join-course-submit" type="submit" class="join-submit">Join course →</button></div></form></section></div>
 
+<script>
+/* SmartClass · Hebrew interface (עב / EN)
+   The app is written in English. In Hebrew mode this layer translates what is on screen:
+   static text, text added later by the app (MutationObserver), placeholders/titles, and
+   confirm()/prompt()/alert() messages. User content (course names, questions, AI reviews)
+   is left as written. Layout mirrors through dir="rtl" + logical CSS properties. */
+(function () {
+  const HE = {
+    // ---- sign in
+    'Welcome to SmartClass': 'ברוכים הבאים ל-SmartClass', 'Sign in to continue': 'התחברות',
+    'Use your institutional email to access your courses and classroom workspace.': 'הזינו את כתובת המייל המוסדית כדי להיכנס לקורסים שלכם.',
+    'Institutional email': 'מייל מוסדי', 'Request verification code': 'שליחת קוד אימות', 'Sign in': 'כניסה',
+    'Verification code expires in': 'הקוד בתוקף עוד', '↻ Request a new code': '↻ שליחת קוד חדש', 'Verification code': 'קוד אימות',
+    'Demo environment.': 'סביבת הדגמה.', 'The current project uses test accounts and displays the verification code on screen instead of sending an email.':
+      'הפרויקט משתמש בחשבונות בדיקה ומציג את קוד האימות על המסך במקום לשלוח מייל.',
+    'Secure classroom access · Student and lecturer accounts': 'כניסה מאובטחת · חשבונות סטודנט ומרצה',
+    'Make every class count.': 'כל שיעור נחשב.', 'Attendance, questions, polls and feedback for your lecture, on one simple screen.': 'נוכחות, שאלות, סקרים ומשוב להרצאה, במסך אחד פשוט.',
+    'Attendance in seconds': 'נוכחות בשניות', 'Students scan the board, one photo confirms who is in the room.': 'הסטודנטים סורקים את הלוח, ותמונה אחת מאמתת מי בכיתה.',
+    'Questions and polls': 'שאלות וסקרים', 'Ask during class or after it, vote and see results live.': 'שואלים בזמן השיעור או אחריו, מצביעים ורואים תוצאות בזמן אמת.',
+    'Summaries and reviews': 'סיכומים וסקירות', 'Lecture summaries and assignment feedback with AI, approved by the lecturer.': 'סיכומי הרצאות ומשוב על מטלות בעזרת AI, באישור המרצה.',
+    'SmartClass · Ariel University demo · 2026': 'SmartClass · הדגמה, אוניברסיטת אריאל · 2026',
+    'Requesting your verification code…': 'שולחים את קוד האימות…', 'Please enter your institutional email.': 'נא להזין מייל מוסדי.',
+    'Enter the verification code to continue.': 'הזינו את קוד האימות כדי להמשיך.', 'Code expired. Request a fresh code.': 'פג תוקף הקוד. בקשו קוד חדש.',
+    'Verification code expired. Request a new one.': 'פג תוקף קוד האימות. בקשו קוד חדש.', 'Invalid verification code. Please request a new one.': 'קוד האימות שגוי. בקשו קוד חדש.',
+    'Unable to sign in right now. Please try again.': 'אי אפשר להתחבר כרגע. נסו שוב.', 'Unable to reach SmartClass. Please try again.': 'אין חיבור ל-SmartClass. נסו שוב.',
+    'Access denied. Check that this account is enabled.': 'הגישה נדחתה. בדקו שהחשבון מופעל.',
+    // ---- navigation / header
+    'Learning workspace': 'סביבת למידה', 'Navigate': 'ניווט', 'My courses': 'הקורסים שלי', 'Notifications': 'התראות', 'Refresh': 'רענון', '↻ Refresh': '↻ רענון',
+    'Sign out': 'יציאה', 'Lecturer': 'מרצה', 'Student': 'סטודנט', 'Member': 'משתמש', 'lecturer': 'מרצה', 'student': 'סטודנט',
+    'Mark all read': 'סימון הכול כנקרא', 'Delete all messages': 'מחיקת כל ההודעות', 'No notifications yet.': 'אין התראות עדיין.',
+    'Notifications panel': 'חלונית התראות', 'Refresh this view': 'רענון המסך', 'SmartClass home': 'דף הבית של SmartClass', 'Main': 'ראשי',
+    '✓ Updated now': '✓ עודכן', 'Update failed. Check your connection.': 'העדכון נכשל. בדקו את החיבור.', 'All notification messages deleted': 'כל ההודעות נמחקו',
+    'Could not delete notifications': 'לא ניתן למחוק את ההודעות', 'Could not mark notifications read': 'לא ניתן לסמן כנקרא',
+    'New assignment published': 'פורסמה מטלה חדשה', 'New lecture started': 'התחילה הרצאה חדשה', 'A live lecture is now available in your course': 'יש עכשיו הרצאה חיה בקורס שלך',
+    'New class poll': 'סקר חדש בכיתה', 'New lecture summary available': 'סיכום הרצאה חדש', 'A recording summary is ready to read': 'סיכום ההקלטה מוכן לקריאה',
+    'New assignment submission': 'הגשה חדשה', 'Assignment grade approved': 'הציון במטלה אושר', 'Course joined': 'הצטרפת לקורס', 'Added to a course': 'נוספת לקורס',
+    'AI review ready': 'סקירת ה-AI מוכנה', 'Assignment updated': 'המטלה עודכנה', 'Assignment removed': 'המטלה הוסרה', 'New poll discussion reply': 'תגובה חדשה בדיון על סקר',
+    'Course name updated': 'שם הקורס עודכן',
+    // ---- dashboard
+    'Your workspace': 'סביבת העבודה שלך', 'Welcome back,': 'ברוכים השבים,', 'there': '', 'Your courses': 'הקורסים שלך',
+    'Manage your courses, start classroom sessions, and organize assignments.': 'נהלו את הקורסים, פתחו הרצאות וארגנו מטלות.',
+    'Pick up where you left off and keep your learning moving forward.': 'ממשיכים מאיפה שעצרתם.', 'Your courses and classroom activities, all in one place.': 'הקורסים והפעילות בכיתה, במקום אחד.',
+    'Create course': 'יצירת קורס', 'New course name': 'שם הקורס החדש', 'Course title': 'שם הקורס', 'account': 'חשבון', 'Lecturer account': 'חשבון מרצה', 'Student account': 'חשבון סטודנט',
+    'Join a course': 'הצטרפות לקורס', '＋ Join a course': '＋ הצטרפות לקורס', 'Enter the course ID shared by your lecturer to join their class.': 'הזינו את קוד הקורס שקיבלתם מהמרצה.',
+    'COURSE ID': 'קוד קורס', 'Join course →': 'הצטרפות לקורס ←', 'Cancel': 'ביטול', 'Open course': 'כניסה לקורס', 'Course options': 'אפשרויות קורס',
+    'Rename': 'שינוי שם', 'Delete course': 'מחיקת קורס', 'Copy ID': 'העתקת קוד', 'Untitled course': 'קורס ללא שם',
+    'Course name cannot be empty.': 'שם הקורס לא יכול להיות ריק.', 'Course could not be created': 'לא ניתן ליצור את הקורס', 'Unable to create course.': 'לא ניתן ליצור את הקורס.',
+    'Course joined successfully!': 'הצטרפת לקורס!', 'Course not found. Please check the code.': 'הקורס לא נמצא. בדקו את הקוד.', 'Could not join this course.': 'לא ניתן להצטרף לקורס.',
+    'Enter the new course name:': 'שם חדש לקורס:', 'Could not rename course.': 'לא ניתן לשנות את שם הקורס.', 'Could not delete course.': 'לא ניתן למחוק את הקורס.',
+    'Unable to load courses': 'לא ניתן לטעון את הקורסים', 'This course was deleted or your access was removed.': 'הקורס נמחק או שהגישה אליו הוסרה.',
+    'Course is no longer available': 'הקורס כבר לא זמין', 'No courses yet': 'אין קורסים עדיין', '✓ Copied': '✓ הועתק',
+    // ---- course page
+    'Course': 'קורס', 'Course workspace': 'סביבת הקורס', 'Lecturer view': 'תצוגת מרצה', 'Student view': 'תצוגת סטודנט',
+    'Course code · tap to copy': 'קוד הקורס · הקשה להעתקה', 'Copy the course code to share with students': 'העתקת קוד הקורס לשיתוף עם הסטודנטים',
+    'Start new lecture': 'התחלת הרצאה חדשה', 'Lectures': 'הרצאות', 'Students': 'סטודנטים', 'Assignments': 'מטלות', 'Course activity': 'פעילות הקורס',
+    'Live now': 'עכשיו בשידור', 'Lecture history': 'היסטוריית הרצאות', 'Finished lectures keep their questions, polls, attendance and summary.': 'הרצאות שהסתיימו שומרות את השאלות, הסקרים, הנוכחות והסיכום.',
+    'Loading lectures…': 'טוענים הרצאות…', 'Loading lecture history…': 'טוענים היסטוריה…', 'No live lecture right now.': 'אין הרצאה חיה כרגע.',
+    'No summary yet': 'אין סיכום עדיין', 'Summary available': 'יש סיכום', 'Finished': 'הסתיימה', 'Live': 'חי', 'live': 'חי', 'Open it for attendance, polls and questions': 'כניסה לנוכחות, סקרים ושאלות',
+    'Add': 'הוספה', 'New': 'חדשה', 'Remove from course': 'הסרה מהקורס', 'Institutional email of the student to add:': 'המייל המוסדי של הסטודנט שרוצים להוסיף:',
+    'Could not add student.': 'לא ניתן להוסיף את הסטודנט.', 'Could not remove student.': 'לא ניתן להסיר את הסטודנט.', 'No students enrolled yet.': 'אין סטודנטים רשומים עדיין.',
+    'Could not start lecture': 'לא ניתן להתחיל הרצאה', 'Unable to start lecture.': 'לא ניתן להתחיל הרצאה.', 'Could not delete the lecture': 'לא ניתן למחוק את ההרצאה',
+    'Loading assignments…': 'טוענים מטלות…', 'No assignments have been posted yet.': 'עדיין לא פורסמו מטלות.', 'Unable to load assignments': 'לא ניתן לטעון מטלות',
+    'Unable to load assignments.': 'לא ניתן לטעון מטלות.', 'Not submitted': 'לא הוגש', 'Submitted': 'הוגש', 'Graded': 'נבדק',
+    // ---- create / edit assignment
+    'Assignment studio': 'יצירת מטלה', 'Publish a new assignment': 'פרסום מטלה חדשה', 'Upload the assignment brief and describe what students must deliver. AI reviews will use these requirements.':
+      'העלו את קובץ המטלה ותארו מה הסטודנטים צריכים להגיש. סקירות ה-AI יתבססו על הדרישות האלה.',
+    'Assignment title *': 'שם המטלה *', 'Due date *': 'תאריך הגשה *', 'Instructions and learning goals *': 'הנחיות ומטרות *',
+    'Include clear evaluation conditions. Either readable document content or text instructions are required.': 'כללו תנאי הערכה ברורים. נדרשים קובץ קריא או הנחיות כתובות.',
+    'Official assignment file': 'קובץ המטלה', 'Choose your assignment document': 'בחירת קובץ המטלה', 'PDF, Word, ZIP or source file · up to 50 MB': 'PDF, Word, ZIP או קובץ קוד · עד 50MB',
+    'Evaluation rubric (optional)': 'מחוון הערכה (לא חובה)', 'The rubric guides Gemini. The lecturer always approves the final grade.': 'המחוון מנחה את Gemini. הציון הסופי תמיד באישור המרצה.',
+    'Students will receive a notification immediately after publication.': 'הסטודנטים יקבלו התראה מיד אחרי הפרסום.', 'Publish assignment': 'פרסום מטלה',
+    '✕ Close': '✕ סגירה', 'Close': 'סגירה', 'e.g. Data structures · Exercise 3': 'לדוגמה: מבני נתונים · תרגיל 3',
+    'Explain what students should build, submit, and demonstrate. You can also attach the brief below.': 'הסבירו מה הסטודנטים צריכים לבנות ולהגיש. אפשר גם לצרף קובץ למטה.',
+    'Enter a title, due date, and either instructions or an assignment document.': 'הזינו שם, תאריך הגשה והנחיות או קובץ מטלה.',
+    'Saving requirements and notifying students…': 'שומרים ומודיעים לסטודנטים…', 'Assignment could not be published': 'לא ניתן לפרסם את המטלה',
+    '✓ Assignment published. Students notified.': '✓ המטלה פורסמה. הסטודנטים קיבלו התראה.', 'Create assignment': 'יצירת מטלה',
+    'Edit assignment': 'עריכת מטלה', '✎ Edit': '✎ עריכה', 'Edit': 'עריכה', 'Delete': 'מחיקה', 'TITLE': 'שם', 'DUE DATE': 'תאריך הגשה', 'INSTRUCTIONS': 'הנחיות',
+    'EVALUATION RUBRIC (OPTIONAL)': 'מחוון הערכה (לא חובה)', 'ASSIGNMENT FILE': 'קובץ המטלה', 'Remove the current file': 'הסרת הקובץ הנוכחי', 'Save changes': 'שמירת שינויים',
+    'Students are notified about the change. Existing submissions and grades are kept — re-run AI reviews if the requirements changed.': 'הסטודנטים יקבלו התראה על השינוי. הגשות וציונים קיימים נשמרים. אם הדרישות השתנו, הריצו שוב את סקירות ה-AI.',
+    'No file attached. You can add one below.': 'אין קובץ מצורף. אפשר להוסיף למטה.', 'The file is larger than 50 MB.': 'הקובץ גדול מ-50MB.',
+    'Could not save the assignment': 'לא ניתן לשמור את המטלה', '✓ Assignment updated. Students were notified.': '✓ המטלה עודכנה. הסטודנטים קיבלו התראה.',
+    'Could not delete the assignment': 'לא ניתן למחוק את המטלה', 'Assignment details are still loading. Try again in a moment.': 'פרטי המטלה עדיין נטענים. נסו שוב בעוד רגע.',
+    // ---- assignment page
+    'Back to course': 'חזרה לקורס', 'Assignment': 'מטלה', 'ASSIGNMENT DETAILS': 'פרטי המטלה', 'Loading assignment requirements…': 'טוענים את דרישות המטלה…',
+    'Loading official assignment requirements…': 'טוענים את דרישות המטלה…', '↓ Download official assignment brief': '↓ הורדת קובץ המטלה',
+    'Instructions are included in the attached official brief.': 'ההנחיות נמצאות בקובץ המצורף.', 'Failed to load assignment': 'טעינת המטלה נכשלה',
+    'Submit assignment': 'הגשת מטלה', 'Submit a new version': 'הגשת גרסה חדשה', 'You have not submitted this assignment yet.': 'עדיין לא הגשת את המטלה.',
+    'Add your files. The AI reviews your work right after you submit.': 'הוסיפו את הקבצים. ה-AI יבדוק את העבודה מיד אחרי ההגשה.',
+    'Click to add files, or drop them here': 'לחצו להוספת קבצים, או גררו אותם לכאן', 'PDF, Word, ZIP or code files · up to 10 files, 50 MB in total': 'PDF, Word, ZIP או קובצי קוד · עד 10 קבצים, 50MB בסך הכול',
+    'Submitting again replaces your previous files, review and grade.': 'הגשה נוספת מחליפה את הקבצים, הסקירה והציון הקודמים.', 'Submit': 'הגשה', 'Submitting…': 'מגישים…',
+    'Add at least one file (click the box above).': 'הוסיפו לפחות קובץ אחד (לחצו על התיבה למעלה).', 'Could not upload your files': 'לא ניתן להעלות את הקבצים',
+    '✓ Submitted and reviewed. Your lecturer approves the final grade.': '✓ הוגש ונבדק. המרצה יאשר את הציון הסופי.', '✓ Submitted. The AI review is in progress.': '✓ הוגש. סקירת ה-AI בתהליך.',
+    '✓ Submitted. The AI was busy, so the review retries automatically.': '✓ הוגש. ה-AI היה עמוס, הסקירה תנוסה שוב אוטומטית.',
+    'AI-recommended grade, waiting for your lecturer': 'ציון מומלץ של ה-AI, ממתין לאישור המרצה', 'Final grade, approved by your lecturer': 'ציון סופי, אושר על ידי המרצה',
+    'The AI was busy, retrying automatically': 'ה-AI היה עמוס, מנסה שוב אוטומטית', 'Old submission, please submit again': 'הגשה ישנה, נא להגיש שוב',
+    'Submitted, AI review in progress': 'הוגש, סקירת ה-AI בתהליך', 'AI review': 'סקירת AI', 'What works well': 'מה עובד טוב', 'What to improve': 'מה לשפר',
+    'Criterion': 'קריטריון', 'Score': 'ציון', 'Notes': 'הערות', 'Your file could not be read. Submit it as PDF, DOCX, ZIP or source files.': 'לא ניתן לקרוא את הקובץ. הגישו PDF, DOCX, ZIP או קובצי קוד.',
+    'Your file is saved. The review is retried automatically in the next few minutes, and this page updates by itself.': 'הקובץ נשמר. הסקירה תנוסה שוב אוטומטית בדקות הקרובות, והעמוד יתעדכן לבד.',
+    'Your file is saved. The review appears here as soon as it is ready.': 'הקובץ נשמר. הסקירה תופיע כאן ברגע שתהיה מוכנה.',
+    'Class feedback forum': 'פורום משובים כיתתי', 'Anonymized written feedback is shared with this class. No grades or student identities are shown here.': 'המשובים הכתובים משותפים עם הכיתה, בלי ציונים ובלי שמות.',
+    'Loading feedback…': 'טוענים משובים…', 'No shared AI feedback yet.': 'אין עדיין משובים משותפים.', 'Could not load class feedback': 'לא ניתן לטעון את המשובים',
+    'Student submissions': 'הגשות הסטודנטים', 'Review the real files and AI recommendations before approving a final grade. Comparisons are visible only to the lecturer.': 'עברו על הקבצים ועל המלצות ה-AI לפני אישור ציון סופי. ההשוואות גלויות למרצה בלבד.',
+    'Final grade': 'ציון סופי', 'Approve grade': 'אישור ציון', 'Update grade': 'עדכון ציון', '✓ Approved': '✓ אושר', 'No AI grade yet': 'אין עדיין ציון AI',
+    'Save the grade typed in the box as the final grade': 'שמירת הציון שהוקלד כציון הסופי', 'Enter a valid grade between 0 and 100.': 'הזינו ציון בין 0 ל-100.',
+    'Could not approve grade': 'לא ניתן לאשר את הציון', '✓ Grade approved. Student notified.': '✓ הציון אושר. הסטודנט קיבל התראה.', '✓ Grade approved': '✓ הציון אושר',
+    'AI reviewed · awaiting final approval': 'נבדק ב-AI · ממתין לאישור סופי', '✓ Grade approved': '✓ הציון אושר', 'No AI review yet.': 'אין עדיין סקירת AI.', 'No submissions yet.': 'אין הגשות עדיין.',
+    '↻ Re-run AI review': '↻ הרצה חוזרת של סקירת AI', 'Gemini is reviewing': 'Gemini בודק', 'Review finished': 'הסקירה הסתיימה', 'Review still pending': 'הסקירה עדיין ממתינה',
+    '✓ AI review completed': '✓ סקירת ה-AI הושלמה', 'Could not re-run the review': 'לא ניתן להריץ שוב את הסקירה',
+    '✧ Generate AI comparative report': '✧ יצירת דוח השוואה ב-AI', 'Comparing submissions with Gemini…': 'משווים הגשות עם Gemini…', 'Could not compare submissions': 'לא ניתן להשוות הגשות',
+    '✓ AI comparison generated for the lecturer': '✓ דוח ההשוואה מוכן', 'AI report': 'דוח AI', 'Outdated AI report — regenerate after new submissions': 'הדוח לא עדכני. צרו אותו מחדש אחרי ההגשות החדשות',
+    'Unable to load lecturer submissions': 'לא ניתן לטעון את ההגשות', 'Text overlap is a limited indicator, not proof of copying.': 'חפיפת טקסט היא אינדיקציה בלבד, לא הוכחה להעתקה.',
+    // ---- lecture page
+    'Lecture': 'הרצאה', 'Lecture #': 'הרצאה #', 'Attendance': 'נוכחות', 'Students scan the QR. Then lock check-ins, photograph the class and approve the list.': 'הסטודנטים סורקים את ה-QR. אחר כך נועלים את הרישום, מצלמים את הכיתה ומאשרים את הרשימה.',
+    '● Live now · updates automatically': '● בשידור חי · מתעדכן אוטומטית', 'Completed lecture · Questions and summary remain available': 'הרצאה שהסתיימה · השאלות והסיכום נשארים זמינים',
+    'Status: Past session': 'הרצאה שהסתיימה', 'Step 1: Attendance QR': 'שלב 1: QR לנוכחות', 'Step 2: Classroom photo': 'שלב 2: צילום הכיתה', 'Step 3: Cross-check and approve': 'שלב 3: הצלבה ואישור',
+    'Project full screen': 'הקרנה במסך מלא', 'Show the QR on the whole screen for the projector': 'הצגת ה-QR על כל המסך למקרן', 'Exit full screen': 'יציאה ממסך מלא',
+    '■ SESSION END · lock check-ins': '■ סיום רישום · נעילת הנוכחות', '▶ Reopen check-ins': '▶ פתיחת הרישום מחדש', 'Check-ins locked': 'הרישום נעול', 'Paused': 'מושהה',
+    'Pause QR': 'השהיית QR', 'Next QR rotation': 'ה-QR הבא בעוד', 'Refreshes automatically every 10 seconds. Students check in inside SmartClass.': 'מתחלף אוטומטית כל 10 שניות. הסטודנטים נרשמים בתוך SmartClass.',
+    'Live check-ins': 'נרשמו עכשיו', 'students checked in': 'סטודנטים נרשמו', 'Waiting for the first student…': 'מחכים לסטודנט הראשון…',
+    'Taking the photo locks check-ins automatically (SESSION END).': 'הצילום נועל את הרישום אוטומטית.', 'Scan with your phone': 'סריקה בטלפון',
+    'Open a secure upload link on the phone and take a classroom photo.': 'פתחו קישור העלאה מאובטח בטלפון וצלמו את הכיתה.', 'Copy phone link': 'העתקת קישור לטלפון',
+    'Open upload page': 'פתיחת עמוד ההעלאה', 'Open upload page ↗': 'פתיחת עמוד ההעלאה ↗', 'Or upload from this computer': 'או העלאה מהמחשב', '📷 Take photo': '📷 צילום', '↑ Choose photo': '↑ בחירת תמונה',
+    'Analyze selected photo': 'ניתוח התמונה', 'Preparing phone link…': 'מכינים קישור לטלפון…', 'Phone upload link copied': 'קישור ההעלאה הועתק', 'Phone link unavailable': 'הקישור לטלפון לא זמין',
+    'estimated people in photo': 'אנשים בתמונה (הערכה)', 'No photo analyzed yet.': 'עדיין לא נותחה תמונה.', 'Verified count': 'ספירה מאומתת', 'Update count': 'עדכון ספירה',
+    'End lecture': 'סיום ההרצאה', 'Verify the estimate visually.': 'בדקו את ההערכה בעין.', 'AI estimate of people in the photo; verify manually': 'הערכת AI של מספר האנשים בתמונה. בדקו בעין',
+    'Manual count approved by the lecturer': 'ספירה ידנית שאישר המרצה', 'Lecturer verified / corrected': 'אומת או תוקן על ידי המרצה',
+    'Waiting for the classroom photo': 'מחכים לצילום הכיתה', '⚠ More check-ins than people in the photo': '⚠ יותר רישומים מאנשים בתמונה',
+    '✓ More people in the photo than check-ins': '✓ יותר אנשים בתמונה מרישומים', '✓ Check-ins match the photo': '✓ הרישומים תואמים לתמונה', '✓ Attendance approved': '✓ הנוכחות אושרה',
+    '(א) Cancel & open new attendance': '(א) ביטול ופתיחת נוכחות חדשה', '(ב) Retake photo': '(ב) צילום מחדש', '(ג) Approve & export Excel': '(ג) אישור וייצוא ל-Excel',
+    '✓ Approve & export Excel': '✓ אישור וייצוא ל-Excel', 'Retake photo': 'צילום מחדש', 'Restart attendance': 'התחלת נוכחות מחדש', '↓ Download attendance Excel': '↓ הורדת קובץ הנוכחות (Excel)',
+    '✓ Attendance approved · Excel report is ready to download': '✓ הנוכחות אושרה · קובץ ה-Excel מוכן להורדה', 'Could not approve attendance': 'לא ניתן לאשר את הנוכחות',
+    'Discard all check-ins of this round and open a new attendance QR?': 'למחוק את כל הרישומים של הסבב הזה ולפתוח QR נוכחות חדש?',
+    '✓ Check-ins reset. A new attendance round is now open for this lecture.': '✓ הרישומים אופסו. נפתח סבב נוכחות חדש.', 'Could not restart attendance': 'לא ניתן להתחיל נוכחות מחדש',
+    'Choose a photo first.': 'בחרו תמונה קודם.', 'Uploading photo': 'מעלים תמונה', 'Gemini is counting people': 'Gemini סופר אנשים', 'Photo analyzed': 'התמונה נותחה',
+    'Automatic counting is unavailable. Enter the verified count manually.': 'הספירה האוטומטית לא זמינה. הזינו ספירה ידנית.', 'Enter a valid people count, 0–1000.': 'הזינו מספר אנשים בין 0 ל-1000.',
+    'Could not save count.': 'לא ניתן לשמור את הספירה.', '✓ Verified count saved': '✓ הספירה נשמרה',
+    'Add a classroom photo or a verified count, then end the lecture.': 'הוסיפו צילום כיתה או ספירה ידנית, ואז סיימו את ההרצאה.',
+    'Resolve the attendance discrepancy in Step 3, or end the lecture to export as is.': 'טפלו בפער הנוכחות בשלב 3, או סיימו את ההרצאה וייצאו כמו שזה.',
+    'There are more check-ins than people in the photo.': 'יש יותר רישומים מאנשים בתמונה.', 'Closing lecture and creating the attendance report…': 'מסיימים את ההרצאה ויוצרים דוח נוכחות…',
+    'Unable to end the lecture': 'לא ניתן לסיים את ההרצאה', 'Lecture has ended. You can create time-limited polls.': 'ההרצאה הסתיימה. אפשר ליצור סקרים מוגבלים בזמן.',
+    'Check in to this lecture': 'רישום נוכחות להרצאה', 'Scan the QR code': 'סריקת קוד ה-QR', 'Scan the QR code on the board, or type the code shown under it.': 'סרקו את ה-QR שעל הלוח, או הקלידו את הקוד שמתחתיו.',
+    'Scan with SmartClass on your phone to check in': 'סרקו עם SmartClass בטלפון כדי להירשם', 'or type the code': 'או הקלידו את הקוד', 'Check in': 'רישום', 'Close camera': 'סגירת המצלמה',
+    'Please scan or enter a QR code.': 'סרקו או הזינו קוד QR.', 'Unable to record attendance. Please try again.': 'לא ניתן לרשום נוכחות. נסו שוב.',
+    '✓ You are checked in. Attendance for this lecture is closed.': '✓ נרשמת. הנוכחות להרצאה נסגרה.',
+    'Attendance for this lecture is closed. You did not check in — contact your lecturer if this is a mistake.': 'הנוכחות להרצאה נסגרה ולא נרשמת. אם זו טעות, פנו למרצה.',
+    'Questions': 'שאלות', 'Polls': 'סקרים', 'Summary': 'סיכום', 'Lecture sections': 'חלקי ההרצאה',
+    'Class forum': 'פורום הכיתה', 'Questions and answers stay available after the lecture.': 'השאלות והתשובות נשארות זמינות גם אחרי ההרצאה.',
+    'Write a question or share an idea…': 'כתבו שאלה או רעיון…', 'Post message': 'פרסום', '↳ Reply': '↳ תגובה', 'Send reply': 'שליחת תגובה', 'Write a helpful reply…': 'כתבו תגובה…',
+    'Could not load forum': 'לא ניתן לטעון את הפורום', 'Unable to post question.': 'לא ניתן לפרסם את השאלה.', 'Unable to reply.': 'לא ניתן להגיב.', 'Could not save reply': 'לא ניתן לשמור את התגובה',
+    'Could not post': 'לא ניתן לפרסם', 'No questions yet. Ask the first one.': 'אין שאלות עדיין. שאלו ראשונים.',
+    'Class polls': 'סקרים בכיתה', 'Live votes, result charts and class discussion update automatically.': 'ההצבעות, התוצאות והדיון מתעדכנים אוטומטית.', '＋ New poll': '＋ סקר חדש',
+    'Poll question': 'שאלת הסקר', "What did you understand from today's lecture?": 'מה הבנתם מההרצאה היום?', 'Options': 'אפשרויות', '＋ Add option': '＋ הוספת אפשרות',
+    'Allow multiple answers': 'אפשר כמה תשובות', 'Voting window for past lecture (minutes)': 'זמן הצבעה להרצאה שהסתיימה (דקות)', 'Publish poll': 'פרסום הסקר',
+    'Enter a question and at least 2 options.': 'הזינו שאלה ולפחות 2 אפשרויות.', 'Each option must be different.': 'כל אפשרות צריכה להיות שונה.', 'Poll could not be published': 'לא ניתן לפרסם את הסקר',
+    '✓ Poll published to students': '✓ הסקר פורסם', 'Add a comment to this poll…': 'הוסיפו תגובה לסקר…', 'Send': 'שליחה', 'Could not vote': 'לא ניתן להצביע', 'Could not vote.': 'לא ניתן להצביע.',
+    'Comment failed': 'התגובה נכשלה', 'Could not post comment': 'לא ניתן לפרסם תגובה', 'Could not load polls': 'לא ניתן לטעון סקרים', 'No polls yet. New polls will appear automatically.': 'אין סקרים עדיין. סקרים חדשים יופיעו כאן אוטומטית.',
+    '☑ Select one or more answers': '☑ אפשר לבחור תשובה אחת או יותר', '☑ Multiple answers allowed': '☑ אפשר כמה תשובות',
+    'Lecture summary': 'סיכום ההרצאה', 'Read the summary saved for this lecture. The lecturer can generate it from a recording with Gemini.': 'הסיכום של ההרצאה. המרצה יכול ליצור אותו מהקלטה בעזרת Gemini.',
+    'Loading summary…': 'טוענים סיכום…', 'No summary has been saved for this lecture yet.': 'עדיין לא נשמר סיכום להרצאה הזו.', 'No summary available yet.': 'אין סיכום עדיין.',
+    'Unable to load summary.': 'לא ניתן לטעון את הסיכום.', 'Could not load summary': 'לא ניתן לטעון את הסיכום', '✧ Generate a summary with Gemini': '✧ יצירת סיכום עם Gemini',
+    'Upload a lecture recording (up to 500 MB, about 1–2 hours) or use a public YouTube link. Private Zoom/Classroom recordings must first be downloaded. Long videos take a few minutes — you can keep working; the summary appears here when ready.':
+      'העלו הקלטה של ההרצאה (עד 500MB, כשעה-שעתיים) או קישור ציבורי ל-YouTube. הקלטות פרטיות מ-Zoom או Classroom צריך להוריד קודם. סרטון ארוך לוקח כמה דקות, ואפשר להמשיך לעבוד בינתיים.',
+    'Public YouTube URL (optional)': 'קישור YouTube ציבורי (לא חובה)', 'Or select a video file (MP4, WebM, MOV, MPEG, AVI, WMV · up to 500 MB)': 'או בחירת קובץ וידאו (MP4, WebM, MOV, MPEG, AVI, WMV · עד 500MB)',
+    '✧ Generate AI summary': '✧ יצירת סיכום AI', 'Edit text summary (lecturer)': 'עריכת הסיכום (מרצה)', 'Write or paste lecture notes here…': 'כתבו או הדביקו כאן את הסיכום…', 'Save summary': 'שמירת הסיכום',
+    'Choose a video or paste a public YouTube URL.': 'בחרו סרטון או הדביקו קישור YouTube ציבורי.', 'Summary failed': 'יצירת הסיכום נכשלה',
+    '✓ Summary saved. Students can read it now.': '✓ הסיכום נשמר. הסטודנטים יכולים לקרוא אותו.', 'Could not save summary': 'לא ניתן לשמור את הסיכום', 'Could not save summary.': 'לא ניתן לשמור את הסיכום.',
+    '✓ Lecture summary saved. Students were notified.': '✓ סיכום ההרצאה נשמר. הסטודנטים קיבלו התראה.', '✓ Summary ready · 100%': '✓ הסיכום מוכן · 100%',
+    'Delete lecture': 'מחיקת הרצאה',
+    // ---- progress labels
+    'Uploading': 'מעלים', 'Uploading video': 'מעלים את הסרטון', 'Uploading your file': 'מעלים את הקובץ', 'Gemini is working': 'Gemini עובד', 'Gemini is reviewing your work': 'Gemini בודק את העבודה',
+    'Starting': 'מתחילים', 'Sending the video to Gemini': 'שולחים את הסרטון ל-Gemini', 'Gemini is processing the video': 'Gemini מעבד את הסרטון', 'Gemini is writing the summary': 'Gemini כותב את הסיכום',
+    'Done': 'הסתיים', 'Submitted ': 'הוגש', 'Summary ready': 'הסיכום מוכן', 'Request failed': 'הבקשה נכשלה',
+    'Network error — check your connection and try again': 'שגיאת רשת. בדקו את החיבור ונסו שוב', 'The server took too long to answer. Try again': 'השרת לא ענה בזמן. נסו שוב',
+    'The file is too large for the server': 'הקובץ גדול מדי לשרת',
+    // ---- server messages
+    'Gemini API key is not configured. Add GEMINI_API_KEY to the server\'s environment variables': 'מפתח Gemini לא מוגדר בשרת. הוסיפו את GEMINI_API_KEY למשתני הסביבה',
+    'Attach at least one file': 'צרפו לפחות קובץ אחד', 'Up to 10 files per submission': 'עד 10 קבצים בהגשה', 'All files together must be under 50 MB': 'כל הקבצים יחד צריכים להיות פחות מ-50MB',
+    'Each file must be between 1 byte and 50 MB': 'כל קובץ צריך להיות עד 50MB', 'Course not found': 'הקורס לא נמצא', 'Lecture not found': 'ההרצאה לא נמצאה', 'Assignment not found': 'המטלה לא נמצאה',
+    'QR code expired. Scan the newest code': 'הקוד פג תוקף. סרקו את הקוד העדכני', 'Please join this course before checking in': 'הצטרפו לקורס לפני רישום נוכחות',
+    'Attendance QR is paused by the lecturer': 'המרצה נעל את רישום הנוכחות', 'Lecture is not active': 'ההרצאה לא פעילה', 'Attendance already recorded for this lecture': 'כבר נרשמת להרצאה הזו',
+    'Check-in successful! Your lecturer can now see you.': 'נרשמת בהצלחה! המרצה רואה אותך.', 'Invalid verification code': 'קוד אימות שגוי', 'Code expired. Request a new code.': 'פג תוקף הקוד. בקשו קוד חדש.',
+    'Email not found in institution records.': 'המייל לא נמצא ברשומות המוסד.', 'Lecturers cannot submit as students': 'מרצה לא יכול להגיש כסטודנט', 'You are not enrolled in this course': 'אינך רשום לקורס הזה',
+    'Only this course\'s lecturer can do that': 'רק המרצה של הקורס יכול לעשות זאת', 'Student is not registered in the institution': 'הסטודנט לא רשום במוסד', 'Student is already enrolled': 'הסטודנט כבר רשום',
+    'Student added successfully': 'הסטודנט נוסף', 'Student removed successfully': 'הסטודנט הוסר', 'You are already enrolled in this course': 'כבר רשום לקורס הזה', 'Successfully enrolled in course!': 'נרשמת לקורס!',
+    'Poll voting window expired': 'זמן ההצבעה הסתיים', 'Poll is closed or does not exist': 'הסקר סגור או לא קיים', 'Poll is closed because the session has ended': 'הסקר נסגר כי ההרצאה הסתיימה',
+    'Vote recorded successfully': 'ההצבעה נקלטה', 'Question and at least two options required': 'נדרשות שאלה ולפחות שתי אפשרויות', 'Each option must be different': 'כל אפשרות צריכה להיות שונה',
+    'End the lecture before deleting it': 'סיימו את ההרצאה לפני מחיקתה', 'Take a classroom photo (or enter a verified count) before approving': 'צלמו את הכיתה (או הזינו ספירה ידנית) לפני האישור',
+    'Analyze a class photo or enter a verified people count before closing': 'נתחו צילום כיתה או הזינו ספירה ידנית לפני הסיום', 'Photo upload link is invalid': 'קישור העלאת התמונה לא תקין',
+    'This lecture is no longer active': 'ההרצאה כבר לא פעילה', 'Choose a photo under 12 MB': 'בחרו תמונה קטנה מ-12MB',
+    'This file is not a supported photo. Please upload a JPEG, PNG, WebP or HEIC image': 'הקובץ אינו תמונה נתמכת. העלו JPEG, PNG, WebP או HEIC',
+    'The video is larger than 500 MB. Compress it or upload a shorter part': 'הסרטון גדול מ-500MB. דחסו אותו או העלו חלק קצר יותר',
+    'Upload a video or provide a public YouTube link': 'העלו סרטון או קישור YouTube ציבורי', 'A summary for this lecture is already being generated': 'כבר נוצר סיכום להרצאה הזו',
+    'Only public YouTube links are supported directly. Download other recordings and upload the video file': 'רק קישורי YouTube ציבוריים נתמכים. הורידו הקלטות אחרות והעלו את הקובץ',
+    'Grade must be an integer 0–100': 'הציון צריך להיות מספר שלם בין 0 ל-100', 'Message cannot be empty': 'ההודעה לא יכולה להיות ריקה', 'Write a comment up to 1500 characters': 'כתבו תגובה עד 1500 תווים',
+    'Invalid due date': 'תאריך הגשה לא תקין', 'Enter a title up to 250 characters': 'הזינו שם עד 250 תווים',
+    'No classroom photo yet. Press SESSION END to lock check-ins, then take a classroom photo.': 'אין עדיין צילום כיתה. לחצו על "סיום רישום" ואז צלמו את הכיתה.',
+    // ---- rename, attendance stages, sidebar list
+    'All courses': 'כל הקורסים', 'Rename course': 'שינוי שם הקורס', 'Rename lecture': 'שינוי שם ההרצאה', 'Course name': 'שם הקורס', 'Save': 'שמירה',
+    '✓ Course renamed': '✓ שם הקורס עודכן', '✓ Lecture renamed': '✓ שם ההרצאה עודכן', '✓ Lecture name cleared': '✓ שם ההרצאה נמחק',
+    'Could not rename the lecture': 'לא ניתן לשנות את שם ההרצאה', 'Lecture name can be up to 200 characters': 'שם ההרצאה יכול להיות עד 200 תווים',
+    '■ End attendance': '■ סיום רישום הנוכחות', 'Reopen check-ins': 'פתיחת הרישום מחדש', 'Check-ins reopened': 'הרישום נפתח מחדש',
+    'Check-ins are closed. Take a photo of the class to verify the count.': 'הרישום נסגר. צלמו את הכיתה כדי לאמת את המספר.',
+    'Check-ins closed. Now take a photo of the class.': 'הרישום נסגר. עכשיו צלמו את הכיתה.',
+    'Reopen check-ins? The QR will fill the screen again until you end attendance.': 'לפתוח את הרישום מחדש? ה-QR יוצג שוב על כל המסך עד שתסיימו את הנוכחות.',
+    'Restart attendance': 'התחלת נוכחות מחדש', 'No photo count available yet.': 'עדיין אין ספירה מתמונה.',
+    // ---- symbols that point in reading direction
+    '›': '‹', '‹': '›', '→': '←', '←': '→',
+  };
+
+  const PATTERNS = [
+    [/^(\d+) courses?$/, (m, n) => n === '1' ? 'קורס אחד' : `${n} קורסים`],
+    [/^(\d+) live$/, (m, n) => n === '1' ? 'הרצאה חיה' : `${n} חיות`],
+    [/^(\d+) (past|ended)$/, (m, n) => `${n} הסתיימו`],
+    [/^Due: (.+)$/, (m, d) => `להגשה עד: ${d}`],
+    [/^DUE · (.+)$/, (m, d) => `להגשה עד · ${d}`],
+    [/^Due (.+?)\. (.*)$/, (m, d, rest) => `להגשה עד ${d}. ${t(rest)}`],
+    [/^Lecture #(\d+)$/, (m, n) => `הרצאה #${n}`],
+    [/^Lecture #(\d+) is live$/, (m, n) => `הרצאה #${n} בשידור חי`],
+    [/^Lecture #(\d+) · live$/, (m, n) => `הרצאה #${n} · חי`],
+    [/^Lecture #(\d+) deleted$/, (m, n) => `הרצאה #${n} נמחקה`],
+    [/^Delete lecture #(\d+)$/, (m, n) => `מחיקת הרצאה #${n}`],
+    [/^Submit (\d+) files$/, (m, n) => `הגשת ${n} קבצים`],
+    [/^↓ Download · (.+)$/, (m, f) => `↓ הורדה · ${f}`],
+    [/^Evaluation rubric\n([\s\S]*)$/, (m, r) => `מחוון הערכה\n${r}`],
+    [/^Submission (\d+)$/, (m, n) => `הגשה ${n}`],
+    [/^Submitted file: (.+)$/, (m, f) => `קובץ שהוגש: ${f}`],
+    [/^Current file: (.+)\. Choose a new file below to replace it\.$/, (m, f) => `הקובץ הנוכחי: ${f}. אפשר לבחור קובץ חדש למטה כדי להחליף אותו.`],
+    [/^Remove (.+)$/, (m, f) => `הסרת ${f}`],
+    [/^Up to (\d+) files per submission\.$/, (m, n) => `עד ${n} קבצים בהגשה.`],
+    [/^Confirm (\d+) as the final grade$/, (m, n) => `אישור ${n} כציון הסופי`],
+    [/^Discussion · (\d+) comments?$/, (m, n) => `דיון · ${n} תגובות`],
+    [/^(●|○) Voting (open|closed) · (\d+) (votes|voters)(?: · Until (.+))?$/, (m, dot, st, n, kind, until) =>
+      `${dot} ${st === 'open' ? 'ההצבעה פתוחה' : 'ההצבעה סגורה'} · ${n} ${kind === 'votes' ? 'קולות' : 'מצביעים'}${until ? ' · עד ' + until : ''}`],
+    [/^Comparison · (\d+) submitted · (\d+) AI-reviewed$/, (m, a, b) => `השוואה · ${a} הוגשו · ${b} נבדקו ב-AI`],
+    [/^Average recommended grade: (.+)$/, (m, v) => `ציון מומלץ ממוצע: ${v === 'Not yet available' ? 'עדיין לא זמין' : v}`],
+    [/^Text-token overlap: (.+) · ([\d.]+)%$/, (m, who, p) => `חפיפת טקסט: ${who} · ${p}%`],
+    [/^(\d+) checked in$/, (m, n) => `${n} נרשמו`],
+    [/^(\d+) in the photo$/, (m, n) => `${n} בתמונה`],
+    [/^QR check-ins: (\d+)$/, (m, n) => `רישומי QR: ${n}`],
+    [/^People in photo: (\d+)$/, (m, n) => `אנשים בתמונה: ${n}`],
+    [/^Photo analyzed: (\d+) estimated people \((.+)\)\.$/, (m, n, how) => `התמונה נותחה: כ-${n} אנשים (${how}).`],
+    [/^Lecture finished · (\d+) check-ins · (.+) people counted$/, (m, a, b) => `ההרצאה הסתיימה · ${a} רישומים · ${b === 'no' ? 'בלי ספירה' : b + ' אנשים נספרו'}`],
+    [/^(\d+) QR check-ins · (\d+) estimated people in photo$/, (m, a, b) => `${a} רישומי QR · ${b} אנשים בתמונה (הערכה)`],
+    [/^Demo verification code: (.+)$/, (m, c) => `קוד אימות לדמו: ${c}`],
+    [/^Remove (.+) from this course\?$/, (m, e) => `להסיר את ${e} מהקורס?`],
+    [/^✓ Assignment deleted(.*)\.$/, (m, rest) => `✓ המטלה נמחקה${rest.replace(/ \(with (\d+) submissions\)/, ' (כולל $1 הגשות)')}.`],
+    [/^(.+?)… (\d+)%( \(estimated\))?( · (\d+):(\d+) elapsed)?$/, (m, label, p, est, el, mm, ss) =>
+      `${t(label)}… ${p}%${est ? ' (הערכה)' : ''}${el ? ` · ${mm}:${ss} עברו` : ''}`],
+    [/^✓ (.+) · 100%$/, (m, label) => `✓ ${t(label)} · 100%`],
+    [/^Discrepancy: (\d+) students? checked in, but only (\d+) (?:person was|people were) detected in the photo — (\d+) more check-ins? than people in the room\. Choose: restart attendance, retake the photo, or approve and export\.$/,
+      (m, a, b, d) => `פער: ${a} סטודנטים נרשמו, אבל בתמונה זוהו רק ${b} אנשים. יש ${d} רישומים יותר מאנשים בחדר. בחרו: התחלת נוכחות מחדש, צילום מחדש, או אישור וייצוא.`],
+    [/^Attendance is valid: (\d+) people in the photo and (\d+) check-ins\. (\d+) (?:person was|people were) in the room without checking in — students who did not scan in time are responsible for that\. The list is approved for export\.$/,
+      (m, p, s, d) => `הנוכחות תקינה: ${p} אנשים בתמונה ו-${s} רישומים. ${d} נכחו בלי להירשם, והאחריות על מי שלא סרק בזמן. הרשימה מאושרת לייצוא.`],
+    [/^Attendance is valid: (\d+) check-ins match the (\d+) people in the photo\.$/, (m, s, p) => `הנוכחות תקינה: ${s} רישומים תואמים ל-${p} האנשים בתמונה.`],
+    [/^Delete "(.+)"\?\n\nAll student submissions, AI reviews and grades for this assignment will be deleted too\. This cannot be undone\.$/s,
+      (m, x) => `למחוק את "${x}"?\n\nגם כל ההגשות, סקירות ה-AI והציונים של המטלה יימחקו. אי אפשר לבטל את זה.`],
+    [/^Delete lecture #(\d+)\?\n\nIts attendance, Excel report, questions, polls and summary will be removed\. This cannot be undone\.$/s,
+      (m, n) => `למחוק את הרצאה #${n}?\n\nהנוכחות, קובץ ה-Excel, השאלות, הסקרים והסיכום יימחקו. אי אפשר לבטל את זה.`],
+    [/^Delete "(.+)" \((.+)\)\?\nThis will also delete its sessions, assignments, and related course data\. This action cannot be undone\.$/s,
+      (m, x, id) => `למחוק את "${x}" (${id})?\nגם ההרצאות, המטלות וכל נתוני הקורס יימחקו. אי אפשר לבטל את זה.`],
+    [/^No classroom photo count is available yet\.\n\nTip: take\/upload a photo, or type the number of people in "Verified count"\.\n\nEnd the lecture now and export attendance without photo verification\?$/s,
+      () => 'אין עדיין ספירה מצילום הכיתה.\n\nאפשר לצלם או להעלות תמונה, או להקליד מספר אנשים ב"ספירה מאומתת".\n\nלסיים את ההרצאה ולייצא נוכחות בלי אימות בתמונה?'],
+    [/^(.+)\n\nEnd the lecture and export attendance anyway\?$/s, (m, msg) => `${t(msg)}\n\nלסיים את ההרצאה ולייצא את הנוכחות בכל זאת?`],
+    [/^Video summary failed — (.+)$/, (m, why) => `יצירת הסיכום נכשלה: ${t(why)}`],
+    [/^AI comparison failed — (.+)$/, (m, why) => `ההשוואה נכשלה: ${t(why)}`],
+    [/^The file is ([\d.]+) MB — (.+)$/, (m, n) => `הקובץ בגודל ${n}MB, מעל המגבלה.`],
+    [/^Your files are ([\d.]+) MB together\. (.+)$/, (m, n) => `הקבצים יחד בגודל ${n}MB. המגבלה היא 50MB, אז השאירו את קובצי הווידאו והנתונים בחוץ ושמרו רק את הקוד.`],
+    [/^Server error \((\d+)\)$/, (m, c) => `שגיאת שרת (${c})`],
+  ];
+
+  function t(text) {
+    if (text == null) return text;
+    const raw = String(text);
+    const lead = raw.match(/^\s*/)[0], trail = raw.match(/\s*$/)[0];
+    const core = raw.trim();
+    if (!core) return raw;
+    if (Object.prototype.hasOwnProperty.call(HE, core)) return lead + HE[core] + trail;
+    for (const [re, fn] of PATTERNS) { const m = core.match(re); if (m) return lead + fn(...m) + trail; }
+    // "✓ Something", "✕ Something", "⚠ …": translate after the symbol
+    const sym = core.match(/^([✓✕⚠↓↻＋✧✎●○■▶×]\s*)(.+)$/s);
+    if (sym && (HE[sym[2]] || PATTERNS.some(([re]) => re.test(sym[2])))) return lead + sym[1] + t(sym[2]) + trail;
+    // composite strings joined with " · "
+    if (core.includes(' · ')) {
+      const parts = core.split(' · '); const out = parts.map(p => t(p));
+      if (out.some((p, i) => p !== parts[i])) return lead + out.join(' · ') + trail;
+    }
+    return raw;
+  }
+
+  const SKIP = new Set(['SCRIPT', 'STYLE', 'TEXTAREA', 'INPUT', 'CODE', 'PRE']);
+  const ATTRS = ['placeholder', 'title', 'aria-label'];
+  let lang = 'en';
+  const originals = new WeakMap();   // node → original English text (so switching back is exact)
+
+  function translateTextNode(node) {
+    const parent = node.parentElement;
+    if (!parent || SKIP.has(parent.tagName) || parent.closest('[data-no-translate]')) return;
+    const current = node.nodeValue;
+    let orig = originals.get(node);
+    // If the app changed the text since we translated it, the new text is the new original.
+    if (orig === undefined || (current !== orig.en && current !== orig.he)) orig = {en: current, he: null};
+    if (lang === 'he') { const he = t(orig.en); orig.he = he; originals.set(node, orig); if (current !== he) node.nodeValue = he; }
+    else { originals.set(node, orig); if (current !== orig.en) node.nodeValue = orig.en; }
+  }
+  function translateAttrs(el) {
+    for (const a of ATTRS) {
+      if (!el.hasAttribute(a)) continue;
+      const key = 'i18n' + a.replace(/-./g, s => s[1].toUpperCase());
+      const cur = el.getAttribute(a);
+      if (el.dataset[key] === undefined || (cur !== el.dataset[key] && cur !== t(el.dataset[key]))) el.dataset[key] = cur;
+      const want = lang === 'he' ? t(el.dataset[key]) : el.dataset[key];
+      if (cur !== want) el.setAttribute(a, want);
+    }
+  }
+  function walk(root) {
+    if (root.nodeType === 3) return translateTextNode(root);
+    if (root.nodeType !== 1 || SKIP.has(root.tagName) && root.tagName !== 'INPUT' && root.tagName !== 'TEXTAREA') return;
+    translateAttrs(root);
+    const tw = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
+    let n; while ((n = tw.nextNode())) { if (n.nodeType === 3) translateTextNode(n); else translateAttrs(n); }
+  }
+
+  let busy = false;
+  const observer = new MutationObserver(records => {
+    if (busy) return; busy = true;
+    try {
+      for (const r of records) {
+        if (r.type === 'characterData') translateTextNode(r.target);
+        else if (r.type === 'attributes') translateAttrs(r.target);
+        else r.addedNodes.forEach(walk);
+      }
+    } finally { busy = false; }
+  });
+
+  // Dialog messages
+  const _confirm = window.confirm.bind(window), _prompt = window.prompt.bind(window), _alert = window.alert.bind(window);
+  window.confirm = msg => _confirm(lang === 'he' ? t(msg) : msg);
+  window.prompt = (msg, def) => _prompt(lang === 'he' ? t(msg) : msg, def);
+  window.alert = msg => _alert(lang === 'he' ? t(msg) : msg);
+
+  function apply(next) {
+    lang = next;
+    try { localStorage.setItem('smartclass-lang', lang); } catch (e) {}
+    document.documentElement.lang = lang === 'he' ? 'he' : 'en';
+    document.documentElement.dir = lang === 'he' ? 'rtl' : 'ltr';
+    document.title = lang === 'he' ? 'SmartClass | סביבת למידה' : (document.title.includes('|') ? 'SmartClass | Learning workspace' : document.title);
+    document.querySelectorAll('.lang-toggle').forEach(b => {
+      b.querySelector('.lang-label').textContent = lang === 'he' ? 'English' : 'עברית';
+      b.querySelector('.lang-icon').textContent = lang === 'he' ? 'EN' : 'עב';
+      b.setAttribute('aria-label', lang === 'he' ? 'Switch to English' : 'מעבר לעברית');
+    });
+    busy = true;
+    try { walk(document.body); } finally { busy = false; }
+  }
+
+  function initialLang() {
+    try { const saved = localStorage.getItem('smartclass-lang'); if (saved === 'he' || saved === 'en') return saved; } catch (e) {}
+    return /^he\b/i.test(navigator.language || '') ? 'he' : 'en';
+  }
+
+  window.SC_I18N = { t: s => (lang === 'he' ? t(s) : s), toggle: () => apply(lang === 'he' ? 'en' : 'he'), get lang() { return lang; } };
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.lang-toggle').forEach(b => b.setAttribute('data-no-translate', ''));
+    apply(initialLang());
+    observer.observe(document.body, {subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ATTRS});
+  });
+})();
+
+</script>
 <script>
 
 /* QRCode for JavaScript – Copyright (c) 2009 Kazuhiko Arase – MIT license (http://www.opensource.org/licenses/mit-license.php).
@@ -2423,7 +2886,6 @@ module.exports = QRCode;
     document.addEventListener('DOMContentLoaded', () => {
       const dropZone = byId('drop-zone');
       const fileInput = byId('student-file-upload');
-      const fileNameDisplay = byId('file-name-display');
       const otpInput = byId('otp-input');
       byId('course-title').addEventListener('keydown', (event) => {
         if (event.key === 'Enter' && !event.repeat) { event.preventDefault(); createCourse(); }
@@ -2437,19 +2899,10 @@ module.exports = QRCode;
       });
       if (!dropZone || !fileInput) return;
       dropZone.addEventListener('click', (event) => { if (event.target !== fileInput) fileInput.click(); });
-      dropZone.addEventListener('dragover', (event) => { event.preventDefault(); dropZone.style.borderColor = '#1c2b4a'; });
-      dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = ''; });
-      dropZone.addEventListener('drop', (event) => {
-        event.preventDefault();
-        dropZone.style.borderColor = '';
-        if (event.dataTransfer.files.length) {
-          fileInput.files = event.dataTransfer.files;
-          fileNameDisplay.textContent = Array.from(fileInput.files).map(file => file.name).join(', ');
-        }
-      });
-      fileInput.addEventListener('change', () => {
-        fileNameDisplay.textContent = Array.from(fileInput.files).map(file => file.name).join(', ');
-      });
+      dropZone.addEventListener('dragover', (event) => { event.preventDefault(); dropZone.classList.add('dragging'); });
+      dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragging'));
+      dropZone.addEventListener('drop', (event) => { event.preventDefault(); dropZone.classList.remove('dragging'); addPendingFiles(event.dataTransfer.files); });
+      fileInput.addEventListener('change', () => { addPendingFiles(fileInput.files); fileInput.value = ''; });
     });
 
     async function startCameraScanner() {
@@ -2550,6 +3003,8 @@ module.exports = QRCode;
     }
 
     function hideAllSections() {
+      document.body.classList.remove('qr-locked');
+      if (typeof toggleQrProjector === 'function') toggleQrProjector(false);
       toggleQrProjector(false);
       requestAnimationFrame(updateSideNav);
       if (qrInterval) { clearInterval(qrInterval); qrInterval = null; }
@@ -2590,6 +3045,7 @@ module.exports = QRCode;
       byId('course-role-chip').textContent = currentUser.role === 'lecturer' ? 'Lecturer view' : 'Student view';
       const isLecturer = currentUser.role === 'lecturer';
       byId('btn-start-session').classList.toggle('hidden', !isLecturer);
+      byId('btn-rename-course').classList.toggle('hidden', !isLecturer);
       byId('btn-create-assignment').classList.toggle('hidden', !isLecturer);
       byId('btn-add-student').classList.toggle('hidden', !isLecturer);
       byId('course-students-panel').classList.toggle('hidden', !isLecturer);
@@ -2693,6 +3149,7 @@ module.exports = QRCode;
 
     let lastDashboardPayload = '';
     function renderCoursesList(courses) {
+      renderSideCourses(courses);
       const signature = JSON.stringify(courses);
       if (signature === lastDashboardPayload && byId('courses-list').childElementCount) { updateCourseUnreadBadges(); return; }
       lastDashboardPayload = signature;
@@ -2861,6 +3318,7 @@ module.exports = QRCode;
     document.addEventListener('keydown', event => {
       if (event.key === 'Escape' && !byId('join-course-overlay').classList.contains('hidden')) closeJoinCourseDialog();
       if (event.key === 'Escape' && !byId('edit-assignment-overlay').classList.contains('hidden')) closeEditAssignment();
+      if (event.key === 'Escape' && !byId('submit-assignment-overlay').classList.contains('hidden')) closeSubmitPopup();
     });
 
     async function loadRealSessionsForCourse() {
@@ -2895,7 +3353,7 @@ module.exports = QRCode;
             const tile = document.createElement('button');
             tile.type = 'button';
             tile.className = `lecture-tile${isLive ? ' live' : ''}`;
-            tile.innerHTML = `<span class="lecture-tile-main"><span class="lecture-mark">${isLive ? '●' : Number(session.id)}</span><span class="lecture-tile-text"><strong>${isLive ? `Lecture #${Number(session.id)} is live` : `Lecture #${Number(session.id)}`}</strong><small>${isLive ? 'Open it for attendance, polls and questions' : (session.has_summary ? 'Summary available' : 'No summary yet')}</small></span></span><span class="lecture-end"><span class="lecture-status">${isLive ? 'Live' : 'Finished'}</span><span class="lecture-chevron">›</span></span>`;
+            tile.innerHTML = `<span class="lecture-tile-main"><span class="lecture-mark">${isLive ? '●' : Number(session.id)}</span><span class="lecture-tile-text"><strong>${session.title ? escapeHtml(session.title) : (isLive ? `Lecture #${Number(session.id)} is live` : `Lecture #${Number(session.id)}`)}</strong><small>${isLive ? 'Open it for attendance, polls and questions' : (session.has_summary ? 'Summary available' : 'No summary yet')}</small></span></span><span class="lecture-end"><span class="lecture-status">${isLive ? 'Live' : 'Finished'}</span><span class="lecture-chevron">›</span></span>`;
             tile.addEventListener('click', () => openSessionView(session.id, isLive));
             row.appendChild(tile);
             if (!isLive && currentUser.role === 'lecturer') {
@@ -2948,6 +3406,9 @@ module.exports = QRCode;
       lastPollPayload = '';
       byId('session-view-section').classList.remove('hidden');
       byId('view-session-id').textContent = currentSessionId;
+      setLectureTitle(null);
+      byId('btn-rename-lecture').classList.toggle('hidden', currentUser.role !== 'lecturer');
+      loadLectureTitle(currentSessionId);
       byId('session-course-name').textContent = currentCourseTitle || '';
       byId('projector-course-title').textContent = currentCourseTitle || 'Attendance';
       setSessionTab(isActive ? 'polls' : 'summary');
@@ -2960,6 +3421,8 @@ module.exports = QRCode;
       byId('summary-editor-box').classList.toggle('hidden', currentUser.role !== 'lecturer');
       byId('session-header').classList.toggle('live', Boolean(isActive));
       byId('btn-delete-lecture').classList.toggle('hidden', Boolean(isActive) || currentUser.role !== 'lecturer');
+      byId('btn-end-lecture').classList.toggle('hidden', !isActive || currentUser.role !== 'lecturer');
+      byId('lecturer-active-tools').dataset.stage = '';
       byId('session-status-text').textContent = isActive
         ? '● Live now · updates automatically'
         : 'Completed lecture · Questions and summary remain available';
@@ -2984,6 +3447,63 @@ module.exports = QRCode;
       resumeSummaryJobIfRunning();
       if (currentUser.role === 'lecturer') loadLecturerLiveState();
       else if (isActive) { byId('student-checkin-controls').classList.remove('hidden'); byId('student-attendance-closed').classList.add('hidden'); refreshSessionStatus(); }
+    }
+
+    /* Rename course / lecture: the title becomes an input in place (Enter saves, Esc cancels) */
+    let currentLectureTitle = null;
+    function setLectureTitle(title) {
+      currentLectureTitle = title || null;
+      byId('lecture-title-custom').textContent = title || '';
+      byId('lecture-title-custom').classList.toggle('hidden', !title);
+      byId('lecture-title-default').classList.toggle('hidden', Boolean(title));
+      if (typeof updateSideNav === 'function') updateSideNav();
+    }
+    async function loadLectureTitle(sessionId) {
+      try {
+        const data = await fetch(`${API_URL}/api/sessions/${sessionId}/status`, {cache: 'no-store'}).then(r => r.json());
+        if (sessionId === currentSessionId) setLectureTitle(data.title);
+      } catch (e) {}
+    }
+    function editTitleInPlace(heading, currentValue, placeholder, save) {
+      const row = heading.parentElement;
+      if (row.querySelector('.title-edit')) return;
+      const form = document.createElement('form'); form.className = 'title-edit';
+      const input = document.createElement('input'); input.value = currentValue; input.placeholder = placeholder; input.maxLength = 200;
+      const ok = document.createElement('button'); ok.type = 'submit'; ok.className = 'btn btn-ink btn-sm'; ok.textContent = 'Save';
+      const cancel = document.createElement('button'); cancel.type = 'button'; cancel.className = 'btn btn-quiet btn-sm'; cancel.textContent = 'Cancel';
+      const close = () => { form.remove(); row.classList.remove('editing'); };
+      cancel.onclick = close;
+      input.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); close(); } });
+      form.onsubmit = async (e) => {
+        e.preventDefault(); ok.disabled = true;
+        try { await save(input.value.trim()); close(); } catch (err) { showToast(err.message, true); ok.disabled = false; }
+      };
+      form.append(input, ok, cancel);
+      row.classList.add('editing'); row.appendChild(form);
+      input.focus(); input.select();
+    }
+    function renameCurrentCourse() {
+      editTitleInPlace(byId('current-course-title'), currentCourseTitle, 'Course name', async (title) => {
+        if (!title) throw Error('Course name cannot be empty.');
+        const url = `${API_URL}/api/courses/${encodeURIComponent(currentCourseId)}/rename?title=${encodeURIComponent(title)}&lecturer_email=${encodeURIComponent(currentUser.email)}`;
+        const res = await fetch(url, {method: 'PATCH'}); const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw Error(data.detail || 'Could not rename course.');
+        currentCourseTitle = data.title || title;
+        byId('current-course-title').textContent = currentCourseTitle;
+        lastDashboardPayload = '';
+        renderSideCourses(sideCourses.map(c => c.course_id === currentCourseId ? {...c, title: currentCourseTitle} : c));
+        showToast('✓ Course renamed');
+      });
+    }
+    function renameCurrentLecture() {
+      editTitleInPlace(byId('lecture-title'), currentLectureTitle || '', `Lecture #${currentSessionId}`, async (title) => {
+        const url = `${API_URL}/api/sessions/${currentSessionId}/rename?title=${encodeURIComponent(title)}&lecturer_email=${encodeURIComponent(currentUser.email)}`;
+        const res = await fetch(url, {method: 'PATCH'}); const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw Error(data.detail || 'Could not rename the lecture');
+        setLectureTitle(data.title);
+        lastCoursePayload = '';
+        showToast(title ? '✓ Lecture renamed' : '✓ Lecture name cleared');
+      });
     }
 
     // Delete a finished lecture with everything recorded in it (lecturer only).
@@ -3563,7 +4083,8 @@ module.exports = QRCode;
       const container = byId('assignments-list');
       if (!container.childElementCount) container.innerHTML = '<div class="course-empty">Loading assignments…</div>';
       try {
-        const response = await fetch(`${API_URL}/api/courses/${encodeURIComponent(courseId)}/assignments`);
+        const who = currentUser.role === 'student' ? `?student_email=${encodeURIComponent(currentUser.email)}` : '';
+        const response = await fetch(`${API_URL}/api/courses/${encodeURIComponent(courseId)}/assignments${who}`, {cache:'no-store'});
         if (!response.ok) throw new Error('Unable to load assignments');
         const assignments = await response.json();
         if (courseId !== currentCourseId) return;
@@ -3576,7 +4097,15 @@ module.exports = QRCode;
           item.innerHTML = '<span style="display:flex;align-items:center;gap:10px;min-width:0;"><span class="assignment-mini-icon">▧</span><span style="min-width:0;"><strong class="course-assignment-title"></strong><small class="course-assignment-due" style="display:block;"></small></span></span><span style="color:#3979bd;font-weight:800;font-size:15px;">›</span>';
           item.querySelector('.course-assignment-title').textContent = assignment.title;
           item.querySelector('.course-assignment-due').textContent = `Due: ${assignment.due_date}`;
-          item.addEventListener('click', () => openAssignmentView(assignment.id, assignment.title));
+          if (currentUser.role === 'student') {
+            const mine = assignment.my_submission;
+            const chip = document.createElement('span');
+            chip.className = 'assignment-chip ' + (mine ? (mine.graded ? 'graded' : 'done') : 'todo');
+            chip.textContent = mine ? (mine.graded ? 'Graded' : 'Submitted') : 'Not submitted';
+            item.querySelector('.course-assignment-due').after(chip);
+            item.addEventListener('click', () => mine ? openAssignmentView(assignment.id, assignment.title)
+              : openSubmitPopup({id: assignment.id, title: assignment.title, due_date: assignment.due_date, submitted: false}));
+          } else item.addEventListener('click', () => openAssignmentView(assignment.id, assignment.title));
           container.appendChild(item);
         });
       } catch (error) {
@@ -3653,14 +4182,9 @@ module.exports = QRCode;
       byId('assignment-reference-link').classList.add('hidden');
       byId('assignment-rubric-text').classList.add('hidden');
       if (isStudent) {
-        byId('student-file-upload').value = '';
-        byId('file-name-display').textContent = '';
-        byId('submit-progress').classList.add('hidden');
         byId('student-feedback-box').classList.add('hidden');
-        byId('resubmit-toggle').classList.add('hidden');
-        byId('submit-area-title').textContent = 'Submit your solution';
-        delete byId('submit-area').dataset.userOpened;
-        toggleResubmit(true);
+        byId('student-not-submitted').classList.add('hidden');
+        byId('open-submit-popup').textContent = 'Submit assignment';
         loadMyAssignmentSubmission();
       } else loadAssignmentSubmissions();
       loadAssignmentDetails();
@@ -3704,21 +4228,14 @@ module.exports = QRCode;
       } catch(e) {return review;}
     }
 
-    function toggleResubmit(force = null) {
-      const area = byId('submit-area');
-      const open = force === null ? area.classList.contains('collapsed') : force;
-      area.classList.toggle('collapsed', !open);
-      byId('resubmit-toggle').textContent = open ? 'Cancel' : 'Submit a new version';
-    }
-
     function displayMySubmission(data) {
       const box = byId('student-feedback-box');
       box.classList.remove('hidden');
       box.replaceChildren();
       // Once submitted, the result comes first; the upload area becomes "Submit a new version".
-      byId('resubmit-toggle').classList.remove('hidden');
-      byId('submit-area-title').textContent = 'Submit a new version';
-      if (!byId('submit-area').dataset.userOpened) toggleResubmit(false);
+      byId('student-not-submitted').classList.add('hidden');
+      byId('open-submit-popup').textContent = 'Submit a new version';
+      if (currentAssignmentMeta && currentAssignmentMeta.id === currentAssignmentId) currentAssignmentMeta.submitted = true;
 
       const hasGrade = data.ai_status === 'reviewed' || data.final_grade_approved;
       const top = document.createElement('div'); top.className = 'my-result-top' + (data.final_grade_approved ? ' final' : '');
@@ -3836,28 +4353,80 @@ module.exports = QRCode;
         const res=await fetch(`${API_URL}/api/assignments/${id}/my-submission?student_email=${encodeURIComponent(currentUser.email)}`,{cache:'no-store'});
         if (!res.ok) return;
         const data=await res.json();
-        if (currentAssignmentId===id && data.submitted) displayMySubmission(data);
+        if (currentAssignmentId!==id) return;
+        if (data.submitted) displayMySubmission(data);
+        else { byId('student-not-submitted').classList.remove('hidden'); if (currentAssignmentMeta) currentAssignmentMeta.submitted = false; }
       } catch(e) {console.warn('My submission:',e);}
     }
 
+    /* Submission popup (requirement: clicking an assignment opens a popup with the option to add files) */
+    const MAX_SUBMIT_FILES = 10, MAX_SUBMIT_BYTES = 50 * 1024 * 1024;
+    let pendingFiles = [];
+    let currentAssignmentMeta = null;   // {id, title, due_date, submitted}
+
+    function openSubmitPopup(meta = null) {
+      if (meta) currentAssignmentMeta = meta;
+      if (!currentAssignmentMeta || currentAssignmentMeta.id !== (meta ? meta.id : currentAssignmentId))
+        currentAssignmentMeta = {id: currentAssignmentId, title: byId('assignment-view-title').textContent,
+                                 due_date: currentAssignmentDetails && currentAssignmentDetails.due_date, submitted: !byId('student-feedback-box').classList.contains('hidden')};
+      const m = currentAssignmentMeta;
+      pendingFiles = []; renderPendingFiles();
+      byId('submit-progress').classList.add('hidden');
+      byId('submit-popup-title').textContent = m.title || 'Submit assignment';
+      byId('submit-popup-meta').textContent = (m.due_date ? `Due ${m.due_date}. ` : '') + 'Add your files. The AI reviews your work right after you submit.';
+      byId('submit-replace-note').classList.toggle('hidden', !m.submitted);
+      byId('submit-assignment-overlay').classList.remove('hidden');
+    }
+    function closeSubmitPopup() {
+      if (byId('submit-assignment-button').disabled) return;  // don't close during upload
+      byId('submit-assignment-overlay').classList.add('hidden');
+    }
+    function addPendingFiles(list) {
+      for (const f of Array.from(list || [])) {
+        if (pendingFiles.some(p => p.name === f.name && p.size === f.size)) continue;
+        if (pendingFiles.length >= MAX_SUBMIT_FILES) { showToast(`Up to ${MAX_SUBMIT_FILES} files per submission.`, true); break; }
+        pendingFiles.push(f);
+      }
+      renderPendingFiles();
+    }
+    function renderPendingFiles() {
+      const ul = byId('pending-files-list'); ul.replaceChildren();
+      pendingFiles.forEach((f, i) => {
+        const li = document.createElement('li');
+        const name = document.createElement('span'); name.textContent = f.name;
+        const size = document.createElement('small'); size.textContent = f.size < 1048576 ? `${Math.max(1, Math.round(f.size / 1024))} KB` : `${(f.size / 1048576).toFixed(1)} MB`;
+        const x = document.createElement('button'); x.type = 'button'; x.textContent = '×'; x.setAttribute('aria-label', `Remove ${f.name}`);
+        x.onclick = () => { pendingFiles.splice(i, 1); renderPendingFiles(); };
+        li.append(name, size, x); ul.appendChild(li);
+      });
+      const btn = byId('submit-assignment-button');
+      if (!btn.disabled) btn.textContent = pendingFiles.length > 1 ? `Submit ${pendingFiles.length} files` : 'Submit';
+    }
+
     async function submitAssignment() {
-      const file=byId('student-file-upload').files[0];
-      const holder=byId('submit-progress');
-      const fail=(msg)=>{createProgress(holder).fail('✕ '+msg);showToast(msg,true);};
-      if (!file) return fail('Choose your assignment file first (click the box above).');
-      if (file.size > 50*1024*1024) return fail(`The file is ${(file.size/1048576).toFixed(1)} MB — the limit is 50 MB. Remove videos/data files from the ZIP and keep the code.`);
-      const body=new FormData();body.append('student_email',currentUser.email);body.append('file',file);
-      const btn=byId('submit-assignment-button');btn.disabled=true;btn.textContent='Submitting…';
+      const holder = byId('submit-progress');
+      const fail = (msg) => { createProgress(holder).fail('✕ ' + msg); };
+      const m = currentAssignmentMeta || {id: currentAssignmentId};
+      if (!pendingFiles.length) return fail('Add at least one file (click the box above).');
+      const total = pendingFiles.reduce((n, f) => n + f.size, 0);
+      if (total > MAX_SUBMIT_BYTES) return fail(`Your files are ${(total / 1048576).toFixed(1)} MB together. The limit is 50 MB, so leave out videos and data files and keep the code.`);
+      const body = new FormData(); body.append('student_email', currentUser.email);
+      pendingFiles.forEach(f => body.append(pendingFiles.length === 1 ? 'file' : 'files', f));
+      const btn = byId('submit-assignment-button'); btn.disabled = true; btn.textContent = 'Submitting…';
       try {
-        const {ok,data}=await requestWithProgress({url:`${API_URL}/api/assignments/${currentAssignmentId}/submit-file`, body, holder,
-          expectedSeconds:25, uploadLabel:'Uploading your file', aiLabel:'Gemini is reviewing your work', doneLabel:'Submitted'});
-        if (!ok) throw Error(data.detail || 'Could not upload file');
-        byId('file-name-display').textContent='';
-        delete byId('submit-area').dataset.userOpened;
-        await Promise.all([loadMyAssignmentSubmission(),loadAssignmentFeedbackForum(),loadNotifications()]);
-        showToast(data.ai_status==='reviewed' ? '✓ Assignment submitted and reviewed · awaiting lecturer approval' : data.ai_status==='review_failed' ? '✓ File submitted. The AI was busy — the review will retry automatically.' : '✓ File submitted. AI review pending.');
-      } catch(e) {showToast(e.message,true);}
-      finally {btn.disabled=false;btn.textContent='Upload and submit';}
+        const {ok, data} = await requestWithProgress({url: `${API_URL}/api/assignments/${m.id}/submit-file`, body, holder,
+          expectedSeconds: 25, uploadLabel: 'Uploading', aiLabel: 'Gemini is reviewing your work', doneLabel: 'Submitted'});
+        if (!ok) throw Error(data.detail || 'Could not upload your files');
+        btn.disabled = false;
+        closeSubmitPopup();
+        // After submitting, the student lands on the assignment page: review, grade and class feedback.
+        if (currentAssignmentId !== m.id || byId('assignment-view-section').classList.contains('hidden')) openAssignmentView(m.id, m.title);
+        else await Promise.all([loadMyAssignmentSubmission(), loadAssignmentFeedbackForum()]);
+        loadNotifications();
+        showToast(data.ai_status === 'reviewed' ? '✓ Submitted and reviewed. Your lecturer approves the final grade.'
+          : data.ai_status === 'review_failed' ? '✓ Submitted. The AI was busy, so the review retries automatically.' : '✓ Submitted. The AI review is in progress.');
+      } catch (e) { showToast(e.message, true); }
+      finally { btn.disabled = false; renderPendingFiles(); }
     }
 
     async function loadAssignmentFeedbackForum() {
@@ -4224,6 +4793,38 @@ module.exports = QRCode;
 
     // Projector mode: the QR card fills the whole screen for the class; same elements, so timers keep running.
     // Side navigation mirrors where the user is: My courses > course > lecture / assignment.
+    /* Sidebar: "My courses" opens the list of courses under it */
+    let sideCourses = [];
+    function sideCoursesOpen() { try { return localStorage.getItem('smartclass-side-courses') === 'open'; } catch (e) { return false; } }
+    function toggleSideCourses(force = null) {
+      const open = force === null ? !sideCoursesOpen() : force;
+      try { localStorage.setItem('smartclass-side-courses', open ? 'open' : 'closed'); } catch (e) {}
+      updateSideNav();
+    }
+    function renderSideCourses(courses) {
+      sideCourses = Array.isArray(courses) ? courses : [];
+      const list = byId('side-course-list');
+      list.replaceChildren();
+      const all = document.createElement('button');
+      all.type = 'button'; all.className = 'side-course side-course-all'; all.textContent = 'All courses';
+      all.onclick = () => goHome();
+      list.appendChild(all);
+      if (!sideCourses.length) {
+        const empty = document.createElement('span'); empty.className = 'side-course-empty'; empty.textContent = 'No courses yet';
+        list.appendChild(empty);
+      }
+      sideCourses.forEach(course => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'side-course'; b.dataset.courseId = course.course_id;
+        const name = document.createElement('span'); name.textContent = course.title || 'Untitled course';
+        name.dir = 'auto';  // English names inside the Hebrew sidebar are cut at their end, not their start
+        b.appendChild(name);
+        b.onclick = () => openCourseView(course.course_id, course.title, course.description || '');
+        list.appendChild(b);
+      });
+      updateSideNav();
+    }
+
     function updateSideNav() {
       const visible = (id) => !byId(id).classList.contains('hidden');
       const inCourse = Boolean(currentCourseId) && !visible('dashboard-section');
@@ -4232,10 +4833,22 @@ module.exports = QRCode;
       byId('nav-course').classList.toggle('hidden', !inCourse);
       byId('nav-course-title').textContent = currentCourseTitle || 'Course';
       byId('nav-lecture').classList.toggle('hidden', !inLecture);
-      byId('nav-lecture-title').textContent = `Lecture #${currentSessionId || ''}${currentSessionIsActive ? ' · live' : ''}`;
+      byId('nav-lecture-title').textContent = currentLectureTitle ? `${currentLectureTitle}${currentSessionIsActive ? ' · live' : ''}` : `Lecture #${currentSessionId || ''}${currentSessionIsActive ? ' · live' : ''}`;
       byId('nav-assignment').classList.toggle('hidden', !inAssignment);
       byId('nav-assignment-title').textContent = (byId('assignment-view-title') || {}).textContent || 'Assignment';
-      const current = inLecture ? 'nav-lecture' : inAssignment ? 'nav-assignment' : inCourse ? 'nav-course' : 'nav-home';
+      const open = sideCoursesOpen();
+      byId('side-course-list').classList.toggle('hidden', !open);
+      byId('nav-home').setAttribute('aria-expanded', String(open));
+      byId('nav-home').classList.toggle('expanded', open);
+      // When the list is open, the current course is highlighted inside it instead of a separate item
+      if (open && inCourse && sideCourses.some(c => c.course_id === currentCourseId)) byId('nav-course').classList.add('hidden');
+      byId('side-course-list').querySelectorAll('.side-course').forEach(b => {
+        const isCurrent = inCourse && b.dataset.courseId === currentCourseId;
+        b.classList.toggle('current', isCurrent && !inLecture && !inAssignment);
+        b.classList.toggle('in-course', isCurrent);
+      });
+      byId('side-course-list').querySelector('.side-course-all')?.classList.toggle('current', !inCourse);
+      const current = inLecture ? 'nav-lecture' : inAssignment ? 'nav-assignment' : inCourse ? 'nav-course' : (open ? '' : 'nav-home');
       ['nav-home', 'nav-course', 'nav-lecture', 'nav-assignment'].forEach(id => {
         byId(id).classList.toggle('current', id === current);
         if (id === current) byId(id).setAttribute('aria-current', 'page'); else byId(id).removeAttribute('aria-current');
@@ -4254,7 +4867,7 @@ module.exports = QRCode;
       const label = byId('qr-project-label');
       if (label) label.textContent = on ? 'Exit full screen' : 'Project full screen';
     }
-    document.addEventListener('keydown', (event) => { if (event.key === 'Escape') toggleQrProjector(false); });
+    document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && !document.body.classList.contains('qr-locked')) toggleQrProjector(false); });
 
     function setSessionTab(name) {
       document.querySelectorAll('.session-tabs [role="tab"]').forEach(tab => {
@@ -4288,7 +4901,7 @@ module.exports = QRCode;
     function updateQrToggleUI() {
       const button = byId('qr-toggle-button');
       if (!button) return;
-      button.textContent = qrIsEnabled ? '■ SESSION END · lock check-ins' : '▶ Reopen check-ins';
+      button.textContent = qrIsEnabled ? '■ End attendance' : '▶ Reopen check-ins';
       button.setAttribute('aria-pressed',String(!qrIsEnabled));
       byId('live-qr-img').classList.toggle('hidden', !qrIsEnabled);
       if (!qrIsEnabled) {
@@ -4313,7 +4926,7 @@ module.exports = QRCode;
         updateQrToggleUI();
         if (!qrIsEnabled) toggleQrProjector(false);
         if (qrIsEnabled) applyQrResponse(data);
-        showToast(qrIsEnabled ? 'Check-ins reopened' : 'SESSION END: check-ins are locked. Now take a classroom photo.');
+        if (qrIsEnabled) showToast('Check-ins reopened');
         await loadLecturerLiveState();
       } catch(e) { showToast(e.message,true); }
       finally { button.disabled = false; }
@@ -4390,10 +5003,46 @@ module.exports = QRCode;
             list.appendChild(row);
           });
         }
-        byId('summary-count-text').textContent = `${state.checked_in_count} QR check-ins · ${state.detected_people ?? 'No'} estimated people in photo`;
         byId('attendance-report-link').href = `${API_URL}/api/sessions/${id}/attendance-report?lecturer_email=${encodeURIComponent(currentUser.email)}`;
-        byId('attendance-report-link').classList.toggle('hidden', Boolean(state.is_active));
+        if (state.is_active) applyAttendanceStage(state);
+        else {
+          byId('summary-count-text').textContent = `${state.checked_in_count} QR check-ins · ${state.detected_people ?? 'No'} estimated people in photo`;
+          byId('attendance-report-link').classList.remove('hidden');
+          byId('summary-restart').classList.add('hidden');
+        }
       } catch (error) { console.warn('Could not update lecture attendance:', error); }
+    }
+
+    /* Attendance runs itself in three stages (decided by the server state, so a page refresh keeps the stage):
+       qr      → check-ins open: the QR fills the screen and only "End attendance" closes it
+       verify  → check-ins locked: classroom photo + cross-check
+       done    → approved: the whole attendance section is replaced by one summary line */
+    function applyAttendanceStage(state) {
+      const tools = byId('lecturer-active-tools');
+      const stage = state.attendance_approved ? 'done' : (state.qr_enabled ? 'qr' : 'verify');
+      const previous = tools.dataset.stage;
+      tools.dataset.stage = stage;
+      tools.classList.toggle('hidden', stage === 'done');
+      document.body.classList.toggle('qr-locked', stage === 'qr');
+      toggleQrProjector(stage === 'qr');
+      const strip = byId('session-attendance-summary');
+      strip.classList.toggle('hidden', stage !== 'done');
+      if (stage === 'done') {
+        const c = state.crosscheck || {};
+        byId('summary-count-text').textContent = `✓ Attendance approved · ${state.checked_in_count} checked in${c.people != null ? ` · ${c.people} in the photo` : ''}`;
+        byId('attendance-report-link').classList.toggle('hidden', !state.report_ready);
+        byId('summary-restart').classList.remove('hidden');
+      }
+      if (previous === 'qr' && stage === 'verify') {
+        showToast('Check-ins closed. Now take a photo of the class.');
+        const card = document.querySelector('.sc-photo-card'); if (card) card.scrollIntoView({behavior: 'smooth', block: 'center'});
+      }
+    }
+
+    async function reopenCheckins() {
+      if (!confirm('Reopen check-ins? The QR will fill the screen again until you end attendance.')) return;
+      if (!qrIsEnabled) await toggleAttendanceQr();
+      await loadLecturerLiveState();
     }
 
     let photoPhoneOrigin = location.origin;

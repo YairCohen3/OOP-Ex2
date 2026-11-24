@@ -132,6 +132,14 @@ class AttendanceApproval(Base):
     approved_at = Column(DateTime, default=datetime.utcnow)
 
 
+class SessionTitle(Base):
+    """Optional name a lecturer gives a lecture (otherwise it is shown as "Lecture #<id>")."""
+    __tablename__ = "smartclass_session_titles"
+    id = Column(Integer, primary_key=True)
+    session_id = Column(Integer, ForeignKey("sessions.id"), nullable=False, unique=True, index=True)
+    title = Column(String(200), nullable=False)
+
+
 class PollSettings(Base):
     __tablename__ = "smartclass_poll_settings"
     id = Column(Integer, primary_key=True)
@@ -254,14 +262,28 @@ def assignment_for_member(db: Session, assignment_id: int, email: str):
     return assignment
 
 
-async def store_upload(upload: UploadFile, prefix: str):
-    filename = Path(upload.filename or "").name
+def store_bytes(raw: bytes, filename: str, prefix: str):
     extension = Path(filename).suffix.lower()
-    if extension not in ALLOWED_FILES:
-        raise HTTPException(status_code=415, detail="Unsupported file type. Use PDF, DOCX, ZIP, text or source code")
+    UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)
+    path = UPLOAD_ROOT / f"{prefix}-{uuid.uuid4().hex}{extension}"
+    path.write_bytes(raw)
+    text, note = extract_document_text(raw, extension)
+    return str(path), filename[:240], text[:45000], note
+
+
+async def read_checked_upload(upload: UploadFile) -> tuple[bytes, str]:
+    filename = Path(upload.filename or "").name
+    if Path(filename).suffix.lower() not in ALLOWED_FILES:
+        raise HTTPException(status_code=415, detail=f"Unsupported file type: {filename or 'file'}. Use PDF, DOCX, ZIP, text or source code")
     raw = await upload.read(MAX_UPLOAD + 1)
     if not raw or len(raw) > MAX_UPLOAD:
-        raise HTTPException(status_code=413, detail="The file must be between 1 byte and 50 MB")
+        raise HTTPException(status_code=413, detail="Each file must be between 1 byte and 50 MB")
+    return raw, filename
+
+
+async def store_upload(upload: UploadFile, prefix: str):
+    raw, filename = await read_checked_upload(upload)
+    extension = Path(filename).suffix.lower()
     UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)
     path = UPLOAD_ROOT / f"{prefix}-{uuid.uuid4().hex}{extension}"
     path.write_bytes(raw)
@@ -286,11 +308,18 @@ def extract_document_text(raw: bytes, extension: str):
             with zipfile.ZipFile(io.BytesIO(raw)) as archive:
                 for entry in archive.infolist()[:90]:
                     ext = Path(entry.filename).suffix.lower()
-                    if entry.is_dir() or ext not in ALLOWED_TEXT or entry.file_size > 220_000 or used > 600_000:
+                    if entry.is_dir() or used > 600_000:
                         continue
                     if entry.compress_size and entry.file_size / max(1, entry.compress_size) > 80:
                         continue
-                    content = archive.read(entry)[:220_000].decode("utf-8", errors="replace")
+                    if ext in (".pdf", ".docx") and entry.file_size <= 15_000_000:
+                        # Documents inside the ZIP (e.g. a report next to the code) are read too.
+                        content, _ = extract_document_text(archive.read(entry), ext)
+                        content = content[:220_000]
+                    elif ext in ALLOWED_TEXT and entry.file_size <= 220_000:
+                        content = archive.read(entry)[:220_000].decode("utf-8", errors="replace")
+                    else:
+                        continue
                     used += len(content)
                     parts.append(f"\n### {entry.filename}\n{content}")
             result = "\n".join(parts)
@@ -738,6 +767,7 @@ def delete_course(course_id: str, lecturer_email: str, db: Session = Depends(get
             db.query(PollSettings).filter(PollSettings.poll_id.in_(poll_ids)).delete(synchronize_session=False)
         db.query(SessionPhotoState).filter(SessionPhotoState.session_id.in_(lecture_ids)).delete(synchronize_session=False)
         db.query(AttendanceApproval).filter(AttendanceApproval.session_id.in_(lecture_ids)).delete(synchronize_session=False)
+        db.query(SessionTitle).filter(SessionTitle.session_id.in_(lecture_ids)).delete(synchronize_session=False)
     assignment_ids = [r[0] for r in db.query(models.Assignment.id).filter(models.Assignment.course_id == course_id).all()]
     if assignment_ids:
         submission_ids = [r[0] for r in db.query(models.Submission.id).filter(models.Submission.assignment_id.in_(assignment_ids)).all()]
@@ -763,7 +793,9 @@ def get_course_sessions(course_id: str, db: Session = Depends(get_db)):
     sessions = (db.query(models.Session)
                 .filter(models.Session.course_id == course_id)
                 .order_by(models.Session.id.desc()).all())
-    return [{"id": s.id, "course_id": s.course_id,
+    ids = [s.id for s in sessions]
+    titles = {t.session_id: t.title for t in db.query(SessionTitle).filter(SessionTitle.session_id.in_(ids)).all()} if ids else {}
+    return [{"id": s.id, "course_id": s.course_id, "title": titles.get(s.id),
              "is_active": bool(s.is_active), "has_summary": bool(s.ai_summary)}
             for s in sessions]
 
@@ -920,13 +952,37 @@ def get_session_status(session_id: int, student_email: str | None = None, db: Se
     if not lecture:
         raise HTTPException(status_code=404, detail="Lecture not found")
     approved = db.query(AttendanceApproval).filter(AttendanceApproval.session_id == session_id).first() is not None
-    result = {"session_id": lecture.id, "is_active": bool(lecture.is_active),
-              "attendance_open": bool(lecture.is_active) and qr_enabled(db, session_id) and not approved}
+    title = db.query(SessionTitle).filter(SessionTitle.session_id == session_id).first()
+    result = {"session_id": lecture.id, "is_active": bool(lecture.is_active), "title": title.title if title else None,
+              "attendance_open": bool(lecture.is_active) and qr_enabled(db, session_id) and not approved,
+              "attendance_approved": approved}
     if student_email:
         result["checked_in"] = db.query(models.AttendanceRecord).filter(
             models.AttendanceRecord.session_id == session_id,
             models.AttendanceRecord.student_email == student_email).first() is not None
     return result
+
+
+@app.patch("/api/sessions/{session_id}/rename")
+def rename_lecture(session_id: int, title: str, lecturer_email: str, db: Session = Depends(get_db)):
+    """Give a lecture a name (empty title = back to "Lecture #<id>")."""
+    lecture = db.query(models.Session).filter(models.Session.id == session_id).first()
+    if not lecture:
+        raise HTTPException(status_code=404, detail="Lecture not found")
+    lecturer_course(db, lecture.course_id, lecturer_email)
+    title = title.strip()
+    if len(title) > 200:
+        raise HTTPException(status_code=400, detail="Lecture name can be up to 200 characters")
+    row = db.query(SessionTitle).filter(SessionTitle.session_id == session_id).first()
+    if not title:
+        if row:
+            db.delete(row)
+    elif row:
+        row.title = title
+    else:
+        db.add(SessionTitle(session_id=session_id, title=title))
+    db.commit()
+    return {"message": "Lecture renamed", "session_id": session_id, "title": title or None}
 
 
 @app.post("/api/attendance/scan")
@@ -1217,7 +1273,7 @@ def delete_past_lecture(session_id: int, lecturer_email: str, db: Session = Depe
     post_ids = [pid for (pid,) in db.query(models.ForumPost.id).filter(models.ForumPost.session_id == session_id).all()]
     if post_ids:
         db.query(ForumThreadReply).filter(ForumThreadReply.post_id.in_(post_ids)).delete(synchronize_session=False)
-    for table in (SessionPhotoState, AttendanceApproval, SessionQRControl):
+    for table in (SessionPhotoState, AttendanceApproval, SessionQRControl, SessionTitle):
         db.query(table).filter(table.session_id == session_id).delete(synchronize_session=False)
     db.query(SmartNotification).filter(SmartNotification.target_type == "session",
                                        SmartNotification.target_id == session_id).delete(synchronize_session=False)
@@ -1865,14 +1921,22 @@ def delete_assignment(assignment_id: int, lecturer_email: str, db: Session = Dep
 
 
 @app.get("/api/courses/{course_id}/assignments")
-def get_course_assignments(course_id: str, db: Session = Depends(get_db)):
+def get_course_assignments(course_id: str, student_email: str | None = None, db: Session = Depends(get_db)):
+    """With student_email, each assignment also says whether that student already submitted
+    (the course page opens the submission popup for assignments not submitted yet)."""
     find_course(db, course_id)
     assignments = db.query(models.Assignment).filter(models.Assignment.course_id == course_id).order_by(models.Assignment.id.desc()).all()
     ids = [a.id for a in assignments]
     briefs = db.query(AssignmentBrief).filter(AssignmentBrief.assignment_id.in_(ids)).all() if ids else []
     by_id = {b.assignment_id: b for b in briefs}
+    mine = {}
+    if student_email and ids:
+        for sub in db.query(models.Submission).filter(models.Submission.assignment_id.in_(ids),
+                                                      models.Submission.student_email == student_email).all():
+            mine[sub.assignment_id] = {"graded": bool(sub.final_grade_approved), "ai_grade": sub.llm_grade}
     return [{"id": a.id, "title": a.title, "description": a.description,
-             "due_date": a.due_date, "has_reference": bool(by_id.get(a.id) and by_id[a.id].reference_path)}
+             "due_date": a.due_date, "has_reference": bool(by_id.get(a.id) and by_id[a.id].reference_path),
+             **({"my_submission": mine.get(a.id)} if student_email else {})}
             for a in assignments]
 
 
@@ -1908,11 +1972,37 @@ def submit_assignment(assignment_id: int, student_email: str, file_url: str,
 @app.post("/api/assignments/{assignment_id}/submit-file")
 async def submit_assignment_file(assignment_id: int, background_tasks: BackgroundTasks,
                                  student_email: str = Form(...),
-                                 file: UploadFile = File(...), db: Session = Depends(get_db)):
+                                 file: UploadFile | None = File(None),
+                                 files: list[UploadFile] | None = File(None),
+                                 db: Session = Depends(get_db)):
+    """One file, or several (`files`). Several files are packed into one ZIP, so the lecturer
+    downloads a single file and the AI reads everything inside it."""
     assignment = assignment_for_member(db, assignment_id, student_email)
     if find_course(db, assignment.course_id).lecturer_email == student_email:
         raise HTTPException(status_code=403, detail="Lecturers cannot submit as students")
-    stored, name, answer, extraction_note = await store_upload(file, "submission")
+    uploads = [u for u in ([file] if file else []) + list(files or []) if u is not None and u.filename]
+    if not uploads:
+        raise HTTPException(status_code=400, detail="Attach at least one file")
+    if len(uploads) > 10:
+        raise HTTPException(status_code=400, detail="Up to 10 files per submission")
+    if len(uploads) == 1:
+        stored, name, answer, extraction_note = await store_upload(uploads[0], "submission")
+    else:
+        bundle, total, used_names = io.BytesIO(), 0, set()
+        with zipfile.ZipFile(bundle, "w", zipfile.ZIP_DEFLATED) as archive:
+            for upload in uploads:
+                raw, filename = await read_checked_upload(upload)
+                total += len(raw)
+                if total > MAX_UPLOAD:
+                    raise HTTPException(status_code=413, detail="All files together must be under 50 MB")
+                stem, ext, n = Path(filename).stem, Path(filename).suffix, 1
+                while filename in used_names:  # two files with the same name
+                    n += 1
+                    filename = f"{stem} ({n}){ext}"
+                used_names.add(filename)
+                archive.writestr(filename, raw)
+        stored, name, answer, extraction_note = store_bytes(bundle.getvalue(), "submission.zip", "submission")
+        name = f"{len(uploads)} files: " + ", ".join(sorted(used_names))[:200]
     sub = db.query(models.Submission).filter(models.Submission.assignment_id == assignment_id,
                  models.Submission.student_email == student_email).first()
     if not sub:
@@ -1983,7 +2073,10 @@ def download_submission_file(submission_id: int, email: str, db: Session = Depen
     meta = db.query(SubmissionDocument).filter(SubmissionDocument.submission_id == sub.id).first()
     if not meta or not Path(meta.stored_path).is_file():
         raise HTTPException(status_code=404, detail="Uploaded file unavailable")
-    return FileResponse(meta.stored_path, filename=meta.filename)
+    download_name = meta.filename
+    if Path(meta.stored_path).suffix.lower() == ".zip" and not download_name.lower().endswith(".zip"):
+        download_name = f"submission-{sub.student_email.split('@')[0]}.zip"  # several files bundled together
+    return FileResponse(meta.stored_path, filename=download_name)
 
 
 @app.post("/api/assignments/submission/{submission_id}/grade")
