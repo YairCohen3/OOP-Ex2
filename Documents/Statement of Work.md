@@ -1,30 +1,44 @@
-# Statement of Work (SoW): SmartClass Project
+# Statement of Work (SoW)
 
-## 1. Project Overview & Objective
-The objective of this project is to design, compile, and demonstrate an end-to-end web application named **SmartClass** for university/school classroom management. The system is built following a **KISS (Keep It Simple, Stupid)** methodology, ensuring a lightweight, intuitive experience for both lecturers and students, while incorporating modern AI capabilities (Gemini vision for counting people, and LLMs for summaries and reviews).
+## Goal
+Build and demo SmartClass, a simple web app for teaching in class (KISS). It should work in our real class, with students using their phones.
 
-## 2. Scope of Work
-The project encompasses the complete lifecycle from requirements analysis and architectural design to a working, deployed implementation and a classroom demonstration. The core deliverables include:
-* **Requirement Analysis & Documentation:** Defining user stories, functional requirements, and system architecture.
-* **Core Feature Implementation (Design & Composition):**
-  1. *Automated Attendance:* Dynamic QR scanning cross-referenced with an AI head count of one classroom photo, and Excel reporting.
-  2. *Q&A Forum:* Real-time and offline discussions per lecture.
-  3. *Polls:* Multiple-choice knowledge checks with live charts and timed responses.
-  4. *AI Lecture Summarization:* Video file/link processing into text summaries.
-  5. *Assignment Workflow:* AI-driven deep reviews and grade recommendations approved by the lecturer, shared verbal feedback forums, and lecturer-only comparative analytics.
-* **Demonstration & Testing:** Composing a working web application demo capable of running live in a standard university classroom within a 10-minute presentation window.
+## Scope
+**In scope:**
+- Attendance with a dynamic QR, a classroom photo counted by AI, and an Excel report (main feature)
+- Q&A forum per lecture
+- Quick polls with live results
+- AI summary of a lecture recording
+- AI review of homework, with lecturer approval and a comparison between students
 
-## 3. Milestones & Deliverables
-1. **Milestone 1:** Repository setup, problem definition, and initial documentation (README & SoW).
-2. **Milestone 2:** Technical tools report and architecture design (System Components, Class Diagrams, and Sequence Diagrams).
-3. **Milestone 3:** SRS document and testing strategy definition.
-4. **Milestone 4:** Web application composition/implementation and preparation for the live classroom demo.
-5. **Milestone 5:** Final project conclusion and results write-up.
+**Out of scope:**
+- Integration with Moodle, Zoom or the university systems
+- Self sign-up (users come from a list given by the institution)
+- Storing ID numbers
 
-**Final submission and demo:** 25/11/2026.
+## Deliverables
+1. GitHub repo with README (problem and scope)
+2. Technical tools report
+3. SoW (this document) and SRS
+4. Use cases and main components
+5. Class and sequence diagrams
+6. Testing strategy and tests
+7. Working web app, deployed online
+8. 10-minute demo in class
 
-## 4. Institutional Assumptions & Constraints
-* **Team:** Yair Cohen and Yaari Meirovich.
-* The system relies on pre-validated institutional user rosters (no self-registration).
-* Authentication is handled securely via institutional email OTP.
-* External legacy integrations (Moodle, university portals) are intentionally excluded per project guidelines.
+## Milestones
+| # | Milestone | Done |
+|---|---|---|
+| 1 | Repo, problem definition, README, SoW | ✓ |
+| 2 | Tools report, components and diagrams | ✓ |
+| 3 | SRS and testing strategy | ✓ |
+| 4 | Working app on Railway | ✓ |
+| 5 | Demo in class and conclusion | 25/11/2026 |
+
+## Team
+Yair Cohen and Yaari Meirovich.
+
+## Assumptions
+- Students have a smartphone with a camera and internet.
+- We have a Gemini API key for the AI features.
+- The app runs over HTTPS (needed for the phone camera).
