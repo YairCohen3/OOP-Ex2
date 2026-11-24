@@ -817,6 +817,25 @@ body.qr-locked .sc-qr-card.projecting #qr-toggle-button { min-height: 72px; padd
 .side-course.current { background: rgba(255,255,255,.1); }
 .side-course.in-course::before { background: var(--marker); opacity: 1; }
 .side-course-empty { padding: 6px 12px; color: var(--chalk-dim, #c9d3cd); font-size: 13.5px; opacity: .8; }
+
+/* Phones and tablets: the notification panel opens under the top bar, full width, instead of
+   hanging off the bell (which pushed it off the left edge of the screen) */
+@media (max-width: 1023px) {
+  .notice-panel { position: fixed; top: 70px; inset-inline: 10px; width: auto; max-height: calc(100dvh - 90px); }
+}
+
+/* Phones: keep the logo its real size and fit the top bar in the screen width */
+@media (max-width: 1023px) {
+  .brand-mark { flex: 0 0 38px; }
+  .topbar-right { min-width: 0; }
+}
+@media (max-width: 480px) {
+  .topbar { gap: 6px; padding: 0 10px; }
+  .topbar-right, .topbar-account, .sync-controls { gap: 6px; }
+  .badge-meta { display: none; }            /* the initials stay; name and role are on the dashboard */
+  .notice-button, .refresh-btn { min-width: 38px; height: 38px; padding: 0 8px; }
+  .logout-btn { padding: 0 9px; }
+}
 </style>
 </head>
 <body>
