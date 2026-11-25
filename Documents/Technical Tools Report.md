@@ -25,7 +25,6 @@ We tested every tool on real data before choosing it: the class photos and the a
 - Homework: returns a grade, a review, strengths and things to improve. Follows the lecturer's rubric if there is one. We tested it on PDF, Word and ZIP files.
 - Summaries: worked on recordings of 1–2 hours (up to 500 MB) using the Gemini Files API.
 - Problem we found: Gemini is sometimes busy (errors 429/503). We added automatic retries and the backup model.
-- `gemini-2.5-flash` from the original spec was shut down in October 2026, so we moved to 3.5.
 
 ## 5. Hosting
 **Railway.** Deploys on every push to GitHub and gives HTTPS.
