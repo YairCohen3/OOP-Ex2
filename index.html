@@ -5104,6 +5104,10 @@ module.exports = QRCode;
         if (!response.ok) return;
         const status = await response.json();
         if (id !== currentSessionId) return;
+        if (status.course_id && currentCourseId && status.course_id !== currentCourseId) {
+          leaveDeletedItem('This lecture was deleted by the lecturer.');
+          return;
+        }
         if (currentUser.role === 'student' && status.is_active) renderStudentAttendance(status);
         if (currentSessionIsActive && !status.is_active) {
           openSessionView(id, false);

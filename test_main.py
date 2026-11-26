@@ -317,6 +317,19 @@ class TestDeleteLecture:
         finally:
             db.close()
 
+    def test_new_lecture_never_reuses_a_deleted_lecture_number(self, client, live_lecture):
+        course_id, session_id = live_lecture
+        close_lecture(client, session_id)
+        assert client.delete(f"/api/sessions/{session_id}", params={"lecturer_email": LECTURER}).status_code == 200
+        new_id = start_lecture(client, course_id)
+        assert new_id > session_id
+        # A student still on the deleted lecture gets "not found", not the new lecture
+        assert client.get(f"/api/sessions/{session_id}/status").status_code == 404
+
+    def test_status_reports_the_course(self, client, live_lecture):
+        course_id, session_id = live_lecture
+        assert client.get(f"/api/sessions/{session_id}/status").json()["course_id"] == course_id
+
     def test_live_lecture_cannot_be_deleted(self, client, live_lecture):
         _, session_id = live_lecture
         response = client.delete(f"/api/sessions/{session_id}", params={"lecturer_email": LECTURER})

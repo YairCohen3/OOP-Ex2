@@ -20,7 +20,7 @@ import io, os, time, secrets, hmac, hashlib, math, socket
 import json, re, uuid, zipfile, statistics, base64
 from urllib.parse import urlparse
 from collections import Counter
-from sqlalchemy import Boolean
+from sqlalchemy import Boolean, func
 import random
 import openpyxl
 from database import engine, Base, get_db, DATA_DIR, DB_PATH, SessionLocal
@@ -698,6 +698,22 @@ def run_fresh_start_once(db: Session):
     print(f"[SmartClass] One-time fresh start done: live lectures ended, {len(set(student_emails))} student(s) removed from courses")
 
 
+class DeletedLecture(Base):
+    """Ids of deleted lectures. SQLite would hand the same id to the next new lecture, and a student
+    still looking at the deleted lecture would then silently land in the new one."""
+    __tablename__ = "smartclass_deleted_lectures"
+    session_id = Column(Integer, primary_key=True)
+
+
+DeletedLecture.__table__.create(bind=engine, checkfirst=True)
+
+
+def next_lecture_id(db: Session) -> int:
+    highest = max(db.query(func.max(models.Session.id)).scalar() or 0,
+                  db.query(func.max(DeletedLecture.session_id)).scalar() or 0)
+    return highest + 1
+
+
 LECTURER_EMAIL_CHANGE_KEY = "2026-11-26-lecturer-email-yaari"
 OLD_LECTURER_EMAIL, NEW_LECTURER_EMAIL, NEW_LECTURER_NAME = "ohadbennun25@gmail.com", "yaarimeirovich@gmail.com", "Yaari"
 
@@ -934,7 +950,7 @@ def start_session(course_id: str, lecturer_email: str, db: Session = Depends(get
     if active:
         return {"session_id": active.id, "course_id": course_id, "already_active": True,
                 **get_qr_status(active.id)}
-    session = models.Session(course_id=course_id, is_active=True, current_qr_code="")
+    session = models.Session(id=next_lecture_id(db), course_id=course_id, is_active=True, current_qr_code="")
     db.add(session)
     db.flush()
     # SQLite can reuse the id of a deleted lecture. Clear anything an old lecture with the same id left
@@ -999,7 +1015,8 @@ def get_session_status(session_id: int, student_email: str | None = None, db: Se
         raise HTTPException(status_code=404, detail="Lecture not found")
     approved = db.query(AttendanceApproval).filter(AttendanceApproval.session_id == session_id).first() is not None
     title = db.query(SessionTitle).filter(SessionTitle.session_id == session_id).first()
-    result = {"session_id": lecture.id, "is_active": bool(lecture.is_active), "title": title.title if title else None,
+    result = {"session_id": lecture.id, "course_id": lecture.course_id,
+              "is_active": bool(lecture.is_active), "title": title.title if title else None,
               "attendance_open": bool(lecture.is_active) and qr_enabled(db, session_id) and not approved,
               "attendance_approved": approved}
     if student_email:
@@ -1324,6 +1341,7 @@ def delete_past_lecture(session_id: int, lecturer_email: str, db: Session = Depe
     db.query(SmartNotification).filter(SmartNotification.target_type == "session",
                                        SmartNotification.target_id == session_id).delete(synchronize_session=False)
     db.delete(lecture)  # ORM cascade removes check-ins, polls (with votes) and forum posts
+    db.merge(DeletedLecture(session_id=session_id))
     db.commit()
     (REPORTS_DIR / f"attendance_session_{session_id}.xlsx").unlink(missing_ok=True)
     VIDEO_JOBS.pop(session_id, None)
