@@ -1577,6 +1577,9 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
     'Resolve the attendance discrepancy in Step 3, or end the lecture to export as is.': 'טפלו בפער הנוכחות בשלב 3, או סיימו את ההרצאה וייצאו כמו שזה.',
     'There are more check-ins than people in the photo.': 'יש יותר רישומים מאנשים בתמונה.', 'Closing lecture and creating the attendance report…': 'מסיימים את ההרצאה ויוצרים דוח נוכחות…',
     'Unable to end the lecture': 'לא ניתן לסיים את ההרצאה', 'Lecture has ended. You can create time-limited polls.': 'ההרצאה הסתיימה. אפשר ליצור סקרים מוגבלים בזמן.',
+    'The lecture has ended. Questions and the summary stay available.': 'ההרצאה הסתיימה. השאלות והסיכום נשארים זמינים.',
+    'No lecture is live right now.': 'אין הרצאה פעילה כרגע.', 'When a lecturer starts one, it will appear here.': 'כשהמרצה יתחיל הרצאה, היא תופיע כאן.',
+    'No previous lectures yet.': 'עדיין אין הרצאות קודמות.', 'Completed lectures are saved here automatically.': 'הרצאות שהסתיימו נשמרות כאן אוטומטית.',
     'Check in to this lecture': 'רישום נוכחות להרצאה', 'Scan the QR code': 'סריקת קוד ה-QR', 'Scan the QR code on the board, or type the code shown under it.': 'סרקו את ה-QR שעל הלוח, או הקלידו את הקוד שמתחתיו.',
     'Scan with SmartClass on your phone to check in': 'סרקו עם SmartClass בטלפון כדי להירשם', 'or type the code': 'או הקלידו את הקוד', 'Check in': 'רישום', 'Close camera': 'סגירת המצלמה',
     'Please scan or enter a QR code.': 'סרקו או הזינו קוד QR.', 'Unable to record attendance. Please try again.': 'לא ניתן לרשום נוכחות. נסו שוב.',
@@ -5186,7 +5189,8 @@ module.exports = QRCode;
           openSessionView(id, false);
           byId('btn-create-poll').classList.toggle('hidden',currentUser.role!=='lecturer');
           byId('poll-time-window').classList.remove('hidden');
-          showToast('Lecture has ended. You can create time-limited polls.');
+          showToast(currentUser.role === 'lecturer' ? 'Lecture has ended. You can create time-limited polls.'
+            : 'The lecture has ended. Questions and the summary stay available.');
         }
       } catch (error) { console.warn('Cannot refresh lecture status:', error); }
     }

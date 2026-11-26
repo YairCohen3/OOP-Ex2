@@ -10,7 +10,7 @@ Yair Cohen ([@YairCohen3](https://github.com/YairCohen3)) & Yaari Meirovich ([@Y
 
 ## Demo video
 
-*Coming soon.*
+[smartclass-demo.mp4](../smartclass-demo.mp4)
 
 <!-- Replace with: [![SmartClass demo](thumbnail.png)](https://youtu.be/VIDEO_ID) -->
 
