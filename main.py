@@ -181,7 +181,7 @@ def get_qr_status(session_id: int):
 def session_photo_state(db: Session, session_id: int, create: bool = True):
     state = db.query(SessionPhotoState).filter(SessionPhotoState.session_id == session_id).first()
     if not state and create:
-        state = SessionPhotoState(session_id=session_id, upload_token=secrets.token_urlsafe(30))
+        state = SessionPhotoState(session_id=session_id, upload_token=secrets.token_urlsafe(16))  # 128-bit, shorter URL = easier QR
         db.add(state)
         db.commit()
         db.refresh(state)
