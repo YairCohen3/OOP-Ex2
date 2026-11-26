@@ -1006,6 +1006,16 @@ html[dir="rtl"] .feedback-item { border-radius: var(--r) 0 0 var(--r); }
 .my-waiting.problem { border-color: #efc9c5; background: var(--red-tint); }
 .my-waiting.problem svg { color: var(--red); }
 </style>
+<style id="sc-fixes-qa">
+/* Submission card: the status chip sits under the name, so the name keeps its width on narrow columns */
+.student-submission-card .sub-head { grid-template-columns: auto minmax(0, 1fr) auto; }
+.student-submission-card .sub-chip { grid-column: 2; grid-row: 2; justify-self: start; }
+.student-submission-card .sub-score { grid-column: 3; grid-row: 1 / span 2; }
+.student-submission-card .sub-head > .avatar { grid-row: 1 / span 2; }
+/* Text written by users takes its direction from its own first letters (English in a Hebrew page and vice versa) */
+#ai-summary-text li, .forum-post > p, .forum-reply, .feedback-item p,
+.my-review-text, .my-review-cols li, .sub-review, .sub-lists li, .poll-comment p, #summary-editor, #session-forum-input { unicode-bidi: plaintext; }
+</style>
 </head>
 <body>
   <header class="topbar">
@@ -1326,7 +1336,7 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
             <div class="summary-tool summary-edit">
               <h4>Edit the summary</h4>
               <p class="session-helper">Students see the text you save here. Lines that start with • become bullet points.</p>
-              <textarea id="summary-editor" class="field-control" placeholder="Write or paste lecture notes here…" aria-label="Lecture summary text"></textarea>
+              <textarea id="summary-editor" dir="auto" class="field-control" placeholder="Write or paste lecture notes here…" aria-label="Lecture summary text"></textarea>
               <button class="btn btn-ink" type="button" onclick="saveSessionSummary()">Save summary</button>
             </div>
           </div>
@@ -1555,7 +1565,7 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
     'Manual count approved by the lecturer': 'ספירה ידנית שאישר המרצה', 'Lecturer verified / corrected': 'אומת או תוקן על ידי המרצה',
     'Waiting for the classroom photo': 'מחכים לצילום הכיתה', '⚠ More check-ins than people in the photo': '⚠ יותר רישומים מאנשים בתמונה',
     '✓ More people in the photo than check-ins': '✓ יותר אנשים בתמונה מרישומים', '✓ Check-ins match the photo': '✓ הרישומים תואמים לתמונה', '✓ Attendance approved': '✓ הנוכחות אושרה',
-    '(א) Cancel & open new attendance': '(א) ביטול ופתיחת נוכחות חדשה', '(ב) Retake photo': '(ב) צילום מחדש', '(ג) Approve & export Excel': '(ג) אישור וייצוא ל-Excel',
+    '(a) Cancel & open new attendance': '(א) ביטול ופתיחת נוכחות חדשה', '(b) Retake photo': '(ב) צילום מחדש', '(c) Approve & export Excel': '(ג) אישור וייצוא ל-Excel',
     '✓ Approve & export Excel': '✓ אישור וייצוא ל-Excel', 'Retake photo': 'צילום מחדש', 'Restart attendance': 'התחלת נוכחות מחדש', '↓ Download attendance Excel': '↓ הורדת קובץ הנוכחות (Excel)',
     '✓ Attendance approved · Excel report is ready to download': '✓ הנוכחות אושרה · קובץ ה-Excel מוכן להורדה', 'Could not approve attendance': 'לא ניתן לאשר את הנוכחות',
     'Discard all check-ins of this round and open a new attendance QR?': 'למחוק את כל הרישומים של הסבב הזה ולפתוח QR נוכחות חדש?',
@@ -1623,6 +1633,7 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
     'Grade must be an integer 0–100': 'הציון צריך להיות מספר שלם בין 0 ל-100', 'Message cannot be empty': 'ההודעה לא יכולה להיות ריקה', 'Write a comment up to 1500 characters': 'כתבו תגובה עד 1500 תווים',
     'Invalid due date': 'תאריך הגשה לא תקין', 'Enter a title up to 250 characters': 'הזינו שם עד 250 תווים',
     'No classroom photo yet. Press SESSION END to lock check-ins, then take a classroom photo.': 'אין עדיין צילום כיתה. לחצו על "סיום רישום" ואז צלמו את הכיתה.',
+    'No classroom photo yet. Take a photo of the class to verify the count.': 'אין עדיין צילום כיתה. צלמו את הכיתה כדי לאמת את המספר.',
     // ---- rename, attendance stages, sidebar list
     'All courses': 'כל הקורסים', 'Rename course': 'שינוי שם הקורס', 'Rename lecture': 'שינוי שם ההרצאה', 'Course name': 'שם הקורס', 'Save': 'שמירה',
     '✓ Course renamed': '✓ שם הקורס עודכן', '✓ Lecture renamed': '✓ שם ההרצאה עודכן', '✓ Lecture name cleared': '✓ שם ההרצאה נמחק',
@@ -4239,9 +4250,9 @@ module.exports = QRCode;
         btn('Restart attendance', 'secondary-btn', resetAttendanceFlow);
       } else if (c.status === 'more_checkins') {
         // Spec: (א) cancel & open a new attendance round, (ב) retake the photo, (ג) approve & export
-        btn('(א) Cancel & open new attendance', 'danger-btn', () => { if (confirm('Discard all check-ins of this round and open a new attendance QR?')) resetAttendanceFlow(); });
-        btn('(ב) Retake photo', 'secondary-btn', () => byId('class-photo-file').click());
-        btn('(ג) Approve & export Excel', 'success-btn', () => approveAttendance(true));
+        btn('(a) Cancel & open new attendance', 'danger-btn', () => { if (confirm('Discard all check-ins of this round and open a new attendance QR?')) resetAttendanceFlow(); });
+        btn('(b) Retake photo', 'secondary-btn', () => byId('class-photo-file').click());
+        btn('(c) Approve & export Excel', 'success-btn', () => approveAttendance(true));
       } else if (c.status === 'more_people' || c.status === 'match') {
         btn('✓ Approve & export Excel', 'success-btn', () => approveAttendance(false));
         btn('Retake photo', 'secondary-btn', () => byId('class-photo-file').click());
@@ -5189,6 +5200,7 @@ module.exports = QRCode;
       if (!open) {
         if (byId('camera-container') && !byId('camera-container').classList.contains('hidden')) stopCameraScanner();
         closed.classList.toggle('missed', !status.checked_in);
+        byId('student-msg').textContent = '';  // an earlier error no longer applies
         closed.textContent = status.checked_in ? '✓ You are checked in. Attendance for this lecture is closed.'
           : 'Attendance for this lecture is closed. You did not check in — contact your lecturer if this is a mistake.';
       }
@@ -5292,10 +5304,10 @@ module.exports = QRCode;
         const line = raw.trim();
         let m;
         if (!line) { closeList(); return; }
-        if ((m = line.match(/^#{1,6}\s+(.*)$/))) { closeList(); out.push(`<h4>${inline(m[1])}</h4>`); return; }
-        if ((m = line.match(/^[-*•]\s+(.*)$/))) { if (list !== 'ul') { closeList(); out.push('<ul>'); list = 'ul'; } out.push(`<li>${inline(m[1])}</li>`); return; }
-        if ((m = line.match(/^\d+[.)]\s+(.*)$/))) { if (list !== 'ol') { closeList(); out.push('<ol>'); list = 'ol'; } out.push(`<li>${inline(m[1])}</li>`); return; }
-        closeList(); out.push(`<p>${inline(line)}</p>`);
+        if ((m = line.match(/^#{1,6}\s+(.*)$/))) { closeList(); out.push(`<h4 dir="auto">${inline(m[1])}</h4>`); return; }
+        if ((m = line.match(/^[-*•]\s+(.*)$/))) { if (list !== 'ul') { closeList(); out.push('<ul dir="auto">'); list = 'ul'; } out.push(`<li>${inline(m[1])}</li>`); return; }
+        if ((m = line.match(/^\d+[.)]\s+(.*)$/))) { if (list !== 'ol') { closeList(); out.push('<ol dir="auto">'); list = 'ol'; } out.push(`<li>${inline(m[1])}</li>`); return; }
+        closeList(); out.push(`<p dir="auto">${inline(line)}</p>`);
       });
       closeList();
       return out.join('');

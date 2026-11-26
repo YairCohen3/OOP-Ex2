@@ -838,6 +838,8 @@ def delete_course(course_id: str, lecturer_email: str, db: Session = Depends(get
         if poll_ids:
             db.query(PollTimeWindow).filter(PollTimeWindow.poll_id.in_(poll_ids)).delete(synchronize_session=False)
     db.query(SmartNotification).filter(SmartNotification.course_id == course_id).delete(synchronize_session=False)
+    for lecture_id in lecture_ids:  # keep these ids reserved, like a single deleted lecture
+        db.merge(DeletedLecture(session_id=lecture_id))
     db.delete(course)
     db.commit()
     return {"message": "Course deleted successfully", "course_id": course_id}
@@ -1060,6 +1062,11 @@ def scan_attendance(session_id: int, student_email: str, student_name: str, qr_c
         models.StudentCourse.course_id == lecture.course_id).first()
     if not enrolled:
         raise HTTPException(status_code=403, detail="Please join this course before checking in")
+    existing = db.query(models.AttendanceRecord).filter(
+        models.AttendanceRecord.session_id == session_id,
+        models.AttendanceRecord.student_email == student_email).first()
+    if existing:  # checked in already: say so even if the code has rotated since
+        return {"message": "Attendance already recorded for this lecture", "already_checked_in": True}
     if not qr_enabled(db, session_id):
         raise HTTPException(status_code=409, detail="Attendance QR is paused by the lecturer")
     now = time.time()
@@ -1069,11 +1076,6 @@ def scan_attendance(session_id: int, student_email: str, student_name: str, qr_c
     previous = qr_at(session_id, slot - 1) if now % QR_TTL_SECONDS < 2 else None
     if qr_code not in (current, previous):
         raise HTTPException(status_code=400, detail="QR code expired. Scan the newest code")
-    existing = db.query(models.AttendanceRecord).filter(
-        models.AttendanceRecord.session_id == session_id,
-        models.AttendanceRecord.student_email == student_email).first()
-    if existing:
-        return {"message": "Attendance already recorded for this lecture", "already_checked_in": True}
     db.add(models.AttendanceRecord(session_id=session_id,
                                    student_email=student_email, student_name=student_name))
     db.commit()
@@ -1181,7 +1183,7 @@ def attendance_crosscheck(scanned: int, people: int | None) -> dict:
     """Spec, feature 1 step 3: compare QR check-ins with the people counted in the classroom photo."""
     if people is None:
         return {"status": "no_photo", "scanned": scanned, "people": None, "difference": None,
-                "message": "No classroom photo yet. Press SESSION END to lock check-ins, then take a classroom photo."}
+                "message": "No classroom photo yet. Take a photo of the class to verify the count."}
     if scanned > people:
         diff = scanned - people
         return {"status": "more_checkins", "scanned": scanned, "people": people, "difference": diff,

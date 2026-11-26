@@ -756,3 +756,324 @@ class TestAssignments:
         self.submit(client, assignment)
         response = client.post(f"/api/assignments/{assignment}/run-comparison", params={"lecturer_email": LECTURER})
         assert response.status_code == 400
+
+
+# ================================================================ 3. MORE API TESTS
+# Endpoints that had no test before: status pages, notifications, renaming, assignment
+# editing/deleting, multi-file submissions, and the lecture tools used by the UI.
+
+def notifications_of(client, email):
+    response = client.get("/api/notifications", params={"email": email, "limit": 100})
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
+class TestServerStatus:
+    def test_ai_status_never_returns_the_key(self, client):
+        data = client.get("/api/ai-status").json()
+        assert data["gemini_configured"] is False
+        assert set(data) == {"gemini_configured", "model", "fallback_model"}
+
+    def test_storage_status_uses_the_data_folder(self, client):
+        data = client.get("/api/storage-status").json()
+        assert data["persistent"] is True and data["database_exists"] is True
+
+    def test_home_page_is_served(self, client):
+        response = client.get("/")
+        assert response.status_code == 200 and "SmartClass" in response.text
+
+    def test_mobile_photo_page_is_served(self, client):
+        response = client.get("/mobile-photo")
+        assert response.status_code == 200 and "Upload a classroom photo" in response.text
+
+    def test_qr_image_is_a_png(self, client):
+        response = client.get("/api/qr-image", params={"content": "QR-12345"})
+        assert response.status_code == 200
+        assert response.headers["content-type"] == "image/png"
+        assert response.content[:8] == b"\x89PNG\r\n\x1a\n"
+
+    def test_qr_image_rejects_empty_content(self, client):
+        assert client.get("/api/qr-image", params={"content": ""}).status_code == 400
+
+
+class TestCourseExtras:
+    def test_lecturer_course_list(self, client):
+        course_id = make_course(client, title="Listed course")
+        courses = client.get("/api/courses", params={"lecturer_email": LECTURER}).json()
+        assert course_id in [c["course_id"] for c in courses]
+
+    def test_details_and_overview(self, client, live_lecture):
+        course_id, _ = live_lecture
+        details = client.get(f"/api/courses/{course_id}/details").json()
+        assert details["title"] == "Software Engineering"
+        overview = client.get(f"/api/courses/{course_id}/overview").json()
+        assert overview == {"sessions_count": 1, "students_count": 2, "assignments_count": 0}
+
+    def test_unknown_course_details(self, client):
+        assert client.get("/api/courses/CRS-0/details").status_code == 404
+
+    def test_lecturer_renames_course_and_students_are_notified(self, client, live_lecture):
+        course_id, _ = live_lecture
+        response = client.patch(f"/api/courses/{course_id}/rename",
+                                params={"title": "  OOP 2026  ", "lecturer_email": LECTURER})
+        assert response.status_code == 200 and response.json()["title"] == "OOP 2026"
+        assert client.get(f"/api/courses/{course_id}/details").json()["title"] == "OOP 2026"
+        kinds = [(n["course_id"], n["kind"]) for n in notifications_of(client, STUDENT)["items"]]
+        assert (course_id, "course_renamed") in kinds
+
+    def test_course_name_cannot_be_empty(self, client, live_lecture):
+        course_id, _ = live_lecture
+        response = client.patch(f"/api/courses/{course_id}/rename", params={"title": "  ", "lecturer_email": LECTURER})
+        assert response.status_code == 400
+
+    def test_student_cannot_rename_course(self, client, live_lecture):
+        course_id, _ = live_lecture
+        response = client.patch(f"/api/courses/{course_id}/rename", params={"title": "Hacked", "lecturer_email": STUDENT})
+        assert response.status_code == 403
+
+
+class TestLectureExtras:
+    def test_status_includes_course_id(self, client, live_lecture):
+        course_id, session_id = live_lecture
+        assert client.get(f"/api/sessions/{session_id}/status").json()["course_id"] == course_id
+
+    def test_refresh_qr_while_open_paused_and_closed(self, client, live_lecture):
+        _, session_id = live_lecture
+        data = client.get(f"/api/sessions/{session_id}/refresh-qr").json()
+        assert data["qr_enabled"] is True and data["qr_code"]
+        client.post(f"/api/sessions/{session_id}/qr-control", params={"lecturer_email": LECTURER, "enabled": False})
+        assert client.get(f"/api/sessions/{session_id}/refresh-qr").json()["qr_enabled"] is False
+        close_lecture(client, session_id)
+        assert client.get(f"/api/sessions/{session_id}/refresh-qr").status_code == 404
+
+    def test_rename_lecture(self, client, live_lecture):
+        _, session_id = live_lecture
+        response = client.patch(f"/api/sessions/{session_id}/rename",
+                                params={"title": "Inheritance", "lecturer_email": LECTURER})
+        assert response.status_code == 200
+        assert client.get(f"/api/sessions/{session_id}/status").json()["title"] == "Inheritance"
+        # An empty name goes back to the default "Lecture #N".
+        client.patch(f"/api/sessions/{session_id}/rename", params={"title": "", "lecturer_email": LECTURER})
+        assert client.get(f"/api/sessions/{session_id}/status").json()["title"] is None
+
+    def test_lecture_name_length_limit(self, client, live_lecture):
+        _, session_id = live_lecture
+        response = client.patch(f"/api/sessions/{session_id}/rename",
+                                params={"title": "x" * 201, "lecturer_email": LECTURER})
+        assert response.status_code == 400
+
+    def test_student_cannot_rename_lecture(self, client, live_lecture):
+        _, session_id = live_lecture
+        response = client.patch(f"/api/sessions/{session_id}/rename",
+                                params={"title": "Hacked", "lecturer_email": STUDENT})
+        assert response.status_code == 403
+
+    def test_deleted_lecture_number_is_not_reused(self, client, live_lecture):
+        course_id, session_id = live_lecture
+        close_lecture(client, session_id)
+        assert client.delete(f"/api/sessions/{session_id}", params={"lecturer_email": LECTURER}).status_code == 200
+        assert start_lecture(client, course_id) > session_id
+
+    def test_lecture_numbers_of_a_deleted_course_are_not_reused(self, client, live_lecture):
+        course_id, session_id = live_lecture
+        client.delete(f"/api/courses/{course_id}", params={"lecturer_email": LECTURER})
+        assert start_lecture(client, make_course(client)) > session_id
+
+    def test_photo_token_for_lecturer_only(self, client, live_lecture):
+        _, session_id = live_lecture
+        response = client.get(f"/api/sessions/{session_id}/photo-token", params={"lecturer_email": LECTURER})
+        assert response.status_code == 200
+        assert response.json()["path"].startswith(f"/mobile-photo?session_id={session_id}&token=")
+        assert client.get(f"/api/sessions/{session_id}/photo-token",
+                          params={"lecturer_email": STUDENT}).status_code == 403
+
+    def test_no_photo_token_after_lecture_closed(self, client, live_lecture):
+        _, session_id = live_lecture
+        close_lecture(client, session_id)
+        assert client.get(f"/api/sessions/{session_id}/photo-token",
+                          params={"lecturer_email": LECTURER}).status_code == 404
+
+    def test_summary_job_is_idle_by_default(self, client, live_lecture):
+        _, session_id = live_lecture
+        assert client.get(f"/api/sessions/{session_id}/summary-job").json() == {"state": "idle"}
+
+    def test_close_with_vision_without_photo(self, client, live_lecture):
+        _, session_id = live_lecture
+        response = client.post(f"/api/sessions/{session_id}/close-with-vision",
+                               params={"lecturer_email": LECTURER, "approve_mismatch": True})
+        assert response.status_code == 200
+        assert client.get(f"/api/sessions/{session_id}/status").json()["is_active"] is False
+
+    def test_lecturer_removes_a_students_check_ins(self, client, live_lecture):
+        _, session_id = live_lecture
+        assert scan(client, session_id).status_code == 200
+        response = client.delete(f"/api/lecturers/attendance/students/{STUDENT}", params={"lecturer_email": LECTURER})
+        assert response.status_code == 200 and response.json()["deleted_checkins"] >= 1
+        state = client.get(f"/api/sessions/{session_id}/live-state", params={"lecturer_email": LECTURER}).json()
+        assert state["checked_in_count"] == 0
+
+    def test_checked_in_student_is_told_so_even_with_an_old_code(self, client, live_lecture):
+        _, session_id = live_lecture
+        assert scan(client, session_id).status_code == 200
+        response = scan(client, session_id, qr="QR-00000000")
+        assert response.status_code == 200 and response.json()["already_checked_in"] is True
+
+    def test_student_cannot_remove_check_ins(self, client):
+        response = client.delete(f"/api/lecturers/attendance/students/{STUDENT_2}", params={"lecturer_email": STUDENT})
+        assert response.status_code == 403
+
+
+class TestNotifications:
+    def test_students_are_notified_of_a_new_lecture(self, client, live_lecture):
+        course_id, session_id = live_lecture
+        items = notifications_of(client, STUDENT)["items"]
+        assert any(n["kind"] == "new_session" and n["course_id"] == course_id and n["target_id"] == session_id
+                   for n in items)
+
+    def test_mark_one_course_and_all_as_read_then_clear(self, client, live_lecture):
+        course_id, _ = live_lecture
+        first = notifications_of(client, STUDENT)["items"][0]
+        assert client.post(f"/api/notifications/{first['id']}/read", params={"email": STUDENT}).status_code == 200
+        assert next(n for n in notifications_of(client, STUDENT)["items"] if n["id"] == first["id"])["is_read"]
+        client.post("/api/notifications/read-course", params={"email": STUDENT, "course_id": course_id})
+        assert course_id not in notifications_of(client, STUDENT)["unread_by_course"]
+        client.post("/api/notifications/read-all", params={"email": STUDENT})
+        assert notifications_of(client, STUDENT)["unread_total"] == 0
+        assert client.delete("/api/notifications", params={"email": STUDENT}).json()["ok"] is True
+        assert notifications_of(client, STUDENT)["items"] == []
+
+    def test_cannot_read_someone_elses_notification(self, client, live_lecture):
+        # live_lecture just notified STUDENT about the new lecture; the lecturer cannot mark it.
+        notifications = notifications_of(client, STUDENT)["items"]
+        assert notifications
+        response = client.post(f"/api/notifications/{notifications[0]['id']}/read", params={"email": LECTURER})
+        assert response.status_code == 404
+
+    def test_unknown_user_has_no_notifications(self, client):
+        assert client.get("/api/notifications", params={"email": "nobody@test.ac.il"}).status_code == 404
+
+    def test_outsider_cannot_mark_course_read(self, client, live_lecture):
+        course_id, _ = live_lecture
+        response = client.post("/api/notifications/read-course", params={"email": OUTSIDER, "course_id": course_id})
+        assert response.status_code == 403
+
+
+class TestAssignmentExtras:
+    @pytest.fixture
+    def course(self, client, live_lecture):
+        return live_lecture[0]
+
+    def create(self, client, course_id, **fields):
+        data = {"course_id": course_id, "title": "Ex2", "description": "Write a Queue class",
+                "due_date": "2026-12-31", "lecturer_email": LECTURER, **fields}
+        return client.post("/api/assignments/create-with-file", data=data,
+                           files={"file": ("brief.txt", b"Queue with enqueue and dequeue", "text/plain")})
+
+    def submit(self, client, assignment_id, email=STUDENT):
+        return client.post(f"/api/assignments/{assignment_id}/submit-file", data={"student_email": email},
+                           files={"file": ("queue.py", b"class Queue:\n    pass\n", "text/x-python")})
+
+    def test_create_with_brief_file_and_download_it(self, client, course):
+        response = self.create(client, course, rubric="Correctness 100%")
+        assert response.status_code == 200 and response.json()["reference_name"] == "brief.txt"
+        assignment_id = response.json()["assignment_id"]
+        brief = client.get(f"/api/assignments/{assignment_id}/reference", params={"email": STUDENT})
+        assert brief.status_code == 200 and brief.content == b"Queue with enqueue and dequeue"
+        assert client.get(f"/api/assignments/{assignment_id}/reference",
+                          params={"email": OUTSIDER}).status_code == 403
+
+    def test_create_with_file_rejects_bad_input(self, client, course):
+        assert self.create(client, course, due_date="31/12/2026").status_code == 400
+        assert self.create(client, course, title="  ").status_code == 400
+        assert self.create(client, course, lecturer_email=STUDENT).status_code == 403
+
+    def test_details_hide_technical_notes_from_students(self, client, course):
+        assignment_id = self.create(client, course, rubric="Tests 50%").json()["assignment_id"]
+        details = client.get(f"/api/assignments/{assignment_id}/details", params={"email": STUDENT}).json()
+        assert details["title"] == "Ex2" and details["rubric"] == "Tests 50%"
+        assert details["extraction_note"] is None
+
+    def test_no_brief_file(self, client, course):
+        response = client.post("/api/assignments/create", params={
+            "course_id": course, "title": "Ex3", "description": "Text only", "due_date": "2026-12-31",
+            "lecturer_email": LECTURER})
+        assignment_id = response.json()["assignment_id"]
+        assert client.get(f"/api/assignments/{assignment_id}/reference",
+                          params={"email": STUDENT}).status_code == 404
+
+    def test_lecturer_edits_assignment(self, client, course):
+        assignment_id = self.create(client, course).json()["assignment_id"]
+        response = client.post(f"/api/assignments/{assignment_id}/update", data={
+            "lecturer_email": LECTURER, "title": "Ex2 (fixed)", "due_date": "2027-01-15",
+            "description": "Write a Queue class with tests", "rubric": "", "remove_file": "true"})
+        assert response.status_code == 200, response.text
+        details = client.get(f"/api/assignments/{assignment_id}/details", params={"email": LECTURER}).json()
+        assert details["title"] == "Ex2 (fixed)" and details["due_date"] == "2027-01-15"
+        assert details["reference_name"] is None
+
+    def test_student_cannot_edit_assignment(self, client, course):
+        assignment_id = self.create(client, course).json()["assignment_id"]
+        response = client.post(f"/api/assignments/{assignment_id}/update", data={
+            "lecturer_email": STUDENT, "title": "Hacked", "due_date": "2027-01-15", "description": "x"})
+        assert response.status_code == 403
+
+    def test_lecturer_deletes_assignment_with_its_submissions(self, client, course):
+        assignment_id = self.create(client, course).json()["assignment_id"]
+        assert self.submit(client, assignment_id).status_code == 200
+        assert client.delete(f"/api/assignments/{assignment_id}",
+                             params={"lecturer_email": STUDENT}).status_code == 403
+        response = client.delete(f"/api/assignments/{assignment_id}", params={"lecturer_email": LECTURER})
+        assert response.status_code == 200 and response.json()["deleted_submissions"] == 1
+        assert client.get(f"/api/assignments/{assignment_id}/details",
+                          params={"email": LECTURER}).status_code == 404
+
+    def test_course_assignment_list_shows_my_status(self, client, course):
+        assignment_id = self.create(client, course).json()["assignment_id"]
+        mine = lambda: next(a for a in client.get(f"/api/courses/{course}/assignments",
+                                                  params={"student_email": STUDENT}).json()
+                            if a["id"] == assignment_id)["my_submission"]
+        assert mine() is None
+        self.submit(client, assignment_id)
+        assert mine() == {"graded": False, "grade": None}
+        submission_id = client.get(f"/api/assignments/{assignment_id}/my-submission",
+                                   params={"student_email": STUDENT}).json()["id"]
+        client.post(f"/api/assignments/submission/{submission_id}/grade",
+                    params={"grade": "95", "approved": True, "lecturer_email": LECTURER})
+        assert mine() == {"graded": True, "grade": "95"}
+        lecturer_list = client.get(f"/api/courses/{course}/assignments").json()
+        assert "my_submission" not in lecturer_list[0]
+
+    def test_multi_file_submission_is_zipped(self, client, course):
+        import zipfile
+        assignment_id = self.create(client, course).json()["assignment_id"]
+        response = client.post(f"/api/assignments/{assignment_id}/submit-file", data={"student_email": STUDENT},
+                               files=[("files", ("queue.py", b"class Queue: pass\n", "text/x-python")),
+                                      ("files", ("README.md", b"# Queue\n", "text/markdown"))])
+        assert response.status_code == 200, response.text
+        submission_id = response.json()["submission_id"]
+        download = client.get(f"/api/assignments/submission/{submission_id}/file", params={"email": LECTURER})
+        assert download.status_code == 200
+        assert sorted(zipfile.ZipFile(io.BytesIO(download.content)).namelist()) == ["README.md", "queue.py"]
+
+    def test_more_than_ten_files_rejected(self, client, course):
+        assignment_id = self.create(client, course).json()["assignment_id"]
+        files = [("files", (f"f{i}.py", b"x = 1\n", "text/x-python")) for i in range(11)]
+        response = client.post(f"/api/assignments/{assignment_id}/submit-file",
+                               data={"student_email": STUDENT}, files=files)
+        assert response.status_code == 400
+
+    def test_old_filename_only_submission_is_gone(self, client, course):
+        assignment_id = self.create(client, course).json()["assignment_id"]
+        response = client.post("/api/assignments/submit", params={
+            "assignment_id": assignment_id, "student_email": STUDENT, "file_url": "x.py"})
+        assert response.status_code == 410
+
+    def test_rerun_review_without_ai_key(self, client, course):
+        assignment_id = self.create(client, course).json()["assignment_id"]
+        submission_id = self.submit(client, assignment_id).json()["submission_id"]
+        assert client.post(f"/api/assignments/submission/{submission_id}/rerun-review",
+                           params={"lecturer_email": STUDENT}).status_code == 403
+        response = client.post(f"/api/assignments/submission/{submission_id}/rerun-review",
+                               params={"lecturer_email": LECTURER})
+        assert response.status_code == 200
+        assert response.json()["ai_status"] == "pending_configuration" and response.json()["llm_grade"] is None
