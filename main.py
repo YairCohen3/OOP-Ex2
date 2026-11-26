@@ -196,7 +196,7 @@ def photo_state_json(state):
 
 AUTH_USERS = {
     "yair18487@gmail.com": {"name": "Yair Cohen", "role": "student"},
-    "ohadbennun25@gmail.com": {"name": "Dr. Ohad", "role": "lecturer"},
+    "yaarimeirovich@gmail.com": {"name": "Yaari", "role": "lecturer"},
 }
 
 
@@ -698,10 +698,44 @@ def run_fresh_start_once(db: Session):
     print(f"[SmartClass] One-time fresh start done: live lectures ended, {len(set(student_emails))} student(s) removed from courses")
 
 
+LECTURER_EMAIL_CHANGE_KEY = "2026-11-26-lecturer-email-yaari"
+OLD_LECTURER_EMAIL, NEW_LECTURER_EMAIL, NEW_LECTURER_NAME = "ohadbennun25@gmail.com", "yaarimeirovich@gmail.com", "Yaari"
+
+
+def migrate_lecturer_email_once(db: Session):
+    """The demo lecturer account moved to a new email. Hand over everything the old account owns
+    (courses, briefs, notifications, forum and poll messages) so no course is orphaned. Runs once."""
+    if db.query(MaintenanceRun).filter(MaintenanceRun.key == LECTURER_EMAIL_CHANGE_KEY).first():
+        return
+    old, new = OLD_LECTURER_EMAIL, NEW_LECTURER_EMAIL
+    old_user = db.query(models.User).filter(models.User.email == old).first()
+    new_user = db.query(models.User).filter(models.User.email == new).first()
+    if old_user and not new_user:
+        old_user.email, old_user.name, old_user.role = new, NEW_LECTURER_NAME, "lecturer"
+    elif old_user:
+        db.delete(old_user)
+    db.query(models.Course).filter(models.Course.lecturer_email == old).update(
+        {models.Course.lecturer_email: new}, synchronize_session=False)
+    db.query(AssignmentBrief).filter(AssignmentBrief.lecturer_email == old).update(
+        {AssignmentBrief.lecturer_email: new}, synchronize_session=False)
+    db.query(SmartNotification).filter(SmartNotification.recipient_email == old).update(
+        {SmartNotification.recipient_email: new}, synchronize_session=False)
+    db.query(ForumThreadReply).filter(ForumThreadReply.author_email == old).update(
+        {ForumThreadReply.author_email: new, ForumThreadReply.author_name: NEW_LECTURER_NAME}, synchronize_session=False)
+    db.query(PollComment).filter(PollComment.email == old).update(
+        {PollComment.email: new, PollComment.author_name: NEW_LECTURER_NAME}, synchronize_session=False)
+    db.query(models.ForumPost).filter(models.ForumPost.student_email == old).update(
+        {models.ForumPost.student_email: new, models.ForumPost.student_name: NEW_LECTURER_NAME}, synchronize_session=False)
+    db.add(MaintenanceRun(key=LECTURER_EMAIL_CHANGE_KEY))
+    db.commit()
+    print(f"[SmartClass] Lecturer account moved from {old} to {new}")
+
+
 @app.on_event("startup")
 def load_seed_users():
     db = next(get_db())
     try:
+        migrate_lecturer_email_once(db)
         for email, user in AUTH_USERS.items():
             if not db.query(models.User).filter(models.User.email == email).first():
                 db.add(models.User(email=email, name=user["name"], role=user["role"]))

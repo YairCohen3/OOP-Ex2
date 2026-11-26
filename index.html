@@ -3330,15 +3330,21 @@ module.exports = QRCode;
 
     async function loadCourseStudents() {
       const container = byId('course-students-list');
-      container.replaceChildren();
-      if (!currentUser || currentUser.role !== 'lecturer') return;
+      if (!currentUser || currentUser.role !== 'lecturer') { container.replaceChildren(); delete container.dataset.signature; return; }
       const courseId = currentCourseId;
+      // A different course is now open: clear the previous course's students right away.
+      if (container.dataset.courseId !== courseId) { container.replaceChildren(); delete container.dataset.signature; container.dataset.courseId = courseId; }
       try {
         const url = `${API_URL}/api/courses/${encodeURIComponent(courseId)}/students?lecturer_email=${encodeURIComponent(currentUser.email)}`;
-        const response = await fetch(url);
+        const response = await fetch(url, {cache:'no-store'});
         if (!response.ok) throw new Error(`Student list HTTP ${response.status}`);
         const students = await response.json();
         if (currentCourseId !== courseId) return;
+        // Auto-sync runs every 5 s: redraw only when the list really changed, so names never blink.
+        const signature = JSON.stringify(students);
+        if (container.dataset.signature === signature) return;
+        container.dataset.signature = signature;
+        container.replaceChildren();
         if (!students.length) { container.innerHTML = '<div class="course-empty">No students enrolled yet. Use Add to invite an institution-registered student.</div>'; return; }
         students.forEach(student => {
           const row = document.createElement('div');
@@ -3350,7 +3356,10 @@ module.exports = QRCode;
           row.querySelector('.roster-remove').addEventListener('click', () => removeCourseStudent(student.email));
           container.appendChild(row);
         });
-      } catch (error) { console.error(error); container.innerHTML = '<div class="course-empty">Unable to load students. Check that the new main.py is running.</div>'; }
+      } catch (error) {
+        console.error(error);
+        if (!container.childElementCount) container.innerHTML = '<div class="course-empty">Unable to load students. Check that the new main.py is running.</div>';
+      }
     }
 
     async function promptAddCourseStudent() {
@@ -4991,6 +5000,8 @@ module.exports = QRCode;
     async function refreshCurrentView(manual = false) {
       if (!currentUser || refreshInProgress) return;
       refreshInProgress = true;
+      // Safety net: a request that never answers must not stop the 5-second sync for good.
+      const watchdog = setTimeout(() => { refreshInProgress = false; }, 20000);
       if (manual) { byId('refresh-btn').disabled = true; byId('refresh-btn').classList.add('busy'); }
       try {
         await loadNotifications();
@@ -5008,6 +5019,7 @@ module.exports = QRCode;
           currentUser.role === 'lecturer' ? loadLecturerLiveState() : Promise.resolve()
         ]);
         else if (!byId('assignment-view-section').classList.contains('hidden')) {
+          if (!(await verifyCurrentAssignmentExists())) return;
           await Promise.all([currentUser.role === 'lecturer' ? loadAssignmentSubmissions() : loadMyAssignmentSubmission(),loadAssignmentFeedbackForum()]);
         }
         if (manual) showToast('✓ Updated now');
@@ -5015,9 +5027,30 @@ module.exports = QRCode;
         console.error('Auto sync:', error);
         if (manual) showToast('Update failed. Check your connection.', true);
       } finally {
+        clearTimeout(watchdog);
         refreshInProgress = false;
         if (manual) { byId('refresh-btn').disabled = false; byId('refresh-btn').classList.remove('busy'); }
       }
+    }
+
+    // Something the user is looking at was deleted: go back to the course (or home if the course is gone too).
+    function leaveDeletedItem(message) {
+      currentSessionId = null;
+      currentAssignmentId = null;
+      if (typeof toggleQrProjector === 'function') toggleQrProjector(false);
+      if (typeof stopCameraScanner === 'function' && byId('camera-container') && !byId('camera-container').classList.contains('hidden')) stopCameraScanner();
+      if (currentCourseId) { lastCoursePayload = ''; goBackToCourse(); } else goHome();
+      showToast(message, true);
+    }
+
+    async function verifyCurrentAssignmentExists() {
+      const id = currentAssignmentId;
+      if (!currentUser || !id) return true;
+      try {
+        const response = await fetch(`${API_URL}/api/assignments/${id}/details?email=${encodeURIComponent(currentUser.email)}`, {cache:'no-store'});
+        if (response.status === 404 && id === currentAssignmentId) { leaveDeletedItem('This assignment was deleted by the lecturer.'); return false; }
+      } catch (error) { console.warn('Assignment check unavailable:', error); }
+      return true;
     }
 
     async function verifyCurrentCourseAccess() {
@@ -5064,6 +5097,10 @@ module.exports = QRCode;
       try {
         const who = currentUser.role === 'student' ? `?student_email=${encodeURIComponent(currentUser.email)}` : '';
         const response = await fetch(`${API_URL}/api/sessions/${id}/status${who}`, {cache:'no-store'});
+        if (response.status === 404 && id === currentSessionId) {
+          leaveDeletedItem('This lecture was deleted by the lecturer.');
+          return;
+        }
         if (!response.ok) return;
         const status = await response.json();
         if (id !== currentSessionId) return;
