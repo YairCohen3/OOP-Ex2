@@ -28,8 +28,8 @@ SmartClass is a web app for lecturers and students. It covers attendance, a Q&A 
 | FR-8 | The lecturer sees the live number and list of students who checked in. | M |
 | FR-9 | "End attendance" locks the check-in. The lecturer can reopen it before approving. | M |
 | FR-10 | The lecturer takes or uploads a class photo (from the laptop or the phone). Gemini counts the people, and the lecturer can fix the number. | M |
-| FR-11 | If there are more check-ins than people, show a warning with 3 options: restart attendance, retake the photo, or approve anyway. | M |
-| FR-12 | If people ≥ check-ins, the list is valid and can be approved. | M |
+| FR-11 | If there are more check-ins than counted people, show a warning with 3 options: restart attendance, retake the photo, or approve anyway. | M |
+| FR-12 | If counted people ≥ check-ins, the list is valid and can be approved. | M |
 | FR-13 | After approval, create an Excel file: name, email, time, status. No ID numbers. It can be downloaded later too. | M |
 
 ### Feature 2 – Q&A forum
@@ -71,7 +71,7 @@ SmartClass is a web app for lecturers and students. It covers attendance, a Q&A 
 | ID | Requirement |
 |---|---|
 | NFR-1 | **Simple:** a student gets to check-in in 3 taps or less. Works in any phone browser, no install. |
-| NFR-2 | **Fast:** check-in answers in under 1 second. Screens update every 5 seconds. |
+| NFR-2 | **Fast:** check-in answers in under 1 second. Screen refresh every 5 seconds. |
 | NFR-3 | **Privacy:** no ID numbers. Grades are seen only by the student and the lecturer. Class photos are not saved, only the count. |
 | NFR-4 | **Security:** every lecturer action checks that it is the course's lecturer. The QR is signed by the server. The API key is only on the server. |
 | NFR-5 | **AI honesty:** if the AI fails, the app says so. It never makes up a count, grade or summary. |

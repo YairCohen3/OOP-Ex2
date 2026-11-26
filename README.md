@@ -39,9 +39,6 @@ The tools we use in class today are not good enough. Taking attendance wastes ti
 | [Class & Sequence Diagrams](Documents/Class%20and%20Sequence%20Diagrams.md) | Low-level design |
 | [Testing Strategy](Documents/Testing%20Strategy.md) | How we test, and the demo checklist |
 
-## Tech
-
-Python + FastAPI, SQLite (SQLAlchemy), one HTML page with plain JavaScript, Google Gemini API, deployed on Railway.
 
 ## Run it
 
@@ -61,6 +58,6 @@ Main things we learned:
 - The AI can be wrong or busy, so the lecturer always has the final word (count, grades) and the app never makes up a result.
 - Keeping it simple (one HTML file, one server file) let us change things fast.
 
-Known limits: the login code is shown on screen for the demo, the user list is in the code, and updates use polling every 5 seconds.
+Known limits: the login code is shown on screen for the demo (Live application will send an OTP via Email), the user list is in the code, and updates use polling every 5 seconds.
 
 *Demo feedback: to be added after the presentation.*

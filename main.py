@@ -20,7 +20,7 @@ import io, os, time, secrets, hmac, hashlib, math, socket
 import json, re, uuid, zipfile, statistics, base64
 from urllib.parse import urlparse
 from collections import Counter
-from sqlalchemy import Boolean
+from sqlalchemy import Boolean, func
 import random
 import openpyxl
 from database import engine, Base, get_db, DATA_DIR, DB_PATH, SessionLocal
@@ -181,7 +181,7 @@ def get_qr_status(session_id: int):
 def session_photo_state(db: Session, session_id: int, create: bool = True):
     state = db.query(SessionPhotoState).filter(SessionPhotoState.session_id == session_id).first()
     if not state and create:
-        state = SessionPhotoState(session_id=session_id, upload_token=secrets.token_urlsafe(30))
+        state = SessionPhotoState(session_id=session_id, upload_token=secrets.token_urlsafe(16))  # 128-bit, shorter URL = easier QR
         db.add(state)
         db.commit()
         db.refresh(state)
@@ -196,7 +196,7 @@ def photo_state_json(state):
 
 AUTH_USERS = {
     "yair18487@gmail.com": {"name": "Yair Cohen", "role": "student"},
-    "ohadbennun25@gmail.com": {"name": "Dr. Ohad", "role": "lecturer"},
+    "yaarimeirovich@gmail.com": {"name": "Yaari", "role": "lecturer"},
 }
 
 
@@ -698,10 +698,60 @@ def run_fresh_start_once(db: Session):
     print(f"[SmartClass] One-time fresh start done: live lectures ended, {len(set(student_emails))} student(s) removed from courses")
 
 
+class DeletedLecture(Base):
+    """Ids of deleted lectures. SQLite would hand the same id to the next new lecture, and a student
+    still looking at the deleted lecture would then silently land in the new one."""
+    __tablename__ = "smartclass_deleted_lectures"
+    session_id = Column(Integer, primary_key=True)
+
+
+DeletedLecture.__table__.create(bind=engine, checkfirst=True)
+
+
+def next_lecture_id(db: Session) -> int:
+    highest = max(db.query(func.max(models.Session.id)).scalar() or 0,
+                  db.query(func.max(DeletedLecture.session_id)).scalar() or 0)
+    return highest + 1
+
+
+LECTURER_EMAIL_CHANGE_KEY = "2026-11-26-lecturer-email-yaari"
+OLD_LECTURER_EMAIL, NEW_LECTURER_EMAIL, NEW_LECTURER_NAME = "ohadbennun25@gmail.com", "yaarimeirovich@gmail.com", "Yaari"
+
+
+def migrate_lecturer_email_once(db: Session):
+    """The demo lecturer account moved to a new email. Hand over everything the old account owns
+    (courses, briefs, notifications, forum and poll messages) so no course is orphaned. Runs once."""
+    if db.query(MaintenanceRun).filter(MaintenanceRun.key == LECTURER_EMAIL_CHANGE_KEY).first():
+        return
+    old, new = OLD_LECTURER_EMAIL, NEW_LECTURER_EMAIL
+    old_user = db.query(models.User).filter(models.User.email == old).first()
+    new_user = db.query(models.User).filter(models.User.email == new).first()
+    if old_user and not new_user:
+        old_user.email, old_user.name, old_user.role = new, NEW_LECTURER_NAME, "lecturer"
+    elif old_user:
+        db.delete(old_user)
+    db.query(models.Course).filter(models.Course.lecturer_email == old).update(
+        {models.Course.lecturer_email: new}, synchronize_session=False)
+    db.query(AssignmentBrief).filter(AssignmentBrief.lecturer_email == old).update(
+        {AssignmentBrief.lecturer_email: new}, synchronize_session=False)
+    db.query(SmartNotification).filter(SmartNotification.recipient_email == old).update(
+        {SmartNotification.recipient_email: new}, synchronize_session=False)
+    db.query(ForumThreadReply).filter(ForumThreadReply.author_email == old).update(
+        {ForumThreadReply.author_email: new, ForumThreadReply.author_name: NEW_LECTURER_NAME}, synchronize_session=False)
+    db.query(PollComment).filter(PollComment.email == old).update(
+        {PollComment.email: new, PollComment.author_name: NEW_LECTURER_NAME}, synchronize_session=False)
+    db.query(models.ForumPost).filter(models.ForumPost.student_email == old).update(
+        {models.ForumPost.student_email: new, models.ForumPost.student_name: NEW_LECTURER_NAME}, synchronize_session=False)
+    db.add(MaintenanceRun(key=LECTURER_EMAIL_CHANGE_KEY))
+    db.commit()
+    print(f"[SmartClass] Lecturer account moved from {old} to {new}")
+
+
 @app.on_event("startup")
 def load_seed_users():
     db = next(get_db())
     try:
+        migrate_lecturer_email_once(db)
         for email, user in AUTH_USERS.items():
             if not db.query(models.User).filter(models.User.email == email).first():
                 db.add(models.User(email=email, name=user["name"], role=user["role"]))
@@ -900,7 +950,7 @@ def start_session(course_id: str, lecturer_email: str, db: Session = Depends(get
     if active:
         return {"session_id": active.id, "course_id": course_id, "already_active": True,
                 **get_qr_status(active.id)}
-    session = models.Session(course_id=course_id, is_active=True, current_qr_code="")
+    session = models.Session(id=next_lecture_id(db), course_id=course_id, is_active=True, current_qr_code="")
     db.add(session)
     db.flush()
     # SQLite can reuse the id of a deleted lecture. Clear anything an old lecture with the same id left
@@ -965,7 +1015,8 @@ def get_session_status(session_id: int, student_email: str | None = None, db: Se
         raise HTTPException(status_code=404, detail="Lecture not found")
     approved = db.query(AttendanceApproval).filter(AttendanceApproval.session_id == session_id).first() is not None
     title = db.query(SessionTitle).filter(SessionTitle.session_id == session_id).first()
-    result = {"session_id": lecture.id, "is_active": bool(lecture.is_active), "title": title.title if title else None,
+    result = {"session_id": lecture.id, "course_id": lecture.course_id,
+              "is_active": bool(lecture.is_active), "title": title.title if title else None,
               "attendance_open": bool(lecture.is_active) and qr_enabled(db, session_id) and not approved,
               "attendance_approved": approved}
     if student_email:
@@ -1290,6 +1341,7 @@ def delete_past_lecture(session_id: int, lecturer_email: str, db: Session = Depe
     db.query(SmartNotification).filter(SmartNotification.target_type == "session",
                                        SmartNotification.target_id == session_id).delete(synchronize_session=False)
     db.delete(lecture)  # ORM cascade removes check-ins, polls (with votes) and forum posts
+    db.merge(DeletedLecture(session_id=session_id))
     db.commit()
     (REPORTS_DIR / f"attendance_session_{session_id}.xlsx").unlink(missing_ok=True)
     VIDEO_JOBS.pop(session_id, None)

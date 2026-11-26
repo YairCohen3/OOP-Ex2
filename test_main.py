@@ -22,7 +22,7 @@ import main
 import models
 from database import SessionLocal
 
-LECTURER = "ohadbennun25@gmail.com"   # lecturer in main.AUTH_USERS
+LECTURER = "yaarimeirovich@gmail.com"   # lecturer in main.AUTH_USERS
 STUDENT = "yair18487@gmail.com"       # student in main.AUTH_USERS
 STUDENT_2 = "student2@test.ac.il"     # extra course member used for privacy tests
 OUTSIDER = "outsider@test.ac.il"      # not a member of any course
@@ -105,6 +105,30 @@ class TestFreshStart:
             assert db.query(models.Session).filter(models.Session.id == new_lecture.id).first().is_active is True
         finally:
             db.close()
+
+
+class TestLecturerEmailChange:
+    def test_old_lecturer_courses_move_to_new_email(self, client):
+        old = main.OLD_LECTURER_EMAIL
+        db = SessionLocal()
+        try:
+            db.query(main.MaintenanceRun).filter(main.MaintenanceRun.key == main.LECTURER_EMAIL_CHANGE_KEY).delete()
+            db.query(models.User).filter(models.User.email == LECTURER).delete()
+            db.add(models.User(email=old, name="Dr. Ohad", role="lecturer"))
+            db.add(models.Course(course_id="CRS-OLD1", title="Old course", description="", lecturer_email=old))
+            db.commit()
+            main.migrate_lecturer_email_once(db)
+            course = db.query(models.Course).filter(models.Course.course_id == "CRS-OLD1").first()
+            assert course.lecturer_email == LECTURER
+            user = db.query(models.User).filter(models.User.email == LECTURER).first()
+            assert user.name == "Yaari" and user.role == "lecturer"
+            assert db.query(models.User).filter(models.User.email == old).count() == 0
+        finally:
+            db.close()
+
+    def test_old_email_can_no_longer_log_in(self, client):
+        response = client.post("/api/auth/request-otp", params={"email": "ohadbennun25@gmail.com"})
+        assert response.status_code == 403
 
 
 class TestQRCode:
@@ -293,6 +317,19 @@ class TestDeleteLecture:
         finally:
             db.close()
 
+    def test_new_lecture_never_reuses_a_deleted_lecture_number(self, client, live_lecture):
+        course_id, session_id = live_lecture
+        close_lecture(client, session_id)
+        assert client.delete(f"/api/sessions/{session_id}", params={"lecturer_email": LECTURER}).status_code == 200
+        new_id = start_lecture(client, course_id)
+        assert new_id > session_id
+        # A student still on the deleted lecture gets "not found", not the new lecture
+        assert client.get(f"/api/sessions/{session_id}/status").status_code == 404
+
+    def test_status_reports_the_course(self, client, live_lecture):
+        course_id, session_id = live_lecture
+        assert client.get(f"/api/sessions/{session_id}/status").json()["course_id"] == course_id
+
     def test_live_lecture_cannot_be_deleted(self, client, live_lecture):
         _, session_id = live_lecture
         response = client.delete(f"/api/sessions/{session_id}", params={"lecturer_email": LECTURER})
@@ -451,7 +488,7 @@ class TestForum:
         _, session_id = live_lecture
         self.post(client, session_id)
         post_id = client.get(f"/api/sessions/{session_id}/forum").json()[0]["id"]
-        for email, name in ((LECTURER, "Dr. Ohad"), (STUDENT_2, "Student Two")):
+        for email, name in ((LECTURER, "Yaari"), (STUDENT_2, "Student Two")):
             reply = client.post(f"/api/forum/{post_id}/replies",
                                 params={"email": email, "name": name, "message": "Good question"})
             assert reply.status_code == 200

@@ -836,6 +836,22 @@ body.qr-locked .sc-qr-card.projecting #qr-toggle-button { min-height: 72px; padd
   .notice-button, .refresh-btn { min-width: 38px; height: 38px; padding: 0 8px; }
   .logout-btn { padding: 0 9px; }
 }
+
+/* Classroom camera dialog (desktop webcams; phones use their own camera app) */
+.camera-dialog { width: min(100%, 760px); }
+.camera-stage { position: relative; display: grid; place-items: center; overflow: hidden; aspect-ratio: 16 / 9; border-radius: 12px; background: #111; }
+.camera-stage video, .camera-stage img { width: 100%; height: 100%; object-fit: contain; background: #111; }
+.camera-status { position: absolute; inset: auto 12px 12px 12px; padding: 8px 12px; border-radius: 9px; background: rgba(0,0,0,.6); color: #fff; font-size: 14px; text-align: center; }
+.camera-status:empty { display: none; }
+.camera-buttons { flex-wrap: wrap; }
+
+/* Phone upload QR: bigger thumbnail, click to show it large */
+.qr-zoom-btn { flex: 0 0 auto; padding: 0; border: 0; background: none; cursor: zoom-in; border-radius: 10px; }
+.phone-route .qr-zoom-btn img { display: block; flex: none; width: 104px; height: 104px; padding: 4px; }
+.qr-zoom-btn:hover img { border-color: var(--ink-2); }
+.phone-qr-dialog { width: min(100%, 620px); text-align: center; }
+.phone-qr-dialog p { margin-bottom: 14px; }
+#phone-qr-large { display: block; width: min(72vh, 82vw, 520px); height: min(72vh, 82vw, 520px); margin: 0 auto; padding: 12px; border: 1px solid var(--rule); border-radius: 12px; background: #fff; image-rendering: pixelated; }
 </style>
 <style id="sc-pages-r2">
 /* ===== Lecture & assignment pages, round 2 ===== */
@@ -1229,7 +1245,7 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
               <strong>Add a photo of the whole room</strong>
               <span>Drop it here, or take one now. Gemini counts the people in it.</span>
               <div class="photo-drop-actions">
-                <button class="btn btn-ink" type="button" onclick="byId('class-photo-camera').click()">Take photo</button>
+                <button class="btn btn-ink" type="button" onclick="takeClassPhoto()">Take photo</button>
                 <button class="btn btn-quiet" type="button" onclick="byId('class-photo-file').click()">Choose photo</button>
               </div>
             </div>
@@ -1239,9 +1255,9 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
             <p id="class-photo-message" class="sc-feedback" aria-live="polite"></p>
             <div id="class-photo-progress" class="hidden"></div>
             <div class="phone-route">
-              <img id="mobile-photo-qr" alt="QR link to phone photo uploader"/>
+              <button type="button" class="qr-zoom-btn" onclick="showPhoneQrLarge()" title="Show larger" aria-label="Show the phone QR code larger"><img id="mobile-photo-qr" alt="QR link to phone photo uploader"/></button>
               <div><strong>Taking it with your phone?</strong><p>Scan this code to open the upload page on the phone.</p>
-                <div class="sc-photo-actions"><button class="btn btn-quiet btn-sm" type="button" onclick="copyMobilePhotoLink()">Copy phone link</button><a id="mobile-photo-link" href="#" target="_blank" rel="noopener noreferrer">Open upload page</a></div></div>
+                <div class="sc-photo-actions"><button class="btn btn-ink btn-sm" type="button" onclick="showPhoneQrLarge()">Show larger</button><button class="btn btn-quiet btn-sm" type="button" onclick="copyMobilePhotoLink()">Copy phone link</button><a id="mobile-photo-link" href="#" target="_blank" rel="noopener noreferrer">Open upload page</a></div></div>
             </div>
           </div>
           <div class="sc-verify-card">
@@ -1348,6 +1364,32 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
       </div>
   </main>
 
+  <div id="phone-qr-overlay" class="join-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="phone-qr-title" onclick="if (event.target === this) hidePhoneQrLarge()">
+    <div class="join-dialog phone-qr-dialog">
+      <button class="join-x" type="button" onclick="hidePhoneQrLarge()" aria-label="Close">×</button>
+      <h2 id="phone-qr-title">Scan with your phone</h2>
+      <p>Open the phone camera and point it at the code. The upload page opens on the phone.</p>
+      <img id="phone-qr-large" alt="Large QR code for the phone upload page" />
+    </div>
+  </div>
+  <div id="camera-overlay" class="join-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="camera-dialog-title">
+    <div class="join-dialog camera-dialog">
+      <button class="join-x" type="button" onclick="closeClassCamera()" aria-label="Close camera">×</button>
+      <h2 id="camera-dialog-title">Take a photo of the class</h2>
+      <p id="camera-dialog-hint">Point the camera at the room so everyone is in the picture.</p>
+      <div class="camera-stage">
+        <video id="camera-video" autoplay playsinline muted></video>
+        <img id="camera-preview" class="hidden" alt="Captured classroom photo" />
+        <span id="camera-status" class="camera-status">Starting the camera…</span>
+      </div>
+      <div class="join-buttons camera-buttons">
+        <button id="camera-switch" class="btn btn-quiet hidden" type="button" onclick="switchClassCamera()">Switch camera</button>
+        <button id="camera-retake" class="btn btn-quiet hidden" type="button" onclick="retakeClassPhoto()">Retake</button>
+        <button id="camera-capture" class="btn btn-ink" type="button" onclick="captureClassPhoto()" disabled>Capture</button>
+        <button id="camera-use" class="btn btn-ink hidden" type="button" onclick="useCapturedClassPhoto()">Use this photo</button>
+      </div>
+    </div>
+  </div>
   <div id="edit-assignment-overlay" class="join-overlay hidden" role="presentation" onclick="if(event.target===this)closeEditAssignment()">
     <section class="join-dialog edit-dialog" role="dialog" aria-modal="true" aria-labelledby="edit-assignment-heading">
       <button class="join-x" type="button" aria-label="Close" onclick="closeEditAssignment()">×</button>
@@ -1596,6 +1638,25 @@ Documentation — 15%"></textarea><span class="hint">The rubric guides Gemini. T
     "Cross-check and approve": "הצלבה ואישור",
     "Take photo": "צילום",
     "Choose photo": "בחירת תמונה",
+    "Show larger": "הגדלה",
+    "Scan with your phone": "סריקה בטלפון",
+    "Open the phone camera and point it at the code. The upload page opens on the phone.": "פתחו את המצלמה בטלפון וכוונו אותה אל הקוד. עמוד ההעלאה ייפתח בטלפון.",
+    "Show the phone QR code larger": "הצגת קוד ה-QR לטלפון בגדול",
+    "Large QR code for the phone upload page": "קוד QR גדול לעמוד ההעלאה בטלפון",
+    "The phone link is still loading. Try again in a moment.": "הקישור לטלפון עדיין נטען. נסו שוב בעוד רגע.",
+    "Take a photo of the class": "צילום הכיתה",
+    "Point the camera at the room so everyone is in the picture.": "כוונו את המצלמה לחדר כך שכולם ייכנסו לתמונה.",
+    "Starting the camera…": "מפעילים את המצלמה…",
+    "Switch camera": "החלפת מצלמה",
+    "Retake": "צילום מחדש",
+    "Capture": "צלם",
+    "Use this photo": "שימוש בתמונה הזו",
+    "Close camera": "סגירת המצלמה",
+    "Captured classroom photo": "תמונת הכיתה שצולמה",
+    "Camera permission was blocked. Allow the camera in the browser, or choose a photo file instead.": "הגישה למצלמה נחסמה. אפשרו את המצלמה בדפדפן או בחרו קובץ תמונה.",
+    "The camera needs HTTPS or localhost. Choose a photo file instead.": "המצלמה דורשת HTTPS או localhost. בחרו קובץ תמונה במקום.",
+    "No camera was found on this computer. Choose a photo file instead.": "לא נמצאה מצלמה במחשב. בחרו קובץ תמונה במקום.",
+    "Could not capture the photo. Try again.": "לא הצלחנו לצלם. נסו שוב.",
     "Add a photo of the whole room": "הוסיפו תמונה של כל החדר",
     "Drop it here, or take one now. Gemini counts the people in it.": "גררו אותה לכאן או צלמו עכשיו. Gemini סופר את האנשים בה.",
     "Analyze the selected photo again": "ניתוח התמונה שנבחרה שוב",
@@ -3103,9 +3164,9 @@ module.exports = QRCode;
     const byId = (id) => document.getElementById(id);
 
     // Draw QR codes in the browser (no server image library needed, nothing sent to third parties).
-    function qrImageUrl(text, dark = '#1c2b4a') {
+    function qrImageUrl(text, dark = '#1c2b4a', level = 'M') {
       try {
-        const qr = new SmartQR.QRCode(-1, SmartQR.ECL.M);
+        const qr = new SmartQR.QRCode(-1, SmartQR.ECL[level] || SmartQR.ECL.M);
         qr.addData(String(text)); qr.make();
         const count = qr.getModuleCount(), quiet = 4, scale = 10, size = (count + quiet * 2) * scale;
         const canvas = document.createElement('canvas'); canvas.width = canvas.height = size;
@@ -3253,6 +3314,7 @@ module.exports = QRCode;
     }
 
     function hideAllSections() {
+      if (typeof closeClassCamera === 'function' && byId('camera-overlay') && !byId('camera-overlay').classList.contains('hidden')) closeClassCamera();
       document.body.classList.remove('qr-locked');
       if (typeof toggleQrProjector === 'function') toggleQrProjector(false);
       toggleQrProjector(false);
@@ -3330,15 +3392,21 @@ module.exports = QRCode;
 
     async function loadCourseStudents() {
       const container = byId('course-students-list');
-      container.replaceChildren();
-      if (!currentUser || currentUser.role !== 'lecturer') return;
+      if (!currentUser || currentUser.role !== 'lecturer') { container.replaceChildren(); delete container.dataset.signature; return; }
       const courseId = currentCourseId;
+      // A different course is now open: clear the previous course's students right away.
+      if (container.dataset.courseId !== courseId) { container.replaceChildren(); delete container.dataset.signature; container.dataset.courseId = courseId; }
       try {
         const url = `${API_URL}/api/courses/${encodeURIComponent(courseId)}/students?lecturer_email=${encodeURIComponent(currentUser.email)}`;
-        const response = await fetch(url);
+        const response = await fetch(url, {cache:'no-store'});
         if (!response.ok) throw new Error(`Student list HTTP ${response.status}`);
         const students = await response.json();
         if (currentCourseId !== courseId) return;
+        // Auto-sync runs every 5 s: redraw only when the list really changed, so names never blink.
+        const signature = JSON.stringify(students);
+        if (container.dataset.signature === signature) return;
+        container.dataset.signature = signature;
+        container.replaceChildren();
         if (!students.length) { container.innerHTML = '<div class="course-empty">No students enrolled yet. Use Add to invite an institution-registered student.</div>'; return; }
         students.forEach(student => {
           const row = document.createElement('div');
@@ -3350,7 +3418,10 @@ module.exports = QRCode;
           row.querySelector('.roster-remove').addEventListener('click', () => removeCourseStudent(student.email));
           container.appendChild(row);
         });
-      } catch (error) { console.error(error); container.innerHTML = '<div class="course-empty">Unable to load students. Check that the new main.py is running.</div>'; }
+      } catch (error) {
+        console.error(error);
+        if (!container.childElementCount) container.innerHTML = '<div class="course-empty">Unable to load students. Check that the new main.py is running.</div>';
+      }
     }
 
     async function promptAddCourseStudent() {
@@ -4991,6 +5062,8 @@ module.exports = QRCode;
     async function refreshCurrentView(manual = false) {
       if (!currentUser || refreshInProgress) return;
       refreshInProgress = true;
+      // Safety net: a request that never answers must not stop the 5-second sync for good.
+      const watchdog = setTimeout(() => { refreshInProgress = false; }, 20000);
       if (manual) { byId('refresh-btn').disabled = true; byId('refresh-btn').classList.add('busy'); }
       try {
         await loadNotifications();
@@ -5008,6 +5081,7 @@ module.exports = QRCode;
           currentUser.role === 'lecturer' ? loadLecturerLiveState() : Promise.resolve()
         ]);
         else if (!byId('assignment-view-section').classList.contains('hidden')) {
+          if (!(await verifyCurrentAssignmentExists())) return;
           await Promise.all([currentUser.role === 'lecturer' ? loadAssignmentSubmissions() : loadMyAssignmentSubmission(),loadAssignmentFeedbackForum()]);
         }
         if (manual) showToast('✓ Updated now');
@@ -5015,9 +5089,30 @@ module.exports = QRCode;
         console.error('Auto sync:', error);
         if (manual) showToast('Update failed. Check your connection.', true);
       } finally {
+        clearTimeout(watchdog);
         refreshInProgress = false;
         if (manual) { byId('refresh-btn').disabled = false; byId('refresh-btn').classList.remove('busy'); }
       }
+    }
+
+    // Something the user is looking at was deleted: go back to the course (or home if the course is gone too).
+    function leaveDeletedItem(message) {
+      currentSessionId = null;
+      currentAssignmentId = null;
+      if (typeof toggleQrProjector === 'function') toggleQrProjector(false);
+      if (typeof stopCameraScanner === 'function' && byId('camera-container') && !byId('camera-container').classList.contains('hidden')) stopCameraScanner();
+      if (currentCourseId) { lastCoursePayload = ''; goBackToCourse(); } else goHome();
+      showToast(message, true);
+    }
+
+    async function verifyCurrentAssignmentExists() {
+      const id = currentAssignmentId;
+      if (!currentUser || !id) return true;
+      try {
+        const response = await fetch(`${API_URL}/api/assignments/${id}/details?email=${encodeURIComponent(currentUser.email)}`, {cache:'no-store'});
+        if (response.status === 404 && id === currentAssignmentId) { leaveDeletedItem('This assignment was deleted by the lecturer.'); return false; }
+      } catch (error) { console.warn('Assignment check unavailable:', error); }
+      return true;
     }
 
     async function verifyCurrentCourseAccess() {
@@ -5064,9 +5159,17 @@ module.exports = QRCode;
       try {
         const who = currentUser.role === 'student' ? `?student_email=${encodeURIComponent(currentUser.email)}` : '';
         const response = await fetch(`${API_URL}/api/sessions/${id}/status${who}`, {cache:'no-store'});
+        if (response.status === 404 && id === currentSessionId) {
+          leaveDeletedItem('This lecture was deleted by the lecturer.');
+          return;
+        }
         if (!response.ok) return;
         const status = await response.json();
         if (id !== currentSessionId) return;
+        if (status.course_id && currentCourseId && status.course_id !== currentCourseId) {
+          leaveDeletedItem('This lecture was deleted by the lecturer.');
+          return;
+        }
         if (currentUser.role === 'student' && status.is_active) renderStudentAttendance(status);
         if (currentSessionIsActive && !status.is_active) {
           openSessionView(id, false);
@@ -5382,7 +5485,9 @@ module.exports = QRCode;
         const url = new URL(mobilePhotoPath, photoPhoneOrigin + '/').href;
         byId('mobile-photo-link').href = url;
         byId('mobile-photo-link').textContent = 'Open upload page ↗';
-        byId('mobile-photo-qr').src = qrImageUrl(url);
+        // Low error correction = fewer, bigger squares: much easier for a phone to read off a laptop screen.
+        byId('mobile-photo-qr').src = qrImageUrl(url, '#1c2b4a', 'L');
+        byId('phone-qr-large').src = byId('mobile-photo-qr').src;
       } catch (error) { showToast('Phone link unavailable on this network.', true); }
     }
 
@@ -5393,6 +5498,122 @@ module.exports = QRCode;
       catch (error) { window.prompt('Copy this phone link:', url); }
     }
 
+
+
+    // ---- Classroom photo from the computer's camera --------------------------------------
+    // <input capture> opens the camera only on phones; desktop browsers show a file picker instead.
+    // On a computer we open the webcam in a dialog, capture a frame and send it like a chosen file.
+    let classCameraStream = null, classCameraFacing = 'environment', classCameraBlob = null;
+
+    function showPhoneQrLarge() {
+      if (!byId('phone-qr-large').getAttribute('src')) { showToast('The phone link is still loading. Try again in a moment.', true); return; }
+      byId('phone-qr-overlay').classList.remove('hidden');
+    }
+    function hidePhoneQrLarge() { byId('phone-qr-overlay').classList.add('hidden'); }
+    document.addEventListener('keydown', (event) => { if (event.key === 'Escape') hidePhoneQrLarge(); });
+
+    function takeClassPhoto() {
+      const isPhone = window.matchMedia('(pointer: coarse)').matches && /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+      if (isPhone || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        byId('class-photo-camera').click();
+        return;
+      }
+      openClassCamera();
+    }
+
+    async function openClassCamera() {
+      classCameraBlob = null;
+      byId('camera-overlay').classList.remove('hidden');
+      byId('camera-preview').classList.add('hidden');
+      byId('camera-video').classList.remove('hidden');
+      ['camera-retake', 'camera-use'].forEach(id => byId(id).classList.add('hidden'));
+      byId('camera-capture').classList.remove('hidden');
+      byId('camera-capture').disabled = true;
+      byId('camera-status').textContent = 'Starting the camera…';
+      stopClassCameraStream();
+      try {
+        classCameraStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: classCameraFacing, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
+        const video = byId('camera-video');
+        video.srcObject = classCameraStream;
+        await video.play().catch(() => {});
+        byId('camera-status').textContent = '';
+        byId('camera-capture').disabled = false;
+        const cameras = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+        byId('camera-switch').classList.toggle('hidden', cameras.length < 2);
+      } catch (error) {
+        console.warn('Camera unavailable:', error);
+        closeClassCamera();
+        const reason = error && error.name === 'NotAllowedError'
+          ? 'Camera permission was blocked. Allow the camera in the browser, or choose a photo file instead.'
+          : (!window.isSecureContext ? 'The camera needs HTTPS or localhost. Choose a photo file instead.'
+          : 'No camera was found on this computer. Choose a photo file instead.');
+        showToast(reason, true);
+        byId('class-photo-file').click();
+      }
+    }
+
+    function stopClassCameraStream() {
+      if (classCameraStream) classCameraStream.getTracks().forEach(track => track.stop());
+      classCameraStream = null;
+      const video = byId('camera-video');
+      if (video) video.srcObject = null;
+    }
+
+    function closeClassCamera() {
+      stopClassCameraStream();
+      const preview = byId('camera-preview');
+      if (preview && preview.src) { URL.revokeObjectURL(preview.src); preview.removeAttribute('src'); }
+      classCameraBlob = null;
+      byId('camera-overlay').classList.add('hidden');
+    }
+
+    function switchClassCamera() {
+      classCameraFacing = classCameraFacing === 'environment' ? 'user' : 'environment';
+      openClassCamera();
+    }
+
+    function captureClassPhoto() {
+      const video = byId('camera-video');
+      if (!video.videoWidth) return;
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+      canvas.getContext('2d').drawImage(video, 0, 0);
+      canvas.toBlob(blob => {
+        if (!blob) { showToast('Could not capture the photo. Try again.', true); return; }
+        classCameraBlob = blob;
+        const preview = byId('camera-preview');
+        preview.src = URL.createObjectURL(blob);
+        preview.classList.remove('hidden');
+        video.classList.add('hidden');
+        stopClassCameraStream();
+        byId('camera-capture').classList.add('hidden');
+        byId('camera-switch').classList.add('hidden');
+        byId('camera-retake').classList.remove('hidden');
+        byId('camera-use').classList.remove('hidden');
+      }, 'image/jpeg', 0.92);
+    }
+
+    function retakeClassPhoto() {
+      const preview = byId('camera-preview');
+      if (preview.src) { URL.revokeObjectURL(preview.src); preview.removeAttribute('src'); }
+      openClassCamera();
+    }
+
+    async function useCapturedClassPhoto() {
+      if (!classCameraBlob) return;
+      const file = new File([classCameraBlob], `classroom-${Date.now()}.jpg`, { type: 'image/jpeg' });
+      closeClassCamera();
+      // Hand the photo to the normal upload path through the camera file input.
+      const input = byId('class-photo-camera');
+      const transfer = new DataTransfer();
+      transfer.items.add(file);
+      input.files = transfer.files;
+      await uploadLecturerPhoto('class-photo-camera');
+    }
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !byId('camera-overlay').classList.contains('hidden')) closeClassCamera();
+    });
 
     async function uploadLecturerPhoto(inputId = 'class-photo-file') {
       const message = byId('class-photo-message');

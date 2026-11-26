@@ -33,7 +33,7 @@ Build and demo SmartClass, a simple web app for teaching in class (KISS). It sho
 | 2 | Tools report, components and diagrams | ✓ |
 | 3 | SRS and testing strategy | ✓ |
 | 4 | Working app on Railway | ✓ |
-| 5 | Demo in class and conclusion | 25/11/2026 |
+| 5 | Demo in class and conclusion | 07/12/2026 |
 
 ## Team
 Yair Cohen and Yaari Meirovich.
