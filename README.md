@@ -9,10 +9,14 @@ Ex2 – Introduction to Software Engineering
 Yair Cohen ([@YairCohen3](https://github.com/YairCohen3)) & Yaari Meirovich ([@YaariMeirovich](https://github.com/YaariMeirovich))
 
 ## Demo video
+<div align="center">
 
-[smartclass-demo.mp4](../smartclass-demo.mp4)
+https://github.com/user-attachments/assets/b1751bc5-bb8d-4c0e-ba0b-f72ddcd858f8
 
-<!-- Replace with: [![SmartClass demo](thumbnail.png)](https://youtu.be/VIDEO_ID) -->
+<sub>2-minute tour · lecturer on a laptop, student on a phone · English narration</sub>
+
+</div>
+
 
 ## The problem
 
